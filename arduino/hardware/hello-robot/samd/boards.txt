@@ -1,0 +1,139 @@
+
+# Hello Pimu
+# ---------------------------------------
+hello_pimu.name=Hello Pimu
+hello_pimu.vid.0=0x2341
+hello_pimu.pid.0=0x804d
+hello_pimu.vid.1=0x2341
+hello_pimu.pid.1=0x804d
+
+hello_pimu.vid.2=0x2341
+hello_pimu.pid.2=0x824d
+# If the board is a 2341:824d use 2341:824d for build and set other parameters as well
+hello_pimu.vid.2.build.vid=0x2341
+hello_pimu.vid.2.build.pid=0x824d
+hello_pimu.vid.2.build.usb_product="Hello Pimu"
+hello_pimu.vid.2.bootloader.file=zero/samd21_sam_ba_genuino.bin
+
+hello_pimu.vid.3=0x2341
+hello_pimu.pid.3=0x024d
+# If the board is a 2341:024d use 2341:824d for build and set other parameters as well
+hello_pimu.vid.3.build.vid=0x2341
+hello_pimu.vid.3.build.pid=0x824d
+hello_pimu.vid.3.build.usb_product="Hello Pimu"
+hello_pimu.vid.3.bootloader.file=zero/samd21_sam_ba_genuino.bin
+
+hello_pimu.upload.tool=bossac
+hello_pimu.upload.protocol=sam-ba
+hello_pimu.upload.maximum_size=262144
+hello_pimu.upload.use_1200bps_touch=true
+hello_pimu.upload.wait_for_upload_port=true
+hello_pimu.upload.native_usb=true
+hello_pimu.build.mcu=cortex-m0plus
+hello_pimu.build.f_cpu=48000000L
+hello_pimu.build.usb_product="Hello Pimu"
+hello_pimu.build.usb_manufacturer="Hello Robot Inc"
+hello_pimu.build.board=SAMD_ZERO
+hello_pimu.build.core=arduino
+hello_pimu.build.extra_flags=-D__SAMD21G18A__ {build.usb_flags}
+hello_pimu.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
+hello_pimu.build.openocdscript=openocd_scripts/arduino_zero.cfg
+hello_pimu.build.variant=hello_pimu
+hello_pimu.build.variant_system_lib=
+hello_pimu.build.vid=0x2341
+hello_pimu.build.pid=0x804d
+hello_pimu.bootloader.tool=openocd
+hello_pimu.bootloader.file=zero/samd21_sam_ba.bin
+
+# Hello Wacc
+# ---------------------------------------
+hello_wacc.name=Hello Wacc
+hello_wacc.vid.0=0x2341
+hello_wacc.pid.0=0x804d
+hello_wacc.vid.1=0x2341
+hello_wacc.pid.1=0x804d
+
+hello_wacc.vid.2=0x2341
+hello_wacc.pid.2=0x824d
+# If the board is a 2341:824d use 2341:824d for build and set other parameters as well
+hello_wacc.vid.2.build.vid=0x2341
+hello_wacc.vid.2.build.pid=0x824d
+hello_wacc.vid.2.build.usb_product="Hello Wacc"
+hello_wacc.vid.2.bootloader.file=zero/samd21_sam_ba_genuino.bin
+
+hello_wacc.vid.3=0x2341
+hello_wacc.pid.3=0x024d
+# If the board is a 2341:024d use 2341:824d for build and set other parameters as well
+hello_wacc.vid.3.build.vid=0x2341
+hello_wacc.vid.3.build.pid=0x824d
+hello_wacc.vid.3.build.usb_product="Hello Wacc"
+hello_wacc.vid.3.bootloader.file=zero/samd21_sam_ba_genuino.bin
+
+hello_wacc.upload.tool=bossac
+hello_wacc.upload.protocol=sam-ba
+hello_wacc.upload.maximum_size=262144
+hello_wacc.upload.use_1200bps_touch=true
+hello_wacc.upload.wait_for_upload_port=true
+hello_wacc.upload.native_usb=true
+hello_wacc.build.mcu=cortex-m0plus
+hello_wacc.build.f_cpu=48000000L
+hello_wacc.build.usb_product="Hello Wacc"
+hello_wacc.build.usb_manufacturer="Hello Robot Inc"
+hello_wacc.build.board=SAMD_ZERO
+hello_wacc.build.core=arduino
+hello_wacc.build.extra_flags=-D__SAMD21G18A__ {build.usb_flags}
+hello_wacc.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
+hello_wacc.build.openocdscript=openocd_scripts/arduino_zero.cfg
+hello_wacc.build.variant=hello_wacc
+hello_wacc.build.variant_system_lib=
+hello_wacc.build.vid=0x2341
+hello_wacc.build.pid=0x804d
+hello_wacc.bootloader.tool=openocd
+hello_wacc.bootloader.file=zero/samd21_sam_ba.bin
+
+
+# Hello Stepper
+# ---------------------------------------
+hello_stepper.name=Hello Stepper
+hello_stepper.vid.0=0x2341
+hello_stepper.pid.0=0x804d
+hello_stepper.vid.1=0x2341
+hello_stepper.pid.1=0x804d
+
+hello_stepper.vid.2=0x2341
+hello_stepper.pid.2=0x824d
+# If the board is a 2341:824d use 2341:824d for build and set other parameters as well
+hello_stepper.vid.2.build.vid=0x2341
+hello_stepper.vid.2.build.pid=0x824d
+hello_stepper.vid.2.build.usb_product="Hello Stepper"
+hello_stepper.vid.2.bootloader.file=zero/samd21_sam_ba_genuino.bin
+
+hello_stepper.vid.3=0x2341
+hello_stepper.pid.3=0x024d
+# If the board is a 2341:024d use 2341:824d for build and set other parameters as well
+hello_stepper.vid.3.build.vid=0x2341
+hello_stepper.vid.3.build.pid=0x824d
+hello_stepper.vid.3.build.usb_product="Hello Stepper"
+hello_stepper.vid.3.bootloader.file=zero/samd21_sam_ba_genuino.bin
+
+hello_stepper.upload.tool=bossac
+hello_stepper.upload.protocol=sam-ba
+hello_stepper.upload.maximum_size=262144
+hello_stepper.upload.use_1200bps_touch=true
+hello_stepper.upload.wait_for_upload_port=true
+hello_stepper.upload.native_usb=true
+hello_stepper.build.mcu=cortex-m0plus
+hello_stepper.build.f_cpu=48000000L
+hello_stepper.build.usb_product="Hello Stepper"
+hello_stepper.build.usb_manufacturer="Hello Robot Inc"
+hello_stepper.build.board=SAMD_ZERO
+hello_stepper.build.core=arduino
+hello_stepper.build.extra_flags=-D__SAMD21G18A__ {build.usb_flags}
+hello_stepper.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
+hello_stepper.build.openocdscript=openocd_scripts/arduino_zero.cfg
+hello_stepper.build.variant=hello_stepper
+hello_stepper.build.variant_system_lib=
+hello_stepper.build.vid=0x2341
+hello_stepper.build.pid=0x804d
+hello_stepper.bootloader.tool=openocd
+hello_stepper.bootloader.file=zero/samd21_sam_ba.bin
