@@ -70,6 +70,8 @@ Now test that your install is ready to go.
 * Select the board type Tools/Board/Hello Wacc
 * Select Sketch/Verify-Compile. It should compile with no errors
 
+
+
 # Updating Stretch Firmware
 
 **Warning: It is possible to 'brick' your Stretch robot if you don't follow these instructions carefully. Firmware upgrade should only be done at the recommendation of Hello Robot support.** 
@@ -111,7 +113,9 @@ Next
 * Open the appropriate sketch for the board to be updated
 * Select the appropriate board type from the menu Tools/Board/hello*
 * Select the appropriate port from Tools/Port (eg /dev/ttyACM0 ) that maps to the correct USB device
-* Select Sketch/Upload from the menu. The new firmware will load to the board. 
+* Select Sketch/Upload from the menu. The new firmware will load to the board as shown
+
+<img src="./images/arduino-4.png" height="600" />
 
 ## Flashing the Stepper Calibration
 
