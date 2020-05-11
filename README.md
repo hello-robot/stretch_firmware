@@ -56,11 +56,11 @@ Set the default Sketchbook location under File/Preferences to
 
 <img src="./images/arduino-1.png" height="300" />
 
-Now close down and restart the IDE. You should now see the three Hello Robot board types available:
+Now close down and restart the IDE. Now under Tools/Board you should see the three Hello Robot board types available at the bottom of the list:
 
 <img src="./images/arduino-2.png"  height="400" />
 
-Next, install the Arduino SAMD Boards (32-bits Arm Cortex-M0+) package via the Boards Manager. **It is important to install version 1.6.x and not a newer version.**
+Next, install the Arduino SAMD Boards (32-bits Arm Cortex-M0+) package via the Boards Manager (Tools/Board/Boards Manager) . **It is important to install version 1.6.21 and not a newer version.**
 
 <img src="./images/arduino-3.png"  height="400" />
 
@@ -81,7 +81,7 @@ cd ~/repos/stretch_firmware
 git pull
 ```
 
-If you are unsure, you can verify the version of firmware for a particular board be looking in the Common.h file for the board. For example:
+Hello Robot support will have specified a firmware version to install. If you are unsure, you can verify the version of firmware for a particular board be looking in the Common.h file for the  Sketch. For example:
 
 ```
 #define FIRMWARE_VERSION "Pimu.V0.0.1p0"
@@ -109,8 +109,8 @@ Next
 
 * Launch the Arduino IDE
 * Open the appropriate sketch for the board to be updated
-* Select the appropriate board type from the menu Tools/Board
-* Select the appropriate port name (eg /dev/ttyACM0 ) that maps to the correct USB device
+* Select the appropriate board type from the menu Tools/Board/hello*
+* Select the appropriate port from Tools/Port (eg /dev/ttyACM0 ) that maps to the correct USB device
 * Select Sketch/Upload from the menu. The new firmware will load to the board. 
 
 ## Flashing the Stepper Calibration
@@ -121,7 +121,7 @@ For each motor (eg, the left wheel):
 
 ```
 cd ~/repos/stretch_firmware/python
-./stepper_calibration_YAML_to_flash.py /dev/hello-motor-left-wheel
+./stepper_calibration_YAML_to_flash.py hello-motor-left-wheel
 ```
 
 
