@@ -70,15 +70,15 @@ struct __attribute__ ((packed)) Wacc_Config{
 };
 
 struct __attribute__ ((packed)) Wacc_Status{
-  float ax;
-  float ay;
-  float az;
-  int16_t a0;
-  uint8_t d0;
-  uint8_t d1;
-  uint8_t d2;
-  uint8_t d3;
-  uint32_t single_tap_count;
+  float ax;	//Accelerometer AX
+  float ay;	//Accelerometer AY
+  float az;	//Accelerometer AZ
+  int16_t a0; //expansion header analog in
+  uint8_t d0; //expansion header digital in
+  uint8_t d1; //expansion header digital in
+  uint8_t d2; //expansion header digital out
+  uint8_t d3; //expansion header digital out
+  uint32_t single_tap_count; //Accelerometer tap count
   uint32_t state;
   uint32_t timestamp; //ms, overflows every 50 days
   uint32_t debug;
