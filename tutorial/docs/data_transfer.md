@@ -2,7 +2,7 @@
 
 # Overview
 
-In this tutorial we explore how to plumb custom data to and from the Arduino based Stretch Wacc (Wrist + Accelerometer) board. This enable users to integrate custom sensors and actuators on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). 
+In this tutorial we explore how to plumb custom data to and from the Arduino based Stretch Wacc (Wrist + Accelerometer) board. This enables users to integrate custom sensors and actuators on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). 
 
 ## How Data Transfer Happens in Stretch Body
 
