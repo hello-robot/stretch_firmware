@@ -43,14 +43,4 @@ The user can interact with these pins through the [Stretch Body python interface
 
 ### Custom Interface
 
-Advanced users may want to create a custom interface to the Expansion DIO header that utilizes SPI, I2C, or UART. For example, interfacing a 3rd party sensor that communicates by SPI requires:
-
-* Create a local version of the firmware that the user can modify.
-* Create a new Arduino board 'variant' which maps the SPI hardware to the DIO pins
-* Modify the firmware to include the sensors SPI driver, allowing the sensor to be read / written.
-* Modify the [Wacc_Status and Wacc_Command]() structures so that the data is piped back to Stretch Body python
-* Create a local version of the [stretch_body/wacc.py](stretch_body/wacc.py) that the user can modify.
-* Update Status and Command interfaces of wacc.py to accommodate the new firmware data structures
-* Expose the sensor data and commands through the wacc.py API
-
-While non-trivial, developing a custom interface is straightforward for an advanced user who is experienced with firmware, Python, and Arduino development. 
+Advanced users may want to create a custom interface to the Expansion DIO header that utilizes SPI, I2C, or UART. For this, see the provided [tutorials](./tutorial/README.md)
