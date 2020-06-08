@@ -74,7 +74,7 @@ struct __attribute__ ((packed)) Wacc_Status{
 
 The ordering of the data is important.  Your custom data should be at the start of the struct as shown.
 
-Next we add the calculator function to  [Wacc.cpp](../arduino/hello_wacc_calc/wacc.cpp):
+Next we add the calculator function to  [Wacc.cpp](../arduino/hello_wacc_calc/Wacc.cpp):
 
 ```c
 float my_calc(uint8_t op, float var1, float var2)
@@ -91,7 +91,7 @@ float my_calc(uint8_t op, float var1, float var2)
 
 Finally, we integrate our calculator into the embedded control loop. 
 
-The function `stepWaccController()` in  [Wacc.cpp](../arduino/hello_wacc_calc/wacc.cpp) is called by Timer5 at 700Hz. The calculator is fairly lightweight so its computation time should not interfere with the existing Wacc timing. Heavier computation would require careful integration with an eye to loop timing.
+The function `stepWaccController()` in  [Wacc.cpp](../arduino/hello_wacc_calc/Wacc.cpp) is called by Timer5 at 700Hz. The calculator is fairly lightweight so its computation time should not interfere with the existing Wacc timing. Heavier computation would require careful integration with an eye to loop timing.
 
 Next we add our call to `stepWaccController()`  just prior to the `Status` data being copied out for transmittal back. 
 
@@ -108,7 +108,7 @@ The variable `cmd`, which contains the command to the calculator, is automatical
 
 Finally, we want to bump the protocol version in order to tell the user that this is a custom protocol. Currently nothing is done with the protocol version information, but it is useful to ensure future compatibility and readability.
 
-In [Common.h](../arduino/hello_wacc_dio/Common.h) , we bump from Protocol '0' 
+In [Common.h](../arduino/hello_wacc_calc/Common.h) , we bump from Protocol '0' 
 
 ```c
 #define FIRMWARE_VERSION "Wacc.v0.0.1p0"
