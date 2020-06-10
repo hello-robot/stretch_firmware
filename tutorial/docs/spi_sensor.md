@@ -82,6 +82,8 @@ Finally, we call the `spiTransaction()` function at a rate of `FS_SPI` by adding
 
 ### Wire Up the Boards
 
+**NOTE: The Wacc is a 3V3 device and the Uno is a 5V device. External level translation is required to protect the Wacc.**
+
 Next, wire the Uno to the Expansion Header as:
 
 | Stretch Expansion Header | Uno  |
