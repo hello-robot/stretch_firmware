@@ -7,7 +7,7 @@ These tutorials demonstrate how to use the Stretch wrist expansion header to int
 | Tutorial                                   | Description                                                  |
 | ------------------------------------------ | ------------------------------------------------------------ |
 | [Data Transfer](./docs/data_transfer.md)   | How to plumb your custom data from the wrist Arduino through Stretch Body |
-| [Wrist Board Emulation](wacc_emulation.md) | How to emulate the Stretch wrist board using an off the shelf Arduino |
+| [Wrist Board Emulation](./docs/wacc_emulation.md) | How to emulate the Stretch wrist board using an off the shelf Arduino |
 | [SPI Sensor](./docs/spi_sensor.md)         | How to integrate an SPI sensor                               |
 | [I2C Sensor](./docs/i2c_sensor.md)         | How to integrate an I2C sensor                               |
 
