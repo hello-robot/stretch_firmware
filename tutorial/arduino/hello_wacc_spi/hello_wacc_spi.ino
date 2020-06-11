@@ -1,6 +1,6 @@
 /*
   -------------------------------------------------------------
-  Hello Robot - Hello Wacc Spi
+  Hello Robot - Hello Wacc
 
   All materials released under the GNU General Public License v3.0 (GNU GPLv3).
   https://www.gnu.org/licenses/gpl-3.0.html      
@@ -24,10 +24,6 @@ void setup()        // This code runs once at startup
   pinMode(D1, INPUT);
   pinMode(D2, OUTPUT);
   pinMode(D3, OUTPUT);
-
-  ////////// SPI ////////////////
-  pinMode(HEADER_SPI_SS,OUTPUT);
-  
   pinMode(ACCEL_INT1, INPUT);
   pinMode(ACCEL_INT2, INPUT);
   digitalWrite(LED, LOW);

@@ -6,18 +6,16 @@ This tutorial illustrates the integration of a SPI device on to the [Wrist Expan
 
 # Calculator via SPI
 
-In this tutorial we will run the calculator from the [Data Transfer](./data_transfer.md) tutorial on an Arduino Uno that is running as an SPI slave. It will take a calculator `Command` from the Wacc and return the result in `Status` message. 
+In this tutorial we will run the calculator from the [Data Transfer](./data_transfer.md) tutorial on an Adafruit Metro M0 Express (Arduino Zero) that is running as an SPI slave. It will take a calculator `Command` from the Wacc and return the result in `Status` message. 
 
-![](../../images/wacc_uno.png)
-
-
+![](../../images/wacc_metro.png)
 
 ### Flash Firmware
 
-First, program the Uno with the provided sketch, [uno_wacc_spi](../arduino/uno_wacc_spi). Be sure to:
+First, program the Metro with the provided sketch, [zero_wacc_spi](../arduino/zero_wacc_spi). Be sure to:
 
 * Select the board's port from the IDE under Tools/Port
-* Select the board 'Arduino UNO' from the IDE under Tools/Board
+* Select the board 'Adafruit M0 Express' from the IDE under Tools/Board
 
 
 
@@ -50,7 +48,7 @@ In `Wacc.cpp` we add the SPI code:
 #include <SPI.h>
 
 uint8_t spi_out[9];   //SPI data out
-uint8_t spi_in[4];    //SPI data in
+uint8_t spi_in[9];    //SPI data in
 uint8_t ds_spi_cnt=0; //Down sample counter
 float FS_SPI = 10;    //Rate to run transactions (Hz)
 
@@ -82,9 +80,7 @@ Finally, we call the `spiTransaction()` function at a rate of `FS_SPI` by adding
 
 ### Wire Up the Boards
 
-**NOTE: The Wacc is a 3V3 device and the Uno is a 5V device. External level translation is required to protect the Wacc.**
-
-Next, wire the Uno to the Expansion Header as:
+Next, wire the Metro to the Expansion Header as:
 
 | Stretch Expansion Header | Uno  |
 | ------------------------ | ---- |
@@ -93,6 +89,8 @@ Next, wire the Uno to the Expansion Header as:
 | MOSI                     | MOSI |
 | SCK                      | SCK  |
 | GND                      | GND  |
+
+**Note: Other Arduino boards can be used. However 5V Arduinos boards will need their SPI lines level shifted to 3V3.**
 
 ### Test the Calculator
 
@@ -159,20 +157,3 @@ X: do calculation
 
 ```
 
-# Integrating other Hardware
-
-**Note: It is possible to brick an Arduino during SPI development. Develop your application on an off-the-shelf Arduino before porting to the Wacc.**
-
-The Stretch Wacc board uses the same microcontroller as used on an Arduino Zero or a Adafruit Metro M0 Express, so it can be useful to first develop your SPI application on this board and then port it to run on the Stretch Wacc (Wrist + Accelerometer) board. 
-
-We recommend:
-
-* Develop your SPI sensor application on an Arduino Zero or equivalent
-* Port your application to the Wacc using the above tutorial as a guide
-* Plumb the data back to Stretch Body using the [Data Transfer](./data_transfer.md) tutorial as a guide
-
-
-
-The mapping between the Wacc and an Metro M0 is shown below.
-
-![](../../images/wrist_expansion_header.png)

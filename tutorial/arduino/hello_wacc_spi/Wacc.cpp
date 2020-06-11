@@ -34,7 +34,7 @@ bool dirty_command = false;
 #include <SPI.h>
 
 uint8_t spi_out[9];   //SPI data out
-uint8_t spi_in[4];    //SPI data in
+uint8_t spi_in[9];    //SPI data in
 uint8_t ds_spi_cnt=0; //Down sample counter
 float FS_SPI = 10;    //Rate to run transactions (Hz)
 
@@ -66,7 +66,7 @@ void setupWacc() {
   memcpy(&(board_info.firmware_version), FIRMWARE_VERSION, min(20, strlen(FIRMWARE_VERSION)));
 
   ////////// SPI ////////////////
-  SPISettings settingsA(100000, MSBFIRST, SPI_MODE1);
+  SPISettings settingsA(100000, MSBFIRST, SPI_MODE0);
   SPI.begin();
   SPI.beginTransaction(settingsA);
   ///////////////////////////////
