@@ -8,7 +8,7 @@ This tutorial illustrates the integration of a SPI device on to the [Wrist Expan
 
 In this tutorial we will run the calculator from the [Data Transfer](./data_transfer.md) tutorial on an Adafruit Metro M0 Express (Arduino Zero) that is running as an SPI slave. It will take a calculator `Command` from the Wacc and return the result in `Status` message. 
 
-![](../../images/wacc_metro.png)
+![](../../images/wacc_spi.png)
 
 ### Flash Firmware
 
