@@ -2,11 +2,11 @@
 
 # Overview
 
-This tutorial illustrates the integration of a I2C device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). It extends the [Data Transfer](./data_transfer.md) tutorial. We recommend doing this tutorial prior to doing this one.
+This tutorial illustrates the integration of a I2C device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). It extends t. We recommend doing the [Data Transfer](./data_transfer.md) tutorial first. 
 
 # Calculator via I2C
 
-In this tutorial we will run the calculator from the [Data Transfer](./data_transfer.md) tutorial on an Arduino Uno that is running as an I2C slave. It will take a calculator `Command` from the Wacc and return the result in `Status` message. 
+In this tutorial we will run the calculator from the [Data Transfer](./data_transfer.md) tutorial on an Adafruit Metro M0 Express (Arduino Zero) that is running as an I2C slave. It will take a calculator `Command` from the Wacc and return the result in `Status` message. 
 
 ![](/home/hello-robot/repos/stretch_firmware/images/wacc_i2c.png)
 
@@ -14,7 +14,7 @@ In this tutorial we will run the calculator from the [Data Transfer](./data_tran
 
 ### Flash Firmware
 
-First, program the Uno with the provided sketch, [uno_wacc_i2c](../arduino/uno_wacc_i2c). Be sure to:
+First, program the Metro with the provided sketch, [zero_wacc_i2c](../arduino/zero_wacc_i2c). Be sure to:
 
 * Select the board's port from the IDE under Tools/Port
 * Select the board 'Arduino UNO' from the IDE under Tools/Board
@@ -24,65 +24,73 @@ First, program the Uno with the provided sketch, [uno_wacc_i2c](../arduino/uno_w
 Next, program the Wacc with the provided sketch, [hello_wacc_i2c](../arduino/hello_wacc_i2c). Be sure to:
 
 * Select the board's port from the IDE under Tools/Port
-* Select the board 'Hello Wacc' from the IDE under Tools/Board
+* Select the board 'Adafruit M0 Express' from the IDE under Tools/Board
 
 ### Code Walk-through
 
-The code is straightforward and is a natural extension of the code described in the  [Data Transfer](./data_transfer.md) tutorial. A few sections to highlight in the  [hello_wacc_spi](../arduino/hello_wacc_spi) sketch are:
+The code is straightforward and is a natural extension of the code described in the  [Data Transfer](./data_transfer.md) tutorial. A few sections to highlight in the  [hello_wacc_i2c](../arduino/hello_wacc_i2c) sketch are:
 
-First, in the sketch `setup()` we configure the slave select pin to be an output
+
+
+In`setupWacc()` we add code to configure the I2C. 
 
 ```c
-pinMode(HEADER_SPI_SS,OUTPUT);
+Wire.begin(); 
 ```
 
-Next in `setupWacc()` we add code to configure the SPI
+In `Wacc.cpp` we add the I2C code:
 
 ```c
-SPISettings settingsA(100000, MSBFIRST, SPI_MODE1);
-SPI.begin();
-SPI.beginTransaction(settingsA);
-```
+#include <Wire.h>
 
-In `Wacc.cpp` we add the SPI code:
+uint8_t i2c_out[9];   //I2C data out
+uint8_t i2c_in[9];    //I2C data in
+uint8_t ds_i2c_cnt=0; //Down sample counter
+float FS_I2C = 10;    //Rate to run transactions (Hz)
+int buf_idx=0;
 
-```c
-#include <SPI.h>
-
-uint8_t spi_out[9];   //SPI data out
-uint8_t spi_in[4];    //SPI data in
-uint8_t ds_spi_cnt=0; //Down sample counter
-float FS_SPI = 10;    //Rate to run transactions (Hz)
-
-void spiTransaction()
+void i2cTransaction()
 {
-  digitalWrite(HEADER_SPI_SS, LOW);
-  SPI.transfer('X'); //Mark start of transaction
-  memcpy(spi_out, (uint8_t *) (&cmd.calc), sizeof(Calc_Command));
-  for (uint8_t idx = 0; idx < 9; idx++)
-    spi_in[idx] = SPI.transfer(spi_out[idx]);
-  digitalWrite(HEADER_SPI_SS, HIGH);
-  memcpy((uint8_t *) (&stat.calc),spi_in+1,  sizeof(Calc_Status));
+  //Send the commmand
+  memcpy(i2c_out, (uint8_t *) (&cmd.calc), sizeof(Calc_Command));
+  Wire.beginTransmission(4); // transmit to device #4
+  for(int i=0;i<sizeof(Calc_Command);i++)
+  {
+    Wire.write(i2c_out[i]);
+  }
+  Wire.endTransmission();    
+
+  //Get the result
+  Wire.requestFrom(4, sizeof(Calc_Status));
+  int buf_idx=0;
+  while (Wire.available() && buf_idx<sizeof(Calc_Status)) // loop through all but the last
+  {
+    uint8_t x = Wire.read();      
+    i2c_in[buf_idx++]=x;
+  }
+  memcpy((uint8_t *) (&stat.calc),i2c_in,  sizeof(Calc_Status));
 }
 ```
 
 Here, the 9 bytes of the `Calc_Command` are transferred out and the 4 bytes of the `Calc_Status` are received. 
 
-**Note: This simple communication protocol is not robust, using an 'X' to demarcate the start of a transaction**
+**Note: This simple communication protocol is not robust to handshaking errors, etc**
 
-Finally, we call the `spiTransaction()` function at a rate of `FS_SPI` by adding to `stepWaccController()`:
+**Note: The Wacc uses I2C to also communicate with its onboard accelerometer** --  the [ADXL343](https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL343.pdf).  In our example we are using I2C address `4` to communicate with our Metro slave. The ADXL343 is configured to use addrex `0xA6` for a write and `0xA7` for a read.
+
+Finally, we call the `i2cTransaction()` function at a rate of `FS_I2C` by adding to `stepWaccController()`:
 
 ```c
- if (ds_spi_cnt++ >= (FS_CTRL / FS_SPI))
+ if (ds_i2c_cnt++ >= (FS_CTRL / FS_I2C))
   {
-    ds_spi_cnt = 0;
-    spiTransaction();
+    ds_i2c_cnt = 0;
+    i2cTransaction();
   }
 ```
 
 ### Wire Up the Boards
 
-Next, wire the Uno to the Expansion Header as:
+Next, wire the Metro to the Expansion Header as:
 
 | Stretch Expansion Header | Uno  |
 | ------------------------ | ---- |
@@ -92,7 +100,7 @@ Next, wire the Uno to the Expansion Header as:
 
 ### Test the Calculator
 
-Now, test the setup using the provided tool, [stretch_wacc_calc_jog.py](../python/stretch_wacc_calc_jog.py). As shown below, The Arduino Uno performs the calculation of 12*13 and the result is report back to Stretch Body.
+Now, test the setup using the provided tool, [stretch_wacc_calc_jog.py](../python/stretch_wacc_calc_jog.py). As shown below, The Metro performs the calculation of 12*13 and the result is report back to Stretch Body.
 
 ```bash
 hello-robot@stretch-re1-100x:~$ cd repos/stretch_firmware/tutorial/python/
@@ -154,21 +162,3 @@ X: do calculation
 -------------------
 
 ```
-
-# Integrating other Hardware
-
-**Note: It is possible to brick an Arduino during SPI development. Develop your application on an off-the-shelf Arduino before porting to the Wacc.**
-
-The Stretch Wacc board uses the same microcontroller as used on an Arduino Zero or a Adafruit Metro M0 Express, so it can be useful to first develop your SPI application on this board and then port it to run on the Stretch Wacc (Wrist + Accelerometer) board. 
-
-We recommend:
-
-* Develop your SPI sensor application on an Arduino Zero or equivalent
-* Port your application to the Wacc using the above tutorial as a guide
-* Plumb the data back to Stretch Body using the [Data Transfer](./data_transfer.md) tutorial as a guide
-
-
-
-The mapping between the Wacc and an Metro M0 is shown below.
-
-![](../../images/wrist_expansion_header.png)
