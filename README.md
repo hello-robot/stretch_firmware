@@ -6,10 +6,11 @@ The stretch_firmware repository provides the Arduino based firmware for the Stre
 
 The repository includes: 
 
-* hello_stepper: stepper motor controller based on the Mechaduino project
-* hello_pimu:  power and imu board (Pimu) in the base
-* hello_wacc: wrist accelerometer board (Wacc) in the wrist 
+* hello_stepper: firmware for stepper motor controller based on the Mechaduino project
+* hello_pimu:  firmware for power and imu board (Pimu) in the base
+* hello_wacc: firmware for wrist accelerometer board (Wacc) in the wrist 
 * Hello_Serial_Transport: serial communication library
+* [Tutorials](tutorials/README.md) on how to integrate custom hardware on to the Stretch Wacc board
 
 Additional 3rd party libraries are provided for convenience.
 
