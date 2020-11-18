@@ -160,10 +160,9 @@ void stepIMU(void)
     return;
 
   // Get new data samples
-  imu_status.timestamp=micros(); //micros()?
+  
   gyro.getEvent(&gyro_event);
   accelmag.getEvent(&accel_event, &mag_event);
-
   float ax = gravity_vector_scale*accel_event.acceleration.x;
   float ay = gravity_vector_scale*accel_event.acceleration.y;
   float az = gravity_vector_scale*accel_event.acceleration.z;

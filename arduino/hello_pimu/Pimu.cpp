@@ -63,6 +63,7 @@ Pimu_Trigger trg_in, trg;
 Pimu_Status stat, stat_out;
 Pimu_Board_Info board_info;
 
+
 unsigned long tlast;
 void setupTimer5();
 void runstop_toggle_led(int rate_ms);
@@ -81,6 +82,32 @@ float FS = 60.0;
 float DT_ms= 1000/FS;
 unsigned long cycle_cnt=0;
 
+
+///////////////////// TIMESTAMP /////////////////////////////////////////
+uint32_t ts_zero;
+uint32_t ts_micros;
+uint64_t timestamp_rollover;
+
+uint64_t update_timestamp()
+{
+  uint32_t t=micros();
+  if (t<ts_micros) //rollover
+  {
+    timestamp_rollover=timestamp_rollover+(uint32_t)0xFFFFFFFF; 
+  }
+  else
+    ts_micros=t;
+  return timestamp_rollover+t-ts_zero;
+}
+
+void zero_timestamp()
+{
+  ts_micros=micros();
+  ts_zero=ts_micros;
+  timestamp_rollover=0;
+}
+
+///////////////////////////////////////////////
 void setupPimu() {  
 
   memset(&cfg_in, 0, sizeof(Pimu_Config));
@@ -91,6 +118,7 @@ void setupPimu() {
   memset(&stat, 0, sizeof(Pimu_Status));
   memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
+  zero_timestamp();
   setupTimer5();
   
  
@@ -109,7 +137,9 @@ float rad_to_deg(float x)
 //Avoid using millis() in ISR
 unsigned long get_elapsed_time_ms(){
   return (unsigned long)((float)(DT_ms*(float)cycle_cnt));
+  
 }
+
 ///////////////////// LED /////////////////////////////////////////
 
 
@@ -217,7 +247,7 @@ int fan_on_cnt=0;
 
 void stepPimuController()
 {
-  stat.timestamp= micros();
+  
   cycle_cnt++;
   toggle_led(500);
   if (dirty_config)
@@ -333,6 +363,10 @@ void stepPimuController()
          delay(1);
          digitalWrite(IMU_RESET, HIGH);
     }
+    if (trg.data & TRIGGER_TIMESTAMP_ZERO)
+    {
+         zero_timestamp();
+    }
     dirty_trigger=false;
   }
 
@@ -425,13 +459,17 @@ void stepPimuController()
       digitalWrite(RUNSTOP_M3, LOW);
   }
   motor_sync_cnt=max(motor_sync_cnt-1,0);
-  ds_cnt++; //Downsample to 70Hz
-  if (ds_cnt==1)//2)
-  {
-    stepIMU();
-    memcpy(&stat.imu,&imu_status, sizeof(IMU_Status));
-    ds_cnt=0;
-  }
+  //ds_cnt++; //Downsample to 70Hz
+  //if (ds_cnt==1)//2)
+  //{
+  update_timestamp();
+  stat.timestamp= update_timestamp(); //Tag timestamp just before reading IMU
+  stepIMU();
+  memcpy(&stat.imu,&imu_status, sizeof(IMU_Status));
+  //ds_cnt=0;
+  //}
+ 
+  
     
 //Todo: Move to a faster read than stock analogRead. Takes 100us each.
 

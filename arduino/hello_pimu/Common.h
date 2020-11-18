@@ -18,8 +18,9 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Pimu.V0.1: Initial production release for RE1
-#define FIRMWARE_VERSION "Pimu.v0.0.1p0"
-#define BOARD_VERSION "Pimu.Guthrie.V1"
+// Pimu.V0.2: Add support for timestamp management
+#define FIRMWARE_VERSION "Pimu.v0.0.1p1"
+#define BOARD_VERSION "Pimu.Irma.V1"
 
 /////////////////////////////////////////////////////////////////
 #define BEEP_ID_OFF 0
@@ -85,11 +86,13 @@
 #define TRIGGER_IMU_RESET 128
 #define TRIGGER_RUNSTOP_ON 256
 #define TRIGGER_BEEP 512
+#define TRIGGER_TIMESTAMP_ZERO 1024
 
 /////////////////////////////////////////////////////////////////
 
 //Note, to serialize to Linux must pack structs given use of sizeof()
 //See https://arduino.stackexchange.com/questions/9899/serial-structure-data-transfer-between-an-arduino-and-a-linux-pc
+
 
 struct __attribute__ ((packed)) IMU_Status{
   
@@ -110,7 +113,6 @@ struct __attribute__ ((packed)) IMU_Status{
   float qy;
   float qz;
   float bump;
-  uint32_t timestamp;
 };
 
 /////////////////////////////////////////////////////////////////
@@ -146,13 +148,17 @@ struct __attribute__ ((packed)) Pimu_Status{
   float temp;
   float cliff_range[NUM_CLIFF];
   uint32_t state;      
-  uint32_t timestamp; //us
+  uint64_t timestamp; //us
   uint16_t bump_event_cnt;
   float debug;
 };
 
 struct __attribute__ ((packed)) Pimu_Trigger{
   uint32_t data;
+};
+
+struct __attribute__ ((packed)) Pimu_MotorSync{
+  uint32_t timestamp_sync;
 };
 
 struct __attribute__ ((packed)) Pimu_Board_Info{

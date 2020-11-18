@@ -134,9 +134,10 @@ struct __attribute__ ((packed)) Status{
   float vel;      //rad/sec
   float err;       //controller error (inner loop)
   uint32_t diag;       //diagnostic codes     
-  uint32_t timestamp; //us
+  uint32_t timestamp; //us since startup or last motor sync (rollover every 2**32/10^6 =~70 minutes)
   float debug; 
   uint32_t guarded_event; 
+  uint32_t timestamp_rollover; //number of rollovers since startup or last motor sync 
 };
 
 /////////////////////////////////////////////////////////////////
