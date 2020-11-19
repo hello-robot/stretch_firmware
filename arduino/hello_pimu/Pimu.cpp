@@ -35,7 +35,6 @@ int low_voltage_alert_cnt=0;
 
 float high_current_alert= I_TO_RAW(6.0);
 
-
 float over_tilt_alert_deg = 10.0;
 int startup_cnt=500;
 
@@ -57,6 +56,7 @@ bool state_over_tilt_alert=false;
 bool dirty_config=false;
 bool dirty_trigger=false;
 bool dirty_motor_sync=false;
+
 //////////////////////////////////////
 Pimu_Config cfg_in, cfg;
 Pimu_Trigger trg_in, trg;
@@ -64,7 +64,6 @@ Pimu_Status stat, stat_out;
 Pimu_Board_Info board_info;
 
 
-unsigned long tlast;
 void setupTimer5();
 void runstop_toggle_led(int rate_ms);
 void toggle_led(int rate_ms);
@@ -75,36 +74,99 @@ void step_beep();
 #define MODE_RESET_ACTIVE 2
 unsigned long t_low;
 int runstop_mode=MODE_RUNNING;
-
 bool alert_trigger_runstop=false;
+uint32_t cycle_cnt=0;
 
-float FS = 60.0;
-float DT_ms= 1000/FS;
-unsigned long cycle_cnt=0;
-
-
-///////////////////// TIMESTAMP /////////////////////////////////////////
-uint32_t ts_zero;
-uint32_t ts_micros;
-uint64_t timestamp_rollover;
-
-uint64_t update_timestamp()
+/////////////////////////////////////////////////////////////////////////
+float deg_to_rad(float x)
 {
-  uint32_t t=micros();
-  if (t<ts_micros) //rollover
+  return x*0.017453292519943295;
+}
+float rad_to_deg(float x)
+{
+  return x*57.29577951308232;
+}
+
+//////////////////////// ANALOG READ ISR ///////////////////////////////////////////
+// Use the SAMD21's ISR to transfer ADC results to buffer array in memory
+
+#define NUM_ADC_INPUTS 8
+#define IDX_ANA_V_BATT 0
+#define IDX_ANA_CLIFF_0 2
+#define IDX_ANA_CLIFF_1 3
+#define IDX_ANA_CLIFF_2 4
+#define IDX_ANA_CLIFF_3 5
+#define IDX_ANA_TEMP 6
+#define IDX_ANA_CURRENT 7
+volatile uint16_t adcResult[NUM_ADC_INPUTS] = {};         // ADC results buffer
+uint8_t adc_input_id=0;
+void setupADC()
+{
+  //ADC ISR setup
+  ADC->INPUTCTRL.bit.MUXPOS = adc_input_id;                   // Set the analog input to A0
+  while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization
+  ADC->SAMPCTRL.bit.SAMPLEN = 0x00;                  // Set max Sampling Time Length to half divided ADC clock pulse (2.66us)
+  ADC->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV512 |      // Divide Clock ADC GCLK by 512 (48MHz/512 = 93.7kHz)
+                   ADC_CTRLB_RESSEL_10BIT |          // Set the ADC resolution to 10 bits (use ADC_CTRLB_RESSEL_12BIT for 12)
+                   ADC_CTRLB_FREERUN;                // Set the ADC to free run
+ 
+  while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization 
+  NVIC_SetPriority(ADC_IRQn, 0);    // Set the Nested Vector Interrupt Controller (NVIC) priority for the ADC to 0 (highest)
+  NVIC_EnableIRQ(ADC_IRQn);         // Connect the ADC to Nested Vector Interrupt Controller (NVIC)
+  ADC->INTENSET.reg = ADC_INTENSET_RESRDY;           // Generate interrupt on result ready (RESRDY)
+  ADC->CTRLA.bit.ENABLE = 1;                         // Enable the ADC
+  while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization
+  ADC->SWTRIG.bit.START = 1;                         // Initiate a software trigger to start an ADC conversion
+  while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization
+}
+
+void ADC_Handler()
+{
+ 
+  if (ADC->INTFLAG.bit.RESRDY)                       // Check if the result ready (RESRDY) flag has been set
   {
-    timestamp_rollover=timestamp_rollover+(uint32_t)0xFFFFFFFF; 
+    ADC->INTFLAG.bit.RESRDY = 1;                     // Clear the RESRDY flag
+    while(ADC->STATUS.bit.SYNCBUSY);                 // Wait for read synchronization
+    adcResult[adc_input_id] = ADC->RESULT.reg;          // Read the result;
+    adc_input_id++;
+    if (adc_input_id==NUM_ADC_INPUTS)
+      adc_input_id=0;
+    ADC->CTRLA.bit.ENABLE = 0;                     // Disable the ADC
+    while(ADC->STATUS.bit.SYNCBUSY);               // Wait for synchronization
+    ADC->INPUTCTRL.bit.MUXPOS = adc_input_id;         // Set the analog input channel
+    while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization
+    ADC->CTRLA.bit.ENABLE = 1;                         // Enable the ADC
+    while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization
   }
-  else
-    ts_micros=t;
-  return timestamp_rollover+t-ts_zero;
+}
+
+
+///////////////////// TIMING and TIMESTAMP /////////////////////////////////////////
+#define FS 100 //Loop rate in Hz
+#define TC5_COUNT_PER_CYCLE (int)( round(48000000 / 16 / FS)) //30,000 at 100hz, 16:1 prescalar TC5 is 32bit timer
+#define US_PER_CYCLE 1000000/FS //10000 at 50Hz
+#define US_PER_TC5_TICK 1000000.0*16/48000000 //0.33us resolution
+
+float DT_ms= 1000/FS;
+
+//Avoid using millis() in ISR
+unsigned long get_elapsed_time_ms(){
+  return (unsigned long)((float)(DT_ms*(float)cycle_cnt));
+  
+}
+
+uint64_t ts_base=0;
+
+uint64_t get_TC5_timestamp()
+{
+  float delta = TC5->COUNT16.COUNT.reg*US_PER_TC5_TICK;
+  return ts_base + (int)delta;
 }
 
 void zero_timestamp()
 {
-  ts_micros=micros();
-  ts_zero=ts_micros;
-  timestamp_rollover=0;
+  ts_base=0;
+  TC5->COUNT16.COUNT.reg=0;
 }
 
 ///////////////////////////////////////////////
@@ -118,27 +180,10 @@ void setupPimu() {
   memset(&stat, 0, sizeof(Pimu_Status));
   memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
-  zero_timestamp();
   setupTimer5();
-  
- 
+  zero_timestamp();
 }
 
-float deg_to_rad(float x)
-{
-  return x*0.017453292519943295;
-}
-float rad_to_deg(float x)
-{
-  return x*57.29577951308232;
-}
-
-
-//Avoid using millis() in ISR
-unsigned long get_elapsed_time_ms(){
-  return (unsigned long)((float)(DT_ms*(float)cycle_cnt));
-  
-}
 
 ///////////////////// LED /////////////////////////////////////////
 
@@ -240,6 +285,9 @@ void stepNonRT()
 uint8_t board_reset_cnt=0;
 uint8_t ds_cnt=0;
 uint8_t motor_sync_cnt=0;
+//100hz control rate, cnt of 3 creates sync high pulse of 33ms. 
+//Stepper syncs at between 10 and 50ms pulse.
+#define MOTOR_SYNC_DURATION 3
 bool first_config = 1;
 int runstop_on_cnt=0;
 void step_runstop();
@@ -247,9 +295,10 @@ int fan_on_cnt=0;
 
 void stepPimuController()
 {
-  
+  ts_base+=US_PER_CYCLE;
   cycle_cnt++;
   toggle_led(500);
+  
   if (dirty_config)
   {
 
@@ -298,13 +347,13 @@ void stepPimuController()
 
     if (first_config)
     {
-      cliff[0]= analogRead(ANA_CLIFF_0);
-      cliff[1]= analogRead(ANA_CLIFF_1);
-      cliff[2]= analogRead(ANA_CLIFF_2);
-      cliff[3]= analogRead(ANA_CLIFF_3);
-      voltage = analogRead(ANA_V_BATT);
-      current = analogRead(ANA_CURRENT);
-      temp =   analogRead(ANA_TEMP);
+      voltage = adcResult[IDX_ANA_V_BATT];
+      current = adcResult[IDX_ANA_CURRENT];
+      temp =    adcResult[IDX_ANA_TEMP];
+      cliff[0] = adcResult[IDX_ANA_CLIFF_0];
+      cliff[1] = adcResult[IDX_ANA_CLIFF_1];
+      cliff[2] = adcResult[IDX_ANA_CLIFF_2];
+      cliff[3] = adcResult[IDX_ANA_CLIFF_3];
       first_config=0;
       }
       dirty_config=false;
@@ -380,9 +429,7 @@ void stepPimuController()
   if (dirty_motor_sync)
   {
     dirty_motor_sync=0;
-    //60hz control rate, cnt of 3 creates sync high pulse of 33ms. 
-    //Stepper syncs at between 10 and 50ms pulse.
-    motor_sync_cnt=2; 
+    motor_sync_cnt=MOTOR_SYNC_DURATION; 
   }
  /////////////////////////
   //Monitor voltage
@@ -429,8 +476,6 @@ void stepPimuController()
   
 
     
-   
-    
     if (board_reset_cnt)
     {
       board_reset_cnt--; //Countdown to allow time for RPC to finish up
@@ -444,6 +489,8 @@ void stepPimuController()
  {//Disable motors or generate sync pulse to trigger motors
     if (!motor_sync_cnt && (state_runstop_event || state_cliff_event))
       runstop_toggle_led(500);//indicate in runstop event
+    if (motor_sync_cnt==MOTOR_SYNC_DURATION) //Timestamp low to high transition due to sync trigger
+      stat.timestamp_last_sync=get_TC5_timestamp();
     digitalWrite(RUNSTOP_M0, HIGH);
     digitalWrite(RUNSTOP_M1, HIGH);
     digitalWrite(RUNSTOP_M2, HIGH);
@@ -451,7 +498,7 @@ void stepPimuController()
  }
   else 
   {//Enable motors
-    stat.debug++;
+
       digitalWrite(RUNSTOP_LED, HIGH);
       digitalWrite(RUNSTOP_M0, LOW);
       digitalWrite(RUNSTOP_M1, LOW);
@@ -459,35 +506,26 @@ void stepPimuController()
       digitalWrite(RUNSTOP_M3, LOW);
   }
   motor_sync_cnt=max(motor_sync_cnt-1,0);
-  //ds_cnt++; //Downsample to 70Hz
-  //if (ds_cnt==1)//2)
-  //{
-  update_timestamp();
-  stat.timestamp= update_timestamp(); //Tag timestamp just before reading IMU
+
+  stat.timestamp= get_TC5_timestamp();//update_timestamp(); //Tag timestamp just before reading IMU
   stepIMU();
   memcpy(&stat.imu,&imu_status, sizeof(IMU_Status));
-  //ds_cnt=0;
-  //}
- 
   
-    
-//Todo: Move to a faster read than stock analogRead. Takes 100us each.
-
   if (first_filter)
   {
-    cliff[0]= analogRead(ANA_CLIFF_0);
-    cliff[1]= analogRead(ANA_CLIFF_1);
-    cliff[2]= analogRead(ANA_CLIFF_2);
-    cliff[3]= analogRead(ANA_CLIFF_3);
-    voltage = analogRead(ANA_V_BATT);
-    current = analogRead(ANA_CURRENT);
-    temp =   analogRead(ANA_TEMP);
+    voltage = adcResult[IDX_ANA_V_BATT];
+    current = adcResult[IDX_ANA_CURRENT];
+    temp =    adcResult[IDX_ANA_TEMP];
+    cliff[0] = adcResult[IDX_ANA_CLIFF_0];
+    cliff[1] = adcResult[IDX_ANA_CLIFF_1];
+    cliff[2] = adcResult[IDX_ANA_CLIFF_2];
+    cliff[3] = adcResult[IDX_ANA_CLIFF_3];
     first_filter=false;
   }
-  cliff[0]= cliff_LPFa*cliff[0] +  cliff_LPFb*(analogRead(ANA_CLIFF_0));
-  cliff[1]= cliff_LPFa*cliff[1] +  cliff_LPFb*(analogRead(ANA_CLIFF_1));
-  cliff[2]= cliff_LPFa*cliff[2] +  cliff_LPFb*(analogRead(ANA_CLIFF_2));
-  cliff[3]= cliff_LPFa*cliff[3] +  cliff_LPFb*(analogRead(ANA_CLIFF_3));
+  cliff[0]= cliff_LPFa*cliff[0] +  cliff_LPFb*adcResult[IDX_ANA_CLIFF_0];
+  cliff[1]= cliff_LPFa*cliff[1] +  cliff_LPFb*adcResult[IDX_ANA_CLIFF_1];
+  cliff[2]= cliff_LPFa*cliff[2] +  cliff_LPFb*adcResult[IDX_ANA_CLIFF_2];
+  cliff[3]= cliff_LPFa*cliff[3] +  cliff_LPFb*adcResult[IDX_ANA_CLIFF_3];
 
   if (!first_config)
   {
@@ -505,19 +543,14 @@ void stepPimuController()
   if (!cliff_last && state_cliff_event)
     do_beep(BEEP_ID_SINGLE_SHORT);
 
-  
-  voltage = voltage * voltage_LPFa +  voltage_LPFb* analogRead(ANA_V_BATT);
-  current = current * current_LPFa +  current_LPFb* analogRead(ANA_CURRENT);
-  temp =    temp *    temp_LPFa +     temp_LPFb*    analogRead(ANA_TEMP);
+  voltage = voltage * voltage_LPFa +  voltage_LPFb* adcResult[IDX_ANA_V_BATT];
+  current = current * current_LPFa +  current_LPFb* adcResult[IDX_ANA_CURRENT];
+  temp =    temp *    temp_LPFa +     temp_LPFb*    adcResult[IDX_ANA_TEMP];
 
-  
-
- 
 
   if(stat.imu.bump>cfg.bump_thresh)
     stat.bump_event_cnt++;
   
-
   
   stat.voltage=voltage;
   stat.current=current;
@@ -538,8 +571,8 @@ void stepPimuController()
   
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
-  //uint32_t x=micros()-stat.timestamp;
-  //stat.debug=(float)x;
+
+  stat.debug=TC5->COUNT16.COUNT.reg;
 }
 
 ///////////////RUNSTOP SWITCH LOGIC //////////////////////////
@@ -551,7 +584,7 @@ int depressed_last=0;
 void step_runstop() 
 {
   int button_depressed=(digitalRead(RUNSTOP_SW)==0);
-  
+
   if (!depressed_last && button_depressed  || alert_trigger_runstop) //button pushed
   {
     
@@ -573,6 +606,11 @@ void step_runstop()
     {
       runstop_mode=MODE_RUNNING;
       do_beep(BEEP_ID_SINGLE_SHORT);
+    }
+    else
+    if(!button_depressed && runstop_mode==MODE_RESET_ACTIVE) //Not held down long enough
+    {
+      runstop_mode=MODE_RUNSTOP_ACTIVE;
     }
   }
   depressed_last=button_depressed;
@@ -665,6 +703,7 @@ void step_beep()
 
 
 void TC5_Handler() {  
+  
 
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
@@ -686,7 +725,7 @@ void disableTCInterrupts() {  //disables the controller interrupt ("closed loop 
 
 void setupTimer5() {  // configure the controller interrupt
   
-  // Enable GCLK for TC4 and TC5 (timer counter input clock)
+  // Enable GCLK for TC5 (timer counter input clock)
   GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID(GCM_TC4_TC5));
   while (GCLK->STATUS.bit.SYNCBUSY);
 
@@ -699,10 +738,10 @@ void setupTimer5() {  // configure the controller interrupt
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_WAVEGEN_MFRQ; // Set TC as normal Normal Frq
   WAIT_TC16_REGS_SYNC(TC5)
 
-  TC5->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV64;   // Set perscaler
+  TC5->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV16;   // Set perscaler
   WAIT_TC16_REGS_SYNC(TC5)
   
-  TC5->COUNT16.CC[0].reg = (int)( round(48000000 / 64 / FS)); //Count up to 6400 / rate
+  TC5->COUNT16.CC[0].reg = TC5_COUNT_PER_CYCLE; //Value to count up to
   WAIT_TC16_REGS_SYNC(TC5)
 
   TC5->COUNT16.INTENSET.reg = 0;              // disable all interrupts

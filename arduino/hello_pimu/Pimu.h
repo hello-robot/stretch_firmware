@@ -17,6 +17,7 @@
 
 
 extern void setupPimu();         
+extern void setupADC();
 extern void stepPimuRPC();
 extern void toggle_led(int rate_ms);
 void TC5_Handler();

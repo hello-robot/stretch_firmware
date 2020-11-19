@@ -136,9 +136,9 @@ void setupIMU()
     imu_valid=false;
     return ;
   }
-  // Filter rate of 60hz, Beta=1.0 works well
+  // Filter rate of 100hz, Beta=1.0 works well
   filter.set_beta(1.0);
-  filter.begin(60);
+  filter.begin(100);
 }
 
 bool isIMUOrientationValid()

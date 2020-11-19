@@ -149,6 +149,7 @@ struct __attribute__ ((packed)) Pimu_Status{
   float cliff_range[NUM_CLIFF];
   uint32_t state;      
   uint64_t timestamp; //us
+  uint64_t timestamp_last_sync; //us
   uint16_t bump_event_cnt;
   float debug;
 };
