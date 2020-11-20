@@ -19,9 +19,10 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 //Version History
-// Stepper.V0.1: Initial production release for RE1
-#define FIRMWARE_VERSION_HR "Stepper.v0.0.1p0"
-#define BOARD_VERSION "Stepper.Guthrie.V1"
+// Protocol 0: Initial production release for RE1
+// Protocol 1: Add support for timestamp management
+#define FIRMWARE_VERSION_HR "Stepper.v0.0.1p1"
+#define BOARD_VERSION "Stepper.Irma.V1"
 
 /////////////////////////////////////////////////////////////////
 #define RUNSTOP D0
@@ -134,7 +135,8 @@ struct __attribute__ ((packed)) Status{
   float vel;      //rad/sec
   float err;       //controller error (inner loop)
   uint32_t diag;       //diagnostic codes     
-  uint32_t timestamp; //us since startup or last motor sync (rollover every 2**32/10^6 =~70 minutes)
+  uint64_t timestamp; //us
+  uint64_t timestamp_last_sync; //us
   float debug; 
   uint32_t guarded_event; 
   uint32_t timestamp_rollover; //number of rollovers since startup or last motor sync 

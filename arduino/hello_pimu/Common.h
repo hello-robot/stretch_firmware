@@ -17,8 +17,8 @@
 
 /////////////////////////////////////////////////////////////////
 //Version History
-// Pimu.V0.1: Initial production release for RE1
-// Pimu.V0.2: Add support for timestamp management
+// Protocol 0: Initial production release for RE1
+// Protocol 1: Add support for timestamp management
 #define FIRMWARE_VERSION "Pimu.v0.0.1p1"
 #define BOARD_VERSION "Pimu.Irma.V1"
 

@@ -87,9 +87,6 @@ unsigned long t_toggle_last=0;
 float hold_pos=0;
 
 void update_status();
-unsigned long get_elapsed_time_ms();
-
-float dt_max_us = 1000000/Fs;
 
 VelocityGenerator vg;
 MotionGenerator mg;
@@ -100,8 +97,58 @@ float g_eff_pos=0;
 float g_eff_neg=0;
 double ywd=0;
 float PAY = 0;
-int cycle_time_max=0;
 
+
+///////////////////// TIMING and TIMESTAMP /////////////////////////////////////////
+float  FsCtrl=1000; //Update rate of control loop Hz
+#define TC4_COUNT_PER_CYCLE (int)( round(48000000 / 2/ FsCtrl)) //24,000 at 1Khz, 2:1 prescalar TC4 is 32bit timer 
+#define US_PER_TC4_CYCLE 1000000/FsCtrl //1000 at 1KHz
+#define US_PER_TC4_TICK 1000000.0*2/48000000 //41.6ns resolution
+
+
+#define TC5_COUNT_PER_CYCLE (int)( round(48000000 / 1/ Fs)) //7384 at 6.5Khz, 1:1 prescalar TC5 is 32bit timer
+#define US_PER_TC5_CYCLE 1000000/Fs //153.8 at 6.5KHz
+#define US_PER_TC5_TICK 1000000.0*1/48000000 //41.6ns resolution
+
+float DT_ms= 1000.0/FsCtrl;
+unsigned long cycle_cnt=0;
+uint64_t encoder_ts_base=0;
+uint32_t encoder_ts_cntr=0;
+uint64_t ts_base_tc4=0;
+uint64_t ts_base_tc5=0;
+
+//Avoid using millis() in ISR
+unsigned long get_elapsed_time_ms(){
+  return (unsigned long)((float)(DT_ms*(float)cycle_cnt));
+  
+}
+
+
+uint64_t get_encoder_timestamp()
+{
+  float delta = encoder_ts_cntr*US_PER_TC5_TICK;
+  return encoder_ts_base*US_PER_TC5_CYCLE + delta;
+}
+    
+uint64_t get_TC4_timestamp()
+{
+  float delta = TC4->COUNT16.COUNT.reg*US_PER_TC4_TICK;
+  return ts_base_tc4*US_PER_TC4_CYCLE + delta;
+}
+uint64_t get_TC5_timestamp()
+{
+  float delta = TC5->COUNT16.COUNT.reg*US_PER_TC5_TICK;
+  return ts_base_tc5*US_PER_TC5_CYCLE + delta;
+}
+void zero_timestamp()
+{
+  ts_base_tc4=0;
+  TC4->COUNT16.COUNT.reg=0;
+  ts_base_tc5=0;
+  TC5->COUNT16.COUNT.reg=0;
+}
+
+///////////////////////////////////////////////
 ///////////////////////// UTIL ///////////////////////////
 
 
@@ -155,6 +202,7 @@ void setupHelloController()
   dirty_gains=1; //force load of gains
   analogFastWrite(VREF_2, 0);     //set phase currents to zero
   analogFastWrite(VREF_1, 0); 
+  zero_timestamp();
 }
 
 
@@ -203,6 +251,8 @@ void step_safety_logic()
   }
   
   ////////////////////
+  stat.timestamp_last_sync=get_TC5_timestamp();
+  
   //Poll runstop line
   //Check for sync pulse vs runstop active
   //Update runstop state and/or trigger sync
@@ -213,6 +263,7 @@ void step_safety_logic()
   if(!runstop_read_last && runstop_read) //Start of a high pulse, trigger sync
   {
     sync_triggered=true;
+    //stat.timestamp_last_sync=get_TC4_timestamp();
   }
   
   if (runstop_read) //Monitor how long line has been high
@@ -359,7 +410,6 @@ void handleNewRPC()
 
 void update_status()
 {
-  stat.timestamp=micros(); 
   stat.effort= eff;
   stat.pos=deg_to_rad(ywd);
   stat.vel=deg_to_rad(vs);
@@ -385,8 +435,7 @@ void update_status()
 
 ///////////////////////// Controller Loop  ///////////////////////////
 //Called every control cycle via TC4 interrupt
-float FsCtrl = 1000.0;//Update rate of control loop Hz
-int start_last=0;
+
 float mpos_d;
 #define STIFFNESS_SLEW .001
 float stiffness_target=0;
@@ -414,11 +463,9 @@ void stepHelloController()
   
   int ii;
   float yy=y; //Grab current value in case commutation loop changes it. 0-360, wraps
+  stat.timestamp=get_encoder_timestamp(); 
 
     
-    int start = micros();
-    //stat.debug=start-start_last;
-    start_last=start;
     
     if (dirty_trigger)
     {
@@ -498,7 +545,6 @@ void stepHelloController()
       wrap_count=(int)(mpos_d) / 360;
       mark_rem = mpos_d-360*wrap_count;
       mark_pos=yy-mark_rem;
-      //stat.debug=wrap_count;  
       y_1=yy;
       yw_1=0;        
       //Reset velocity measurements
@@ -571,8 +617,6 @@ void stepHelloController()
         {
           cmd.mode=cmd_in.mode; 
         }
-        //else
-        //  stat.debug++;
 
         if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
         {
@@ -588,7 +632,6 @@ void stepHelloController()
         cmd.i_contact_pos =cmd_in.i_contact_pos;
         cmd.i_contact_neg =cmd_in.i_contact_neg;
         
-        //stat.debug=cmd.x_des;
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
         {
@@ -711,8 +754,6 @@ void stepHelloController()
            } //else do a safety hold
            else
            {
-            stat.debug++;
-            //stat.debug=hold_pos;
             e = (hold_pos - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit
             if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
@@ -893,7 +934,6 @@ void stepHelloController()
       if (eff>g_eff_pos || eff<g_eff_neg)
       {
         guarded_event_cnt++;
-        //stat.debug=eff;
         if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ)) //Hit a new contact event, hold position
         {
           guarded_override=1;
@@ -906,7 +946,6 @@ void stepHelloController()
      {
       guarded_override=0;
       guarded_event_cnt=0;
-      //stat.debug=0;
      }
       
   ////////////////////
@@ -936,11 +975,11 @@ void stepHelloController()
       trg.data=0; //Clear triggers
       first_filter=false;
 
-      int finish = micros();
-      //stat.debug=finish-start;
 }
 
 ///////////////////////// Commutation Loop ///////////////////////////
+
+
 
 //Called every control cycle via interrupt (6.5Khz, sync)
 //The desired effort (U) and Phase Advance (PAY) is updated in the control loop at a lower rate
@@ -949,11 +988,12 @@ void stepHelloCommutation()
 {
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   { 
-    //int start = micros();
-    //stat.debug=start-start_last;
-    //start_last=start;
+    //Grab current timestamp in case commutation loop changes
+    encoder_ts_cntr=TC5->COUNT16.COUNT.reg;
+    encoder_ts_base=ts_base_tc5;
+    ts_base_tc5++;
+    
     y = lookup[readEncoder()];
-     
     if (receiving_calibration)
     {
       analogFastWrite(VREF_2, 0);     //set phase currents to zero
@@ -961,40 +1001,31 @@ void stepHelloCommutation()
     }
     else
       output(-(y+PAY), round(U));
-      
-    //int finish = micros();
-    //if (finish-start>dt_max_us)
-    //stat.debug=finish-start;//stat.debug+1;
+    
     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
+    
   }
+  
 }
 
 ///////////////////////// Control Loop ///////////////////////////
 
 
-float DT_ms= 1000/FsCtrl;
-unsigned long cycle_cnt=0;
-
-
-//Avoid using millis() in ISR
-unsigned long get_elapsed_time_ms(){
-  return (unsigned long)((float)(DT_ms*(float)cycle_cnt));
-}
-
 void TC4_Handler() {                // gets called with FsMg frequency
 
   if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
+    ts_base_tc4++;
     cycle_cnt++;
     toggle_led(500);
     if (hello_interface)
       stepHelloController();
-
+  stat.debug=TC4->COUNT16.COUNT.reg;  
   TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
 
 
-
+/*
 void setupMGInterrupts() {  // configure the controller interrupt
 
   // Enable GCLK for TC4 and TC5 (timer counter input clock)
@@ -1013,7 +1044,7 @@ void setupMGInterrupts() {  // configure the controller interrupt
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV2;   // Set perscaler
   WAIT_TC16_REGS_SYNC(TC4)
 
-  TC4->COUNT16.CC[0].reg = (int)( round(48000000 / FsCtrl / 2)); //0x3E72; //0x4AF0;
+  TC4->COUNT16.CC[0].reg =  TC4_COUNT_PER_CYCLE; //(int)( round(48000000 / FsCtrl / 2)); //0x3E72; //0x4AF0;
   WAIT_TC16_REGS_SYNC(TC4)
 
   TC4->COUNT16.INTENSET.reg = 0;              // disable all interrupts
@@ -1042,4 +1073,4 @@ void enableMGInterrupts() {   //enables the controller interrupt ("closed loop m
 void disableMGInterrupts() {  //disables the controller interrupt ("closed loop mode")
   TC4->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC4
   WAIT_TC16_REGS_SYNC(TC4)                      // wait for sync
-}
+}*/
