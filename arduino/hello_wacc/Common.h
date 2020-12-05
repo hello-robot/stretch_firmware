@@ -30,7 +30,9 @@
 #define RPC_REPLY_WACC_COMMAND 6
 #define RPC_GET_WACC_BOARD_INFO 7
 #define RPC_REPLY_WACC_BOARD_INFO 8
+
 #define TRIGGER_BOARD_RESET  1
+#define TRIGGER_TIMESTAMP_ZERO  2
 
 /////////////////////////////////////////////////////////////////
 //From hello_wacc/variants.h
@@ -80,7 +82,7 @@ struct __attribute__ ((packed)) Wacc_Status{
   uint8_t d3; //expansion header digital out
   uint32_t single_tap_count; //Accelerometer tap count
   uint32_t state;
-  uint32_t timestamp; //ms, overflows every 50 days
+  uint64_t timestamp; //us
   uint32_t debug;
 };
 
