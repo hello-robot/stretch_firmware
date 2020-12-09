@@ -77,7 +77,7 @@
 #define TRIGGER_WRITE_GAINS_TO_FLASH 8
 #define TRIGGER_RESET_POS_CALIBRATED 16
 #define TRIGGER_POS_CALIBRATED 32
-#define TRIGGER_TIMESTAMP_ZERO 64
+
 
 #define CONFIG_SAFE_MODE_HOLD 1
 #define CONFIG_ENABLE_RUNSTOP 2
@@ -130,17 +130,16 @@ struct __attribute__ ((packed)) Trigger{
 };
 
 struct __attribute__ ((packed)) Status{
-  uint8_t mode;   //current control mode
-  float effort;   //ticks, 1 tick = 12.95mA
-  double pos;      //rad, wrapped
-  float vel;      //rad/sec
-  float err;       //controller error (inner loop)
-  uint32_t diag;       //diagnostic codes     
-  uint64_t timestamp; //us
-  uint64_t timestamp_last_sync; //us
+  uint8_t mode;                 //current control mode
+  float effort;                 //ticks, 1 tick = 12.95mA
+  double pos;                   //rad, wrapped
+  float vel;                    //rad/sec
+  float err;                    //controller error (inner loop)
+  uint32_t diag;                //diagnostic codes     
+  uint64_t timestamp;           //us of time of when encoder was read (since power-on)
+  uint64_t timestamp_line_sync; //us of time of when status sync was triggered (since power-on)
   float debug; 
-  uint32_t guarded_event; 
-  uint32_t timestamp_rollover; //number of rollovers since startup or last motor sync 
+  uint32_t guarded_event;       //counter of guarded events since power-up
 };
 
 /////////////////////////////////////////////////////////////////

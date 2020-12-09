@@ -25,13 +25,16 @@
 #include <FlashStorage.h>
 #include "Controller.h"
 
+#include "SyncManager.h"
+#include "TimeManager.h"
+
 void write_to_lookup(uint8_t page_id, float * data);
 
 
 Command cmd,cmd_in;
 Gains gains, gains_in;
 Trigger trg, trg_in;
-Status stat,stat_out;
+Status stat,stat_out, stat_sync;
 EncCalib enc_calib_in;
 MotionLimits motion_limits;
 
@@ -98,70 +101,19 @@ float g_eff_neg=0;
 double ywd=0;
 float PAY = 0;
 
-
-///////////////////// TIMING and TIMESTAMP /////////////////////////////////////////
-float  FsCtrl=1000; //Update rate of control loop Hz
-#define TC4_COUNT_PER_CYCLE (int)( round(48000000 / 2/ FsCtrl)) //24,000 at 1Khz, 2:1 prescalar TC4 is 32bit timer 
-#define US_PER_TC4_CYCLE 1000000/FsCtrl //1000 at 1KHz
-#define US_PER_TC4_TICK 1000000.0*2/48000000 //41.6ns resolution
+float FsCtrl = TC4_LOOP_RATE;
+bool receiving_calibration=false;
+bool flip_encoder_polarity = false;
+bool flip_effort_polarity = false;
 
 
-float DT_ms= 1000.0/FsCtrl;
-unsigned long cycle_cnt=0;
-volatile uint64_t encoder_ts_base=0;
-volatile uint32_t encoder_ts_cntr=0;
-volatile uint64_t runstop_ts_base=0;
-volatile uint32_t runstop_ts_cntr=0;
-volatile uint64_t ts_base_tc4=0;
+bool runstop_enabled=false;
+bool guarded_mode_enabled = false;
 
+bool safety_override = false;
+bool guarded_override=false;
+int first_step_safety=10; //count down
 
-//Avoid using millis() in ISR
-unsigned long get_elapsed_time_ms(){
-  return (unsigned long)((float)(DT_ms*(float)cycle_cnt));
-  
-}
-
-uint16_t rscnt=0;
-void start_runstop_pulse()
-{
-  runstop_ts_base=ts_base_tc4;
-  runstop_ts_cntr=TC4->COUNT16.COUNT.reg;
-}
-
-uint16_t end_runstop_pulse()
-{
-  uint16_t delta_base=ts_base_tc4-runstop_ts_base;
-  float delta_cntr = (TC4->COUNT16.COUNT.reg-runstop_ts_cntr)*US_PER_TC4_TICK;
-  return (uint16_t)((delta_base)*US_PER_TC4_CYCLE + (int)(round(delta_cntr)));
-}
-    
-
-uint64_t get_encoder_timestamp()
-{
-  float delta = encoder_ts_cntr*US_PER_TC4_TICK;
-  return encoder_ts_base*US_PER_TC4_CYCLE + delta;
-}
-    
-uint64_t get_TC4_timestamp()
-{
-  float delta = TC4->COUNT16.COUNT.reg*US_PER_TC4_TICK;
-  return ts_base_tc4*US_PER_TC4_CYCLE + delta;
-}
-
-//Should be called zero_clock?
-void zero_timestamp()
-{
-  uint16_t cntr=TC4->COUNT16.COUNT.reg;
-  encoder_ts_base=encoder_ts_base-ts_base_tc4;
-  encoder_ts_cntr=encoder_ts_cntr-cntr;
-  
-  stat.timestamp_last_sync=stat.timestamp_last_sync-(ts_base_tc4*US_PER_TC4_CYCLE + cntr*US_PER_TC4_TICK);
-  
-  ts_base_tc4=0;
-  TC4->COUNT16.COUNT.reg=0;
-}
-
-///////////////////////////////////////////////
 ///////////////////////// UTIL ///////////////////////////
 
 
@@ -182,7 +134,7 @@ return max(-255,min(255,(255/3.3)*(x*10*rSense)));
 
 void toggle_led(int rate_ms)
 {
-  unsigned long t = get_elapsed_time_ms();
+  unsigned long t = time_manager.get_elapsed_time_ms();
   if (t-t_toggle_last>rate_ms)
   {
     t_toggle_last=t;
@@ -195,7 +147,6 @@ void toggle_led(int rate_ms)
 }
 
 
-void runstop_ISR();
 void setupHelloController()
 {
   memset(&cmd, 0, sizeof(Command));
@@ -211,131 +162,15 @@ void setupHelloController()
   memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
 
-  attachInterrupt(digitalPinToInterrupt(RUNSTOP), runstop_ISR, CHANGE);
+  sync_manager.setupSyncManager();
+  time_manager.setupTimeManager();
    
   Gains fg;
   fg=flash_gains.read();
   memcpy(&gains_in, &fg, sizeof(Gains));
   dirty_gains=1; //force load of gains
   analogFastWrite(VREF_2, 0);     //set phase currents to zero
-  analogFastWrite(VREF_1, 0); 
-  zero_timestamp();
-}
-
-
-///////////////////////// RUNSTOP & SAFETY ///////////////////////////
-/*
-* An active runstop will put the motor in the SAFETY_STATE (if runstop_enabled==true (can override from client)) 
-* The runstop is active when the digital input has been high over 200ms
-* The digital input is pulled high internally such that a disconnected cable will make the runstop active
-* Pulling the digital input low will make the runstop non-active, allowing the motors to be in CTRL_STATE
- */
-
-#define RUNSTOP_STATE_ACTIVE 0
-#define RUNSTOP_STATE_NOT_ACTIVE 1
-uint8_t runstop_state=RUNSTOP_STATE_ACTIVE;
-
-unsigned long t_runstop_pulse=0;
-unsigned long t_now=0;
-unsigned long t_runstop_high=0;
-unsigned long t_last_low=0;
-
-bool sync_mode_enabled = false;
-bool guarded_mode_enabled = false;
-bool sync_triggered = false;
-bool runstop_enabled=false;
-bool safety_override = false;
-bool guarded_override=false;
-int first_step_safety=10; //count down
-bool receiving_calibration=false;
-
-bool flip_encoder_polarity = false;
-bool flip_effort_polarity = false;
-
-int runstop_read_last=0;
-int runstop_read=0;
-
-float x_des_incr=0;
-
-volatile uint8_t runstopState = 0; //0:Normal, 1:pulse started, 2: pulse ended, dirty, 3: error, 4: overrun
-volatile uint16_t runstop_pulse_width;
-
-    
-void runstop_ISR() //Called on pin state change with highest priority (0)
-{
-    rscnt++;
-    stat.debug=rscnt;
-  uint8_t r=digitalRead(RUNSTOP);
-  if (r)
-    start_runstop_pulse();
-  else
-  {
-    runstop_pulse_width=end_runstop_pulse();
-    //stat.debug=runstop_pulse_width;
-  }
-}
-
-void step_safety_logic()
-{
-  
-  
-  if (!diag_calibration_rcvd)
-  {
-    if (lookup[0]!=0 && lookup[16383]!=0)
-      diag_calibration_rcvd=1;
-  }
-  
-  ////////////////////
-  
-  
-  //Poll runstop line
-  //Check for sync pulse vs runstop active
-  //Update runstop state and/or trigger sync
-  t_now= get_elapsed_time_ms();
-  
-  runstop_read=digitalRead(RUNSTOP); //0 is all-ok, 1 is active
-
-  if(!runstop_read_last && runstop_read) //Start of a high pulse, trigger sync
-  {
-    sync_triggered=true;
-    stat.timestamp_last_sync=get_TC4_timestamp();
-  }
-  
-  if (runstop_read) //Monitor how long line has been high
-    t_runstop_high = t_now-t_last_low; //TODO: handle rollover of elapsed_time
-  else
-  {
-    t_runstop_high=0;
-    t_last_low=t_now;
-  }
-  runstop_read_last=runstop_read;
-  
-  
-  if (t_runstop_high>200 ) //has been high over 200ms, activate runstop
-  {
-    runstop_state = RUNSTOP_STATE_ACTIVE;
-  }
-  else
-  {
-    runstop_state = RUNSTOP_STATE_NOT_ACTIVE;
-  }
-  
-  ////////////////////
-  //Manage safety mode
-   if (first_step_safety>0)
-   {
-    hold_pos=yw; //Grab position at startup
-    first_step_safety--;
-   }
-   
-   diag_runstop_on=(runstop_state==RUNSTOP_STATE_ACTIVE) && runstop_enabled;
-   if (diag_runstop_on)
-   {
-      cmd.mode=MODE_SAFETY;
-      safety_override=true;
-   }
-   else
-    safety_override=false;
+  analogFastWrite(VREF_1, 0);   
 }
 
 
@@ -361,7 +196,8 @@ void stepHelloControllerRPC()
 
 void handleNewRPC()
 {
-  int ll,idx,ii;
+  int ll,idx;
+
   switch(rpc_in[0])
   {
     case RPC_GET_STEPPER_BOARD_INFO:
@@ -399,16 +235,13 @@ void handleNewRPC()
           num_byte_rpc_out=1;
           switch_to_menu_cnt=5; //allow 5 rpc cycles to pass before switch to menu mode, allows any RPC replies to go out
           break; 
-          
     case RPC_SET_TRIGGER: 
           memcpy(&trg_in, rpc_in+1, sizeof(Trigger)); //copy in the config
           dirty_trigger=1;
           rpc_out[0]=RPC_REPLY_SET_TRIGGER;
           num_byte_rpc_out=1;
-    
           if (trg_in.data & TRIGGER_WRITE_GAINS_TO_FLASH)
            flash_gains.write(gains);
-
           break;
     case RPC_SET_ENC_CALIB: 
           receiving_calibration=true;
@@ -421,10 +254,12 @@ void handleNewRPC()
           break;
     case RPC_GET_STATUS: 
           rpc_out[0]=RPC_REPLY_STATUS;
-          //update_status();
-          memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
+          if (sync_manager.sync_mode_enabled)
+            memcpy(rpc_out + 1, (uint8_t *) (&stat_sync), sizeof(Status)); //Collect the status data
+          else
+            memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Status)+1;
-          break; 
+          break;
     case RPC_LOAD_TEST:
           memcpy(&load_test, rpc_in+1, sizeof(LoadTest)); //copy in the command
           ll=load_test.data[0];
@@ -440,11 +275,13 @@ void handleNewRPC()
   };
 }
 
-
 ///////////////////////// Status ///////////////////////////
 
 void update_status()
 {
+  //noInterrupts();
+  //stat.timestamp=time_manager.get_encoder_timestamp();
+  stat.timestamp_line_sync=0;
   stat.effort= eff;
   stat.pos=deg_to_rad(ywd);
   stat.vel=deg_to_rad(vs);
@@ -464,7 +301,10 @@ void update_status()
   stat.diag= guarded_override ?         stat.diag|DIAG_IN_GUARDED_EVENT : stat.diag;
   stat.diag = safety_override?          stat.diag| DIAG_IN_SAFETY_EVENT: stat.diag;
   stat.diag = diag_waiting_on_sync?     stat.diag| DIAG_WAITING_ON_SYNC: stat.diag;
+  //stat.debug = sync_manager.last_pulse_duration;
+  noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
+  interrupts();
 }
 
 
@@ -472,36 +312,29 @@ void update_status()
 //Called every control cycle via TC4 interrupt
 
 float mpos_d;
+float x_des_incr=0;
 #define STIFFNESS_SLEW .001
 float stiffness_target=0;
-/*
- * if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR)
-    {
-      float dv=cmd.v_des-v_des_slewed;
-      if(dv>0)
-      {
-        v_des_slewed=v_des_slewed+min(VELOCITY_SLEW,dv);
-      }
-      else if(dv<0)
-      {
-        v_des_slewed = v_des_slewed-min(VELOCITY_SLEW,-1*dv);
-      }
-      mg.setMaxVelocity(abs(rad_to_deg(v_des_slewed)));
-      mg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
-    } 
-
- */
 
 void stepHelloController()
 {
   float xdes;
   
-  int ii;
-  float yy=y; //Grab current value in case commutation loop changes it. 0-360, wraps
-  stat.timestamp=get_encoder_timestamp(); 
+ 
+  //noInterrupts();
+  //time_manager.timestamp_encoder(sync_manager.sync_cnt);
+  stat.timestamp=time_manager.current_time_us();
+  float yy = lookup[readEncoder()];
+  //interrupts();
+  
+  sync_manager.step();
 
-    
-    
+    if (!diag_calibration_rcvd)
+    {
+      if (lookup[0]!=0 && lookup[16383]!=0)
+        diag_calibration_rcvd=1;
+    }
+  
     if (dirty_trigger)
     {
         memcpy((uint8_t *) (&trg),(uint8_t *) (&trg_in),sizeof(Trigger));
@@ -509,9 +342,6 @@ void stepHelloController()
 
         if (trg.data & TRIGGER_BOARD_RESET)
           board_reset_cnt=100;
-
-        if (trg.data & TRIGGER_TIMESTAMP_ZERO)
-          zero_timestamp();
     }
 
     if (board_reset_cnt)
@@ -553,7 +383,7 @@ void stepHelloController()
       memcpy((uint8_t *) (&gains),(uint8_t *) (&gains_in),sizeof(Gains));
 
       runstop_enabled = gains.config & CONFIG_ENABLE_RUNSTOP;
-      sync_mode_enabled = gains.config & CONFIG_ENABLE_SYNC_MODE;
+      sync_manager.sync_mode_enabled = gains.config & CONFIG_ENABLE_SYNC_MODE;
       guarded_mode_enabled = gains.config & CONFIG_ENABLE_GUARDED_MODE;
       flip_encoder_polarity = gains.config & CONFIG_FLIP_ENCODER_POLARITY;
       flip_effort_polarity = gains.config & CONFIG_FLIP_EFFORT_POLARITY;
@@ -627,25 +457,44 @@ void stepHelloController()
     v = vLPFa*v +  vLPFb*(yw-yw_1);     //compute velocity for vel PID
     vs = vsLPFa*vs +  vsLPFb*(yw-yw_1);     //compute velocity status msg
 
-      //////// Determine new controller mode / controller settings
 
-    uint8_t mode_last=cmd.mode;
+    /////////// Safety Logic ////////////
     
-    step_safety_logic(); //May override commanded control mode.
+    //May override commanded control mode.
+     uint8_t mode_last=cmd.mode;
+     if (first_step_safety>0)
+     {
+      hold_pos=yw; //Grab position at startup
+      first_step_safety--;
+     }
+     
+     diag_runstop_on=(sync_manager.runstop_active && runstop_enabled);
+     if (diag_runstop_on)
+     {
+        cmd.mode=MODE_SAFETY;
+        safety_override=true;
+     }
+     else
+      safety_override=false;
 
     
-    
-    //Update data for RPC replies
-    //if (!sync_mode_enabled || (sync_mode_enabled && sync_triggered))
-    update_status(); //Todo: sync status with command
+    /*
+     * Update data for RPC replies
+     * The flag status_sync_triggered will have been set prior to this ISR
+     * We cache this status in stat_sync until there is a RPC_GET_STATUS_SYNC
+     */
+    update_status();
 
-    ////// Copy in new Command Data
+
+      /////////// Copy in new Command Data  ///////////
+      
+    //Determine new controller mode / controller settings
     if (dirty_cmd)
     {
-      diag_waiting_on_sync = sync_mode_enabled && !sync_triggered;
-      if (!sync_mode_enabled || (sync_mode_enabled && sync_triggered) || (sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
+      diag_waiting_on_sync = sync_manager.sync_mode_enabled && !sync_manager.motor_sync_triggered;
+      if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
-        sync_triggered=false;
+        sync_manager.motor_sync_triggered=false;
         diag_waiting_on_sync=false;
 
         if (guarded_override) //Reset on new command to track
@@ -1004,14 +853,9 @@ void stepHelloController()
     diag_is_moving=0;
     diag_is_moving=abs(vs)>gains.vel_near_setpoint_d;
       
-      ////// Now copy out new Status data
-
-      //update_status();
-
-      //sync_triggered=false;
-      //wait_on_new_status=false;
-      trg.data=0; //Clear triggers
-      first_filter=false;
+    //Cleanup
+    trg.data=0; //Clear triggers
+    first_filter=false;
 
 }
 
@@ -1026,12 +870,10 @@ void stepHelloCommutation()
 {
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   { 
-    //Grab current timestamp in case commutation loop changes
-    encoder_ts_cntr=TC4->COUNT16.COUNT.reg;
-    encoder_ts_base=ts_base_tc4;
-
-    
+    noInterrupts();
     y = lookup[readEncoder()];
+    interrupts();
+    
     if (receiving_calibration)
     {
       analogFastWrite(VREF_2, 0);     //set phase currents to zero
@@ -1052,20 +894,21 @@ void stepHelloCommutation()
 void TC4_Handler() {                // gets called with FsMg frequency
 
   if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
-    ts_base_tc4++;
-    cycle_cnt++;
-    toggle_led(500);
-    if (hello_interface)
-      stepHelloController();
-  //stat.debug=TC4->COUNT16.COUNT.reg;  
-  TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
+      TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
+      time_manager.ts_base++;
+    
+      toggle_led(500);
+      if (hello_interface)
+        stepHelloController();
+  
   }
 }
 
 
-
 void setupMGInterrupts() {  // configure the controller interrupt
 
+ ////////////////////////// Counter 4 ///////////////////////////
+ 
   // Enable GCLK for TC4 and TC5 (timer counter input clock)
   GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID(GCM_TC4_TC5));
   while (GCLK->STATUS.bit.SYNCBUSY);
@@ -1089,22 +932,29 @@ void setupMGInterrupts() {  // configure the controller interrupt
   TC4->COUNT16.INTENSET.bit.OVF = 1;          // enable overfollow
   TC4->COUNT16.INTENSET.bit.MC0 = 1;         // enable compare match to CC0
 
+
+   ////////////////////////// Setup Interrupts ///////////////////////////
+
 //Set interrupt priority so Controller (TC4) preempts Commutation (TC5) (Inverted numbering scheme)
 //This ensures stable time base for controller filters
 //Jitter on commutation seems to be OK for performance
 
+
   NVIC_SetPriority(TC4_IRQn, 1);      //1        see https://github.com/arduino/ArduinoCore-samd/blob/master/cores/arduino/cortex_handlers.c#L84
   NVIC_SetPriority(TC5_IRQn, 2);      //2        
+
   // Enable InterruptVector
   NVIC_EnableIRQ(TC4_IRQn);
+
 
   // Enable TC
   //  TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;
   //  WAIT_TC16_REGS_SYNC(TC5)
 }
 
+
 void enableMGInterrupts() {   //enables the controller interrupt ("closed loop mode")
-  TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC5
+  TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC4
   WAIT_TC16_REGS_SYNC(TC4)                      //wait for sync
 }
 

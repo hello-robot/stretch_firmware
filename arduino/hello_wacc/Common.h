@@ -18,8 +18,8 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Wacc.V0.1: Initial production release for RE1
-#define FIRMWARE_VERSION "Wacc.v0.0.1p0"
-#define BOARD_VERSION "Wacc.Guthrie.V1"
+#define FIRMWARE_VERSION "Wacc.v0.0.1p1"
+#define BOARD_VERSION "Wacc.Irma.V1"
 
 /////////////////////////////////////////////////////////////////
 #define RPC_SET_WACC_CONFIG 1
@@ -30,9 +30,13 @@
 #define RPC_REPLY_WACC_COMMAND 6
 #define RPC_GET_WACC_BOARD_INFO 7
 #define RPC_REPLY_WACC_BOARD_INFO 8
+#define RPC_SET_STATUS_SYNC 9
+#define RPC_REPLY_STATUS_SYNC 10
+#define RPC_SET_CLOCK_ZERO 11
+#define RPC_REPLY_CLOCK_ZERO 12
 
 #define TRIGGER_BOARD_RESET  1
-#define TRIGGER_TIMESTAMP_ZERO  2
+
 
 /////////////////////////////////////////////////////////////////
 //From hello_wacc/variants.h
@@ -69,6 +73,7 @@ struct __attribute__ ((packed)) Wacc_Config{
   uint8_t accel_single_tap_dur;     ////625 µs/LSB, Default is 50 (31ms)
   uint8_t accel_single_tap_thresh; //62.5 mg/LSB (that is, 0xFF = 16 g).Default is 20 (1.25g)
   float accel_gravity_scale;
+  uint8_t sync_mode_enabled;
 };
 
 struct __attribute__ ((packed)) Wacc_Status{
@@ -89,6 +94,10 @@ struct __attribute__ ((packed)) Wacc_Status{
 struct __attribute__ ((packed)) Wacc_Board_Info{
   char board_version[20];
   char firmware_version[20];
+};
+
+struct __attribute__ ((packed)) Wacc_Timestamp{
+  uint64_t timestamp; //us
 };
 /////////////////////////////////////////////////////////////////
 

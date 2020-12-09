@@ -32,28 +32,19 @@ unsigned long TimeManager::get_elapsed_time_ms()
 TimeManager::TimeManager()
 {
   ts_base=0;
-  duration_base=0;
 }
     
 uint64_t TimeManager::current_time_us()
 {
+  uint64_t base;
   int cntr = TC4->COUNT16.COUNT.reg;
-  uint64_t base = ts_base*US_PER_TC4_CYCLE;
+  
+  if (TC4->COUNT16.INTFLAG.bit.OVF == 1) //Catch the case that there's an IRQ waiting to be handled
+    base = (ts_base+1)*US_PER_TC4_CYCLE;
+  else
+    base = ts_base*US_PER_TC4_CYCLE;
+
   return base+(int)(round(cntr*US_PER_TC4_TICK));
-}
-    
-void TimeManager::start_duration_measure()
-{
-  duration_base=ts_base;
-  duration_cntr = TC4->COUNT16.COUNT.reg;
-}
-    
-int TimeManager::end_duration_measure()
-{
-  int cntr = TC4->COUNT16.COUNT.reg;
-  int us_base = (ts_base-duration_base)*US_PER_TC4_CYCLE;
-  int us_cntr = (int)((cntr-duration_cntr)*US_PER_TC4_TICK);;
-  return us_base+us_cntr;
 }
 
 void TimeManager::clock_zero()

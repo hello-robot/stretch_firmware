@@ -1,6 +1,0 @@
-{
-  "cpu": {
-    "fqbn": "arduino:samd:arduino_zero_native",
-    "name": "Arduino/Genuino Zero (Native USB Port)"
-  }
-}

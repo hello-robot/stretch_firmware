@@ -60,6 +60,7 @@ SyncManager::SyncManager()
   in_pulse=0;
   last_pulse_duration=-1;//N/A
   sync_mode_enabled = false;
+  sync_cnt=0;
 }
     
 //Called from runstop IO ISR on rising edge.
@@ -84,8 +85,10 @@ void SyncManager::start_pulse_measure()
     enableTC3Interrupts();
     if (sync_mode_enabled)
     {
+      noInterrupts();
       memcpy((uint8_t *) (&stat_sync),(uint8_t *) (&stat_out),sizeof(Status));
-      stat_sync.timestamp_last_sync=time_manager.current_time_us();
+      stat_sync.timestamp_line_sync=time_manager.current_time_us();
+      interrupts();
     }
 }
     
@@ -101,7 +104,7 @@ void  SyncManager::end_pulse_measure() //Called from runstop IO ISR of falling e
           motor_sync_triggered=1;
       }
       last_pulse_duration=(int)(round(cntr*US_PER_TC3_TICK)); 
-      stat.debug=last_pulse_duration;
+      //stat.debug=last_pulse_duration;
       in_pulse=0;
     }
 }

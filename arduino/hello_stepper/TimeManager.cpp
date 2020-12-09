@@ -36,10 +36,6 @@ TimeManager time_manager;
 TimeManager::TimeManager()
 {
   ts_base=0; 
-  encoder_ts_base=0;
-  encoder_ts_cntr=0;
-  status_sync_ts_base=0;
-  status_sync_ts_cntr=0;
   dt_ms= 1000.0/TC4_LOOP_RATE;
 }
 
@@ -55,29 +51,11 @@ uint32_t TimeManager::get_elapsed_time_ms() //Avoid using millis() in ISR
 
 uint64_t TimeManager::current_time_us()
 {
+  uint64_t base;
   int cntr = TC4->COUNT16.COUNT.reg;
-  uint64_t base = ts_base*US_PER_TC4_CYCLE;
+  if (TC4->COUNT16.INTFLAG.bit.OVF == 1) //Catch the case that there's an IRQ waiting to be handled
+    base = (ts_base+1)*US_PER_TC4_CYCLE;
+  else
+    base = ts_base*US_PER_TC4_CYCLE;
   return base+(int)(round(cntr*US_PER_TC4_TICK));
-}
-
-void TimeManager::timestamp_encoder()
-{
-  encoder_ts_cntr=TC4->COUNT16.COUNT.reg;
-  encoder_ts_base=ts_base;
-}
-void TimeManager::timestamp_status_sync()
-{
-  status_sync_ts_cntr=TC4->COUNT16.COUNT.reg;
-  status_sync_ts_base=ts_base;
-}
-
-uint64_t TimeManager::get_encoder_timestamp()
-{
-  float delta = encoder_ts_cntr*US_PER_TC4_TICK;
-  return encoder_ts_base*US_PER_TC4_CYCLE + delta;
-}
-uint64_t TimeManager::get_status_sync_timestamp()
-{
-  float delta = status_sync_ts_cntr*US_PER_TC4_TICK;
-  return status_sync_ts_base*US_PER_TC4_CYCLE + delta;
 }

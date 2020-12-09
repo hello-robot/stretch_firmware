@@ -34,7 +34,7 @@ class SyncManager{
     bool sync_mode_enabled;
     
     bool in_pulse;
-
+    uint32_t sync_cnt;
     private:
     
     void enableTC3Interrupts();
@@ -47,6 +47,7 @@ class SyncManager{
     
     
     int pulse_start_count;
+    
     
 };
 

@@ -64,7 +64,7 @@ void SyncManager::step(Pimu_Status * stat_sync, Pimu_Status * stat_out, Pimu_Con
     dirty_status_sync=0;
     dirty_motor_sync=0;
     memcpy((uint8_t *)stat_sync,(uint8_t *)stat_out,sizeof(Pimu_Status)); //Cache most recent status
-    stat_sync->timestamp_last_sync=time_manager.current_time_us(); //Mark time of new sync event
+    stat_sync->timestamp_line_sync=time_manager.current_time_us(); //Mark time of new sync event
     time_manager.start_duration_measure();
       
   }    
