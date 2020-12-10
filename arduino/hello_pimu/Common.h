@@ -117,6 +117,7 @@ struct __attribute__ ((packed)) IMU_Status{
 
 /////////////////////////////////////////////////////////////////
 
+
 struct __attribute__ ((packed)) Pimu_Config{
   float cliff_zero[NUM_CLIFF];
   float cliff_thresh;
