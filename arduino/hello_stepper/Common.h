@@ -47,6 +47,8 @@
 #define RPC_REPLY_STEPPER_BOARD_INFO 18
 #define RPC_SET_MOTION_LIMITS 19
 #define RPC_REPLY_MOTION_LIMITS 20
+#define RPC_ADD_TRAJECTORY_SEG 21
+#define RPC_REPLY_ADD_TRAJECTORY_SEG 22
 
 #define MODE_SAFETY 0
 #define MODE_FREEWHEEL 1
@@ -57,6 +59,7 @@
 #define MODE_VEL_TRAJ 6
 #define MODE_CURRENT 7
 #define MODE_POS_TRAJ_INCR 8
+#define MODE_POS_TRAJ_VIA 9
 
 #define DIAG_POS_CALIBRATED 1         //Has a pos mark trigger been recieved since powerup
 #define DIAG_RUNSTOP_ON 2             //Is controller in runstop mode 
@@ -70,6 +73,8 @@
 #define DIAG_IN_GUARDED_EVENT 512     //Guarded event occured
 #define DIAG_IN_SAFETY_EVENT 1024     //Guarded event occured
 #define DIAG_WAITING_ON_SYNC 2048     //Command rcvd but no sync trigger yet
+#define DIAG_VIA_TRAJ_ACTIVE  4096 
+
 
 #define TRIGGER_MARK_POS  1
 #define TRIGGER_RESET_MOTION_GEN  2
@@ -77,7 +82,7 @@
 #define TRIGGER_WRITE_GAINS_TO_FLASH 8
 #define TRIGGER_RESET_POS_CALIBRATED 16
 #define TRIGGER_POS_CALIBRATED 32
-
+#define TRIGGER_START_NEW_VIA_TRAJ 64
 
 #define CONFIG_SAFE_MODE_HOLD 1
 #define CONFIG_ENABLE_RUNSTOP 2
@@ -85,6 +90,7 @@
 #define CONFIG_ENABLE_GUARDED_MODE 8
 #define CONFIG_FLIP_ENCODER_POLARITY 16
 #define CONFIG_FLIP_EFFORT_POLARITY 32
+
 /////////////////////////////////////////////////////////////////
 
 //Note, to serialize to Linux must pack structs given use of sizeof()
@@ -167,6 +173,21 @@ struct __attribute__ ((packed)) EncCalib{
 struct __attribute__ ((packed)) Stepper_Board_Info{
     char board_version[20];
     char firmware_version_hr[20];
+};
+
+struct __attribute__ ((packed)) TrajectorySegment{
+  float a0;
+  float a1;
+  float a2;
+  float a3;
+  float tf; 
+  uint16_t id; 
+};
+
+
+
+struct __attribute__ ((packed)) TrajectorySegmentReply{
+  uint8_t state;
 };
 
 /////////////////////////////////////////////////////////////////

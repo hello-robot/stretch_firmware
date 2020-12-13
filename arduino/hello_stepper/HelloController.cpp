@@ -27,6 +27,7 @@
 
 #include "SyncManager.h"
 #include "TimeManager.h"
+#include "TrajectoryManager.h"
 
 void write_to_lookup(uint8_t page_id, float * data);
 
@@ -37,6 +38,8 @@ Trigger trg, trg_in;
 Status stat,stat_out, stat_sync;
 EncCalib enc_calib_in;
 MotionLimits motion_limits;
+TrajectorySegment traj_seg_in;
+TrajectorySegmentReply traj_seg_reply;
 
 Stepper_Board_Info board_info;
 FlashStorage(flash_gains, Gains);
@@ -45,7 +48,7 @@ LoadTest load_test;
 bool dirty_cmd=false;
 bool dirty_gains=false;
 bool dirty_trigger=false;
-
+bool dirty_traj_seg=false;
 
 bool diag_pos_calibrated = 0;
 bool diag_runstop_on=0;
@@ -270,6 +273,13 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&load_test), sizeof(LoadTest)); 
           num_byte_rpc_out=sizeof(LoadTest)+1;
           break;
+    case RPC_ADD_TRAJECTORY_SEG: 
+          memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
+          traj_seg_reply.state=trajectory_manager.add_trajectory_segment(&traj_seg_in);
+          rpc_out[0]=RPC_REPLY_ADD_TRAJECTORY_SEG;
+          memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
+          num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
+          break;
    default:
         break;
   };
@@ -328,7 +338,8 @@ void stepHelloController()
   //interrupts();
   
   sync_manager.step();
-
+  trajectory_manager.step();
+  
     if (!diag_calibration_rcvd)
     {
       if (lookup[0]!=0 && lookup[16383]!=0)
@@ -765,6 +776,9 @@ void stepHelloController()
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
+            break;
+        case MODE_POS_TRAJ_VIA:
+            stat.debug=trajectory_manager.q;
             break;
                
       };
