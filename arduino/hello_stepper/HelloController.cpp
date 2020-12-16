@@ -61,6 +61,7 @@ bool diag_is_mg_moving=0;
 bool diag_calibration_rcvd=0;
 bool diag_waiting_on_sync=0;
 
+
 int switch_to_menu_cnt=0;
 int board_reset_cnt=0;
 int guarded_event_cnt=0;
@@ -273,12 +274,20 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&load_test), sizeof(LoadTest)); 
           num_byte_rpc_out=sizeof(LoadTest)+1;
           break;
-    case RPC_ADD_TRAJECTORY_SEG: 
+    case RPC_SET_NEXT_TRAJECTORY_SEG: 
           memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
-          traj_seg_reply.state=trajectory_manager.add_trajectory_segment(&traj_seg_in);
-          rpc_out[0]=RPC_REPLY_ADD_TRAJECTORY_SEG;
+          traj_seg_reply.id_curr_seg=trajectory_manager.set_next_trajectory_segment(&traj_seg_in);
+          rpc_out[0]=RPC_REPLY_SET_NEXT_TRAJECTORY_SEG;
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
+          break;
+    case RPC_START_NEW_TRAJECTORY: 
+          memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
+          traj_seg_reply.id_curr_seg=trajectory_manager.start_new_trajectory(&traj_seg_in, sync_manager.sync_mode_enabled );
+          rpc_out[0]=RPC_REPLY_START_NEW_TRAJECTORY;
+          memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
+          num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
+          stat.debug=123;//trajectory_manager.dirty_seg_in;
           break;
    default:
         break;
@@ -292,7 +301,6 @@ void update_status()
   //noInterrupts();
   //stat.timestamp=time_manager.get_encoder_timestamp();
   stat.timestamp_line_sync=0;
-  stat.effort= eff;
   stat.pos=deg_to_rad(ywd);
   stat.vel=deg_to_rad(vs);
   stat.err=deg_to_rad(e);               //controller error (inner loop)
@@ -311,7 +319,10 @@ void update_status()
   stat.diag= guarded_override ?         stat.diag|DIAG_IN_GUARDED_EVENT : stat.diag;
   stat.diag = safety_override?          stat.diag| DIAG_IN_SAFETY_EVENT: stat.diag;
   stat.diag = diag_waiting_on_sync?     stat.diag| DIAG_WAITING_ON_SYNC: stat.diag;
+  stat.diag = trajectory_manager.is_trajectory_active()? stat.diag| DIAG_TRAJ_ACTIVE: stat.diag;
+
   //stat.debug = sync_manager.last_pulse_duration;
+  stat.debug=456;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
@@ -506,6 +517,7 @@ void stepHelloController()
       if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
         sync_manager.motor_sync_triggered=false;
+        trajectory_manager.waiting_on_sync=false;
         diag_waiting_on_sync=false;
 
         if (guarded_override) //Reset on new command to track
@@ -555,6 +567,9 @@ void stepHelloController()
             case MODE_POS_TRAJ_INCR:
               mg.safe_switch_on(yw,v);
               break; 
+            case MODE_POS_TRAJ_VIA:
+              mg.safe_switch_on(yw,v);
+              break; 
             case MODE_CURRENT:
               u=0;
               e=0;
@@ -564,7 +579,7 @@ void stepHelloController()
       if (cmd.mode==MODE_VEL_TRAJ)
         vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
         
-      if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR)
+      if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_POS_TRAJ_VIA)
       {
         if(cmd_in.v_des!=cmd.v_des)
           mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
@@ -778,7 +793,29 @@ void stepHelloController()
             diag_is_mg_moving=mg.isMoving();
             break;
         case MODE_POS_TRAJ_VIA:
-            stat.debug=trajectory_manager.q;
+            if (stiffness_target==0.0 || !trajectory_manager.is_trajectory_active())
+            {
+              mg.follow(yw,v); //floating so force mg to track
+              xdes=yw;
+            }
+            else
+            {
+              if (motion_limits_set)
+                xdes=mg.update(rad_to_deg(min(max(trajectory_manager.q, motion_limits.pos_min), motion_limits.pos_max)));
+              else
+                xdes=mg.update(rad_to_deg(trajectory_manager.q)); //get target position
+            }
+            e = (xdes - yw);
+            ITerm += (gains.pKi * e);                             //Integral wind up limit
+            if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
+            else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;      
+            DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
+            u = (gains.pKp * e) + ITerm + DTerm;
+            u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+            diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
+            diag_near_vel_setpoint=0;
+            diag_is_mg_accelerating=mg.isAccelerating();
+            diag_is_mg_moving=mg.isMoving();
             break;
                
       };

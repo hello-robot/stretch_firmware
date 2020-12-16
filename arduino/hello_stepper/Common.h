@@ -47,8 +47,10 @@
 #define RPC_REPLY_STEPPER_BOARD_INFO 18
 #define RPC_SET_MOTION_LIMITS 19
 #define RPC_REPLY_MOTION_LIMITS 20
-#define RPC_ADD_TRAJECTORY_SEG 21
-#define RPC_REPLY_ADD_TRAJECTORY_SEG 22
+#define RPC_SET_NEXT_TRAJECTORY_SEG 21
+#define RPC_REPLY_SET_NEXT_TRAJECTORY_SEG 22
+#define RPC_START_NEW_TRAJECTORY 23
+#define RPC_REPLY_START_NEW_TRAJECTORY 24
 
 #define MODE_SAFETY 0
 #define MODE_FREEWHEEL 1
@@ -73,7 +75,7 @@
 #define DIAG_IN_GUARDED_EVENT 512     //Guarded event occured
 #define DIAG_IN_SAFETY_EVENT 1024     //Guarded event occured
 #define DIAG_WAITING_ON_SYNC 2048     //Command rcvd but no sync trigger yet
-#define DIAG_VIA_TRAJ_ACTIVE  4096 
+#define DIAG_TRAJ_ACTIVE 4096         //Currently executing a splined trajectory
 
 
 #define TRIGGER_MARK_POS  1
@@ -90,6 +92,7 @@
 #define CONFIG_ENABLE_GUARDED_MODE 8
 #define CONFIG_FLIP_ENCODER_POLARITY 16
 #define CONFIG_FLIP_EFFORT_POLARITY 32
+#define CONFIG_USE_CUBIC_TRAJ 64
 
 /////////////////////////////////////////////////////////////////
 
@@ -175,19 +178,22 @@ struct __attribute__ ((packed)) Stepper_Board_Info{
     char firmware_version_hr[20];
 };
 
+//Cubic or quintic spline / linear plus duration
 struct __attribute__ ((packed)) TrajectorySegment{
+  float tf; 
   float a0;
   float a1;
   float a2;
   float a3;
-  float tf; 
-  uint16_t id; 
+  float a4;
+  float a5;
+  uint8_t id;
 };
 
 
 
 struct __attribute__ ((packed)) TrajectorySegmentReply{
-  uint8_t state;
+  uint8_t id_curr_seg;
 };
 
 /////////////////////////////////////////////////////////////////

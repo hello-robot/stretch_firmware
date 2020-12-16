@@ -21,28 +21,49 @@ TrajectoryManager trajectory_manager;
 
 #define TRAJ_STATE_IDLE 0
 #define TRAJ_STATE_ACTIVE 1 
+#define TRAJ_STATE_WAITING_ON_SYNC 2
     
 TrajectoryManager::TrajectoryManager()
 {
-    id_write=0;
-    id_read=0;
-    num_seg=0;
-  
-    dirty_seg_add=false;
+    dirty_seg_in=false;
     state=TRAJ_STATE_IDLE;
     t=0;
     q=0;
+    start_new=false;
+    seg_active_valid=false;
+    seg_next_valid=false;
+    id_curr_seg=0;
+    waiting_on_sync=false;
 }
 
+bool TrajectoryManager::is_trajectory_active()
+{
+  return state==TRAJ_STATE_ACTIVE;
+}
 
 void TrajectoryManager::step()
 {
-  if (dirty_seg_add)
+  
+  if (dirty_seg_in) //Transfer in new data on sync signal, starts the trajectory
   {
-    segs[id_write]=seg_add;
-    num_seg++;
-    id_write=(id_write+1)%NUM_SEGS_MAX;
-    dirty_seg_add=false;
+    if (start_new)
+    {
+      start_new=false;
+      seg_active=seg_in;
+      id_curr_seg=seg_active.id;
+      seg_active_valid=true;
+    }
+    else
+    {
+      if(seg_in.tf>0) //A tf of 0 marks the end of a trajectory
+      {
+        seg_next=seg_in;
+        seg_next_valid=true;
+      }
+      else
+        seg_next_valid=false;
+    }
+    dirty_seg_in=false;
   }
  
  /* Behavior is to automatically execute sequential trajectories as long as there
@@ -52,31 +73,38 @@ void TrajectoryManager::step()
  switch(state)
   {
     case TRAJ_STATE_IDLE:
-        if (num_seg>0)
+        if (seg_active_valid) 
         {
-          id_read=0;
-          state=TRAJ_STATE_ACTIVE;
+          if (waiting_on_sync)
+            state=TRAJ_STATE_WAITING_ON_SYNC;
+          else
+            state=TRAJ_STATE_ACTIVE;
           t=0;
         }
+        break;
+    case TRAJ_STATE_WAITING_ON_SYNC:
+        if (!waiting_on_sync)
+           state=TRAJ_STATE_ACTIVE; //Fall through and start
         break;
     case TRAJ_STATE_ACTIVE:
           float t2 = t*t;
           float t3 =t2*t;
-          q = segs[id_read].a0 + segs[id_read].a1*t + segs[id_read].a2*t2 + segs[id_read].a3*t3;
-          if (t<segs[id_read].tf) 
-            t=min(segs[id_read].tf,t+.001); //Called at 1Khz, increment time for next cycle (Todo: user timer based clock?)
-          else
-          { //Start next segment
-            num_seg--;
-            if(num_seg==0) //Finished trajectory
+          q = seg_active.a0 + seg_active.a1*t + seg_active.a2*t2 + seg_active.a3*t3;
+          if (t<seg_active.tf) 
+            t=min(seg_active.tf,t+.001); //Called at 1Khz, increment time for next cycle (Todo: user timer based clock?)
+          else //Finished segment
+          { 
+            if(!seg_next_valid) //Finished trajectory
             {
               state=TRAJ_STATE_IDLE;
-              id_write=0;
-              id_read=0;
+              seg_active_valid=false;
+              id_curr_seg=0;//reserved for no trajectory
             }
             else //start next segment
             {
-              id_read=(id_read+1)%NUM_SEGS_MAX;
+              seg_active=seg_next;
+              seg_next_valid=false;
+              id_curr_seg=seg_active.id;
               t=0;
             }
           }
@@ -85,11 +113,27 @@ void TrajectoryManager::step()
 }
 
 //Called from RPC loop
-bool TrajectoryManager::add_trajectory_segment(TrajectorySegment * s)
+uint8_t TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s)
 {
-  if(num_seg==NUM_SEGS_MAX)
-    return false;
-  seg_add=*s;
-  dirty_seg_add=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
-  return true;
+  if (state==TRAJ_STATE_ACTIVE || state==TRAJ_STATE_WAITING_ON_SYNC) //Don't allow starting of new trajectory until current one is done
+  {
+    seg_in=*s;
+    dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
+    return seg_active.id;
+  }
+  return 0;
+}
+
+//Called from RPC loop
+uint8_t TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync)
+{
+  if (state==TRAJ_STATE_IDLE) //Don't allow starting of new trajectory until current one is done
+  {
+    start_new=true;
+    seg_in=*s;
+    dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
+    waiting_on_sync=wait_on_sync;
+    return s->id;
+  }
+  return 0;
 }
