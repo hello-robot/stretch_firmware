@@ -61,7 +61,7 @@
 #define MODE_VEL_TRAJ 6
 #define MODE_CURRENT 7
 #define MODE_POS_TRAJ_INCR 8
-#define MODE_POS_TRAJ_VIA 9
+#define MODE_POS_TRAJ_WAYPOINT 9
 
 #define DIAG_POS_CALIBRATED 1         //Has a pos mark trigger been recieved since powerup
 #define DIAG_RUNSTOP_ON 2             //Is controller in runstop mode 
@@ -76,7 +76,7 @@
 #define DIAG_IN_SAFETY_EVENT 1024     //Guarded event occured
 #define DIAG_WAITING_ON_SYNC 2048     //Command rcvd but no sync trigger yet
 #define DIAG_TRAJ_ACTIVE 4096         //Currently executing a splined trajectory
-
+#define DIAG_IN_SYNC_MODE 8192        //Currently running in sync mode
 
 #define TRIGGER_MARK_POS  1
 #define TRIGGER_RESET_MOTION_GEN  2
@@ -149,6 +149,7 @@ struct __attribute__ ((packed)) Status{
   uint64_t timestamp_line_sync; //us of time of when status sync was triggered (since power-on)
   float debug; 
   uint32_t guarded_event;       //counter of guarded events since power-up
+  float pos_traj;                 //Target of waypoint trajectory
 };
 
 /////////////////////////////////////////////////////////////////

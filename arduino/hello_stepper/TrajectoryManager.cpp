@@ -20,8 +20,9 @@
 TrajectoryManager trajectory_manager;
 
 #define TRAJ_STATE_IDLE 0
-#define TRAJ_STATE_ACTIVE 1 
-#define TRAJ_STATE_WAITING_ON_SYNC 2
+#define TRAJ_STATE_WAITING_ON_SYNC 1
+#define TRAJ_STATE_ACTIVE 2 
+
     
 TrajectoryManager::TrajectoryManager()
 {
@@ -41,6 +42,12 @@ bool TrajectoryManager::is_trajectory_active()
   return state==TRAJ_STATE_ACTIVE;
 }
 
+void TrajectoryManager::halt()
+{
+  state=TRAJ_STATE_IDLE;
+  seg_active_valid=false;
+}
+
 void TrajectoryManager::step()
 {
   
@@ -50,7 +57,6 @@ void TrajectoryManager::step()
     {
       start_new=false;
       seg_active=seg_in;
-      id_curr_seg=seg_active.id;
       seg_active_valid=true;
     }
     else
@@ -70,57 +76,65 @@ void TrajectoryManager::step()
   * is unexecuted segments in the buffer.
   * Then revert to idle state until more data shows up.
   */
- switch(state)
-  {
-    case TRAJ_STATE_IDLE:
-        if (seg_active_valid) 
-        {
-          if (waiting_on_sync)
-            state=TRAJ_STATE_WAITING_ON_SYNC;
-          else
-            state=TRAJ_STATE_ACTIVE;
-          t=0;
-        }
-        break;
-    case TRAJ_STATE_WAITING_ON_SYNC:
-        if (!waiting_on_sync)
+ 
+ if(state==TRAJ_STATE_IDLE)
+ {
+    id_curr_seg=0;//reserved for not loaded
+    if (seg_active_valid) 
+    {
+      if (waiting_on_sync)
+        state=TRAJ_STATE_WAITING_ON_SYNC;
+      else
+        state=TRAJ_STATE_ACTIVE;
+      t=0;
+    }
+ }
+ 
+ if(state==TRAJ_STATE_WAITING_ON_SYNC)
+ {
+    id_curr_seg=1;//reserved for waiting
+    if (!waiting_on_sync)
            state=TRAJ_STATE_ACTIVE; //Fall through and start
-        break;
-    case TRAJ_STATE_ACTIVE:
-          float t2 = t*t;
-          float t3 =t2*t;
-          q = seg_active.a0 + seg_active.a1*t + seg_active.a2*t2 + seg_active.a3*t3;
-          if (t<seg_active.tf) 
-            t=min(seg_active.tf,t+.001); //Called at 1Khz, increment time for next cycle (Todo: user timer based clock?)
-          else //Finished segment
-          { 
-            if(!seg_next_valid) //Finished trajectory
-            {
-              state=TRAJ_STATE_IDLE;
-              seg_active_valid=false;
-              id_curr_seg=0;//reserved for no trajectory
-            }
-            else //start next segment
-            {
-              seg_active=seg_next;
-              seg_next_valid=false;
-              id_curr_seg=seg_active.id;
-              t=0;
-            }
-          }
-          break; 
-  };
+ }
+ 
+ if(state==TRAJ_STATE_ACTIVE)
+ {
+    float t2 = t*t;
+    float t3 =t2*t;
+    id_curr_seg=seg_active.id;
+    q = seg_active.a0 + seg_active.a1*t + seg_active.a2*t2 + seg_active.a3*t3;
+    if (t<seg_active.tf) 
+      t=min(seg_active.tf,t+.001); //Called at 1Khz, increment time for next cycle (Todo: user timer based clock?)
+    else //Finished segment
+    { 
+      if(!seg_next_valid) //Finished trajectory
+      {
+        state=TRAJ_STATE_IDLE;
+        seg_active_valid=false;
+        id_curr_seg=0;//reserved for no trajectory
+      }
+      else //start next segment
+      {
+        seg_active=seg_next;
+        seg_next_valid=false;
+        t=0;
+      }
+    }
+ }
+ 
 }
 
 //Called from RPC loop
 uint8_t TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s)
 {
-  if (state==TRAJ_STATE_ACTIVE || state==TRAJ_STATE_WAITING_ON_SYNC) //Don't allow starting of new trajectory until current one is done
+  if (state==TRAJ_STATE_ACTIVE) //Don't allow starting of new trajectory until current one is done
   {
     seg_in=*s;
     dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
     return seg_active.id;
   }
+  if (state==TRAJ_STATE_WAITING_ON_SYNC)
+    return 1;
   return 0;
 }
 
@@ -133,7 +147,7 @@ uint8_t TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait
     seg_in=*s;
     dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
     waiting_on_sync=wait_on_sync;
-    return s->id;
+    return 1; //signal that is loaded
   }
-  return 0;
+  return 0; //signal that is not loaded
 }

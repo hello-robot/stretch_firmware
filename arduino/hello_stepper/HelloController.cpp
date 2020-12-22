@@ -287,7 +287,7 @@ void handleNewRPC()
           rpc_out[0]=RPC_REPLY_START_NEW_TRAJECTORY;
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
-          stat.debug=123;//trajectory_manager.dirty_seg_in;
+          //stat.debug=trajectory_manager.dirty_seg_in;
           break;
    default:
         break;
@@ -320,9 +320,11 @@ void update_status()
   stat.diag = safety_override?          stat.diag| DIAG_IN_SAFETY_EVENT: stat.diag;
   stat.diag = diag_waiting_on_sync?     stat.diag| DIAG_WAITING_ON_SYNC: stat.diag;
   stat.diag = trajectory_manager.is_trajectory_active()? stat.diag| DIAG_TRAJ_ACTIVE: stat.diag;
+  stat.diag = sync_manager.sync_mode_enabled?     stat.diag| DIAG_IN_SYNC_MODE: stat.diag;
+
+  //stat.debug=trajectory_manager.q;
 
   //stat.debug = sync_manager.last_pulse_duration;
-  stat.debug=456;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
@@ -330,7 +332,7 @@ void update_status()
 
 
 ///////////////////////// Controller Loop  ///////////////////////////
-//Called every control cycle via TC4 interrupt
+//Called every control cycle waypoint TC4 interrupt
 
 float mpos_d;
 float x_des_incr=0;
@@ -350,6 +352,7 @@ void stepHelloController()
   
   sync_manager.step();
   trajectory_manager.step();
+  stat.pos_traj=trajectory_manager.q;
   
     if (!diag_calibration_rcvd)
     {
@@ -511,13 +514,16 @@ void stepHelloController()
       /////////// Copy in new Command Data  ///////////
       
     //Determine new controller mode / controller settings
+    diag_waiting_on_sync = sync_manager.sync_mode_enabled && ((!sync_manager.motor_sync_triggered && dirty_cmd)||trajectory_manager.waiting_on_sync);
+
+ 
     if (dirty_cmd)
     {
-      diag_waiting_on_sync = sync_manager.sync_mode_enabled && !sync_manager.motor_sync_triggered;
+      
       if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
-        sync_manager.motor_sync_triggered=false;
-        trajectory_manager.waiting_on_sync=false;
+        
+        
         diag_waiting_on_sync=false;
 
         if (guarded_override) //Reset on new command to track
@@ -541,6 +547,7 @@ void stepHelloController()
         cmd.stiffness=cmd_in.stiffness;
         cmd.i_contact_pos =cmd_in.i_contact_pos;
         cmd.i_contact_neg =cmd_in.i_contact_neg;
+        
         
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
@@ -567,8 +574,9 @@ void stepHelloController()
             case MODE_POS_TRAJ_INCR:
               mg.safe_switch_on(yw,v);
               break; 
-            case MODE_POS_TRAJ_VIA:
+            case MODE_POS_TRAJ_WAYPOINT:
               mg.safe_switch_on(yw,v);
+              trajectory_manager.q=yw;
               break; 
             case MODE_CURRENT:
               u=0;
@@ -579,7 +587,7 @@ void stepHelloController()
       if (cmd.mode==MODE_VEL_TRAJ)
         vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
         
-      if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_POS_TRAJ_VIA)
+      if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_POS_TRAJ_WAYPOINT)
       {
         if(cmd_in.v_des!=cmd.v_des)
           mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
@@ -596,6 +604,12 @@ void stepHelloController()
       dirty_cmd=0;
       }
     }
+
+    
+    if (sync_manager.motor_sync_triggered)
+      trajectory_manager.waiting_on_sync=false;
+    
+    sync_manager.motor_sync_triggered=false;
 
   if(cmd.mode!=MODE_SAFETY)
   {    
@@ -792,8 +806,8 @@ void stepHelloController()
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
             break;
-        case MODE_POS_TRAJ_VIA:
-            if (stiffness_target==0.0 || !trajectory_manager.is_trajectory_active())
+        case MODE_POS_TRAJ_WAYPOINT:
+            if (stiffness_target==0.0)
             {
               mg.follow(yw,v); //floating so force mg to track
               xdes=yw;
@@ -812,6 +826,8 @@ void stepHelloController()
             DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+            
+            //stat.debug=xdes;
             diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
@@ -867,16 +883,26 @@ void stepHelloController()
 
      if (guarded_mode_enabled)
      {
+        
         g_eff_pos=current_to_effort(abs(cmd.i_contact_pos));
         g_eff_neg=current_to_effort(-1*abs(cmd.i_contact_neg));
+        
       if (eff>g_eff_pos || eff<g_eff_neg)
       {
         guarded_event_cnt++;
-        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ)) //Hit a new contact event, hold position
+        
+        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT)) //Hit a new contact event, hold position
         {
           guarded_override=1;
           hold_pos=yw;
+          
+          if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
+          {
+            trajectory_manager.halt();
+            stat.debug++;
+          }
           cmd.mode=MODE_SAFETY;
+          
         }
       }
      }

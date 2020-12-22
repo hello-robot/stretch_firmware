@@ -25,6 +25,7 @@ class  TrajectoryManager{
     void step(); //Called at 1Khz by TC4 loop
     uint8_t set_next_trajectory_segment(TrajectorySegment * s);
     uint8_t start_new_trajectory(TrajectorySegment * s,  bool wait_on_sync);
+    void halt();
     
     float q; //current position target
     uint8_t id_curr_seg;
