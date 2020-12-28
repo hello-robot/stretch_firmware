@@ -2,7 +2,7 @@
 
 # Overview
 
-The stretch_firmware repository provides the Arduino based firmware for the Stretch robot. The user is not expected to modify the firmware. However, it may occasionally be necessary to update the Stretch firmware while doing a Hello Robot recommended software upgrade. 
+The stretch_firmware repository provides the Arduino based firmware for the Stretch robot. The user is not typically expected to modify the firmware. However, it may occasionally be necessary to update the Stretch firmware while doing a Hello Robot recommended software upgrade. 
 
 The repository includes: 
 
@@ -13,11 +13,6 @@ The repository includes:
 * [Tutorials](tutorials/README.md) on how to integrate custom hardware on to the Stretch Wacc board
 
 Additional 3rd party libraries are provided for convenience.
-
-## Release Notes
-Version 0.0.1 (2020/05/8)
-* Initial public release for Guthrie robot
-* Compatable with firmware 0.0.1.p0
 
 ## License
 
@@ -34,61 +29,61 @@ cd ~/repos
 git clone https://github.com/hello-robot/stretch_firmware
 ```
 
-## Install the Arduino IDE
+## Install the Arduino Command Line Interface
 
-In order to update the firmware you'll need to install the recommended IDE and libraries.
-
-* Download and unzip the latest version (1.8.12 as of this writing) from the [Arduino site](https://www.arduino.cc/en/main/software)
-  * The Ubuntu package does not play well with stretch_firmware. Do not use this one.
+First, test if the Arduino command line tool is already installed. 
 
 ```bash
-cd Downloads
-tar -xvf arduino-1.8.12-linux64.tar.xz
-cd arduino-1.8.12
-sudo ./install.sh
-arduino
+>>$ arduino-cli
+Arduino Command Line Interface (arduino-cli).
+
+Usage:
+  arduino-cli [command]
+...
 ```
 
-Set the default Sketchbook location under File/Preferences to 
+If it isn't installed already, install arduino-cli and configure it:
+
+```bash
+>>$ curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=.local/bin/ sh
+>>$ arduino-cli config init
+>>$ arduino-cli core install arduino:samd
+```
+
+Then modify the file `~/.arduino15/arduino-cli.yaml` and set the `user` field to point to  Stretch Firmware:
 
 ```
-~/repos/stretch_firmware/arduino
+>>$ emacs ~/.arduino15/arduino-cli.yaml
+
+  user: /home/hello-robot/repos/stretch_firmware/arduino
+
 ```
 
-<img src="./images/arduino-1.png" height="300" />
+Now test that the install is working:
 
-Now close down and restart the IDE. Now under Tools/Board you should see the three Hello Robot board types available at the bottom of the list:
+```bash
+>>$arduino-cli compile --fqbn hello-robot:samd:hello_pimu ~/repos/stretch_firmware/arduino/hello_pimu
 
-<img src="./images/arduino-2.png"  height="400" />
+Sketch uses 40904 bytes (15%) of program storage space. Maximum is 262144 bytes.
+```
 
-Next, install the Arduino SAMD Boards (32-bits Arm Cortex-M0+) package via the Boards Manager (Tools/Board/Boards Manager) . **It is important to install version 1.6.21 and not a newer version.**
-
-<img src="./images/arduino-3.png"  height="400" />
-
-Now test that your install is ready to go. 
-
-* Open up the sketch hello_wacc.ino
-* Select the board type Tools/Board/Hello Wacc
-* Select Sketch/Verify-Compile. It should compile with no errors
-
-
+You may also uses the Arduino IDE to update the Stretch Firmware. Instructions are found [here](./tutorial/Arduino_IDE_install.md).
 
 # Updating Stretch Firmware
 
-**Warning: It is possible to 'brick' your Stretch robot if you don't follow these instructions carefully. Firmware upgrade should only be done at the recommendation of Hello Robot support.** 
+**Warning: Firmware upgrade should only be done at the recommendation of Hello Robot support.** 
 
-First, update the stretch_firmware repository to the correct version. Generally this will be done by
+First, update the stretch_firmware repository to the lastest version.
+
+```bash
+>>$ cd ~/repos/stretch_firmware
+>>$ git pull
+```
+
+Next, update your stretch_body to the latest version if it isn't already.
 
 ```
-cd ~/repos/stretch_firmware
-git pull
-```
-
-Hello Robot support will have specified a firmware version to install. If you are unsure, you can verify the version of firmware for a particular board be looking in the Common.h file for the  Sketch. For example:
-
-```
-#define FIRMWARE_VERSION "Pimu.V0.0.1p0"
-#define BOARD_VERSION "Pimu.Guthrie.V1"
+>>$ pip2 install hello-robot-stretch-body
 ```
 
 There are 6 boards that you may want to update.
@@ -102,32 +97,207 @@ There are 6 boards that you may want to update.
 | Pimu                | /dev/hello-pimu              | hello_pimu.ino    |
 | Wacc                | /dev/hello-wacc              | hello_wacc.ino    |
 
-The device names listed are sim-links to the actual USB device. For the board to be upgraded, determine the actual port name that will be used by the Arduino IDE. This can be determined by:
+Stretch Firmware includes a command line tool for compiling and uploading firmware updates:
+
+```bash
+~/repos/stretch_firmware/python/stretch_firmware_upload.py --help
+usage: stretch_firmware_upload.py [-h] [--pimu] [--wacc] [--arm] [--lift] [--left_wheel] [--right_wheel]
+
+Upload Stretch firmware to microcontrollers
+
+optional arguments:
+  -h, --help     show this help message and exit
+  --pimu         Upload Pimu firmware
+  --wacc         Upload Wacc firmware
+  --arm          Upload Arm Stepper firmware
+  --lift         Upload Lift Stepper firmware
+  --left_wheel   Upload Left Wheel Stepper firmware
+  --right_wheel  Upload Right Wheel Stepper firmware
 
 ```
-ls -l /dev/hello*
+
+
+
+## Update the Pimu
+
+Compile and then upload the firmware for the Pimu board.
+
+```bash
+>>$  ~/repos/stretch_firmware/python/stretch_firmware_upload.py --pimu
+Found Pimu at ttyACM3
+Uploading firmware to hello_pimu
+---------------Compile-------------------------
+Sketch uses 40904 bytes (15%) of program storage space. Maximum is 262144 bytes.
+---------------Upload-------------------------
+Atmel SMART device 0x10010005 found
+Device       : ATSAMD21G18A
+Chip ID      : 10010005
+Version      : v2.0 [Arduino:XYZ] Dec 20 2016 15:36:39
+Address      : 8192
+Pages        : 3968
+Page Size    : 64 bytes
+Total Size   : 248KB
+Planes       : 1
+Lock Regions : 16
+Locked       : none
+Security     : false
+Boot Flash   : true
+BOD          : true
+BOR          : true
+Arduino      : FAST_CHIP_ERASE
+Arduino      : FAST_MULTI_PAGE_WRITE
+Arduino      : CAN_CHECKSUM_MEMORY_BUFFER
+Erase flash
+done in 0.785 seconds
+
+Write 41288 bytes to flash (646 pages)
+[==============================] 100% (646/646 pages)
+done in 0.193 seconds
+
+Verify 41288 bytes of flash with checksum.
+Verify successful
+done in 0.041 seconds
+CPU reset.
+---------------Next Steps-------------------------
+Test the Pimu using: stretch_pimu_jog.py
 ```
 
-Next
+Next test that the Pimu is working by causing it to beep from the tool menu:
 
-* Launch the Arduino IDE
-* Open the appropriate sketch for the board to be updated
-* Select the appropriate board type from the menu Tools/Board/hello*
-* Select the appropriate port from Tools/Port (eg /dev/ttyACM0 ) that maps to the correct USB device
-* Select Sketch/Upload from the menu. The new firmware will load to the board as shown
+```bash
+>>$ stretch_pimu_jog.py 
+For use with S T R E T C H (TM) RESEARCH EDITION from Hello Robot Inc.
 
-<img src="./images/arduino-4.png" height="600" />
-
-## Flashing the Stepper Calibration
-
-After updating the firmware to any of the stepper motors the encoder calibration must be rewritten to the flash. If the flash calibration has not been written the motor will not work. 
-
-For each motor (eg, the left wheel):
+------ MENU -------
+m: menu
+i: reset imu
+f: toggle fan
+b: toggle buzzer
+p: beep
+s: trigger status sync
+t: trigger motor sync
+k: disable sync mode
+l: enable sync mode
+r: reset board
+x: reset runstop event
+o: trigger runstop event
+z: zero clock
+y: reset cliff event
+-------------------
+p
 
 ```
-cd ~/repos/stretch_firmware/python
-./stepper_calibration_YAML_to_flash.py hello-motor-left-wheel
+
+## Update the Wacc
+
+Upload the firmware for the Wacc board. 
+
+```bash
+>>$ ~/repos/stretch_firmware/python/stretch_firmware_upload.py --wacc
 ```
 
+Next test that the Wacc is working by checking that the accelerometer reports AX as near 9.8:
 
+```bash
+>>$ 
+stretch_wacc_jog.py 
+For use with S T R E T C H (TM) RESEARCH EDITION from Hello Robot Inc.
 
+------ MENU -------
+m: menu
+r: reset board
+a: set D2 on
+b: set D2 off
+c: set D3 on
+d: set D3 off
+s: trigger status sync
+k: disable sync mode
+l: enable sync mode
+z: zero clock
+-------------------
+
+------------------------------
+Ax (m/s^2) 9.61330890656
+...
+```
+
+## Update the Steppers
+
+### Arm
+
+Upload the firmware for the Arm stepper board. Afterwards push the encoder calibration data to its flash memory.
+
+```bash
+>>$ ~/repos/stretch_firmware/python/stretch_firmware_upload.py --arm
+...
+>>$ RE1_stepper_calibration_YAML_to_flash.py hello-motor-arm
+Reading calibration data from YAML...
+Writing calibration data to flash...
+Writing encoder calibration...
+Sending page 0 of 255
+...
+Sending page 255 of 255
+Successful write of FLASH. Resetting board now.
+```
+
+Test that the arm is working by homing it. 
+
+```bash
+>>$  stretch_arm_home.py
+```
+
+### Lift
+
+**Note: If powered the lift may drop during firmware upload. Apply a clamp to the mast below the shoulder prior to running the scripts.**
+
+Upload the firmware for the Lift stepper board. Afterwards push the encoder calibration data to its flash memory.
+
+```bash
+>>$ ~/repos/stretch_firmware/python/stretch_firmware_upload.py --lift
+>>$ RE1_stepper_calibration_YAML_to_flash.py hello-motor-lift
+```
+
+Test that the lift is working by homing it. 
+
+```bash
+>>$  stretch_lift_home.py
+```
+
+### Wheels
+
+Upload the firmware for the base wheels. Afterwards push the encoder calibration data to their flash memory.
+
+```bash
+>>$ ~/repos/stretch_firmware/python/stretch_firmware_upload.py --left_wheel
+>>$ ~/repos/stretch_firmware/python/stretch_firmware_upload.py --right_wheel
+>>$ RE1_stepper_calibration_YAML_to_flash.py hello-motor-left-wheel
+>>$ RE1_stepper_calibration_YAML_to_flash.py hello-motor-right-wheel
+```
+
+Test that the base is working by jogging it forward and back using the `f` and `b` commands.
+
+```bash
+>>$ stretch_base_jog.py 
+For use with S T R E T C H (TM) RESEARCH EDITION from Hello Robot Inc.
+
+--------------
+m: menu
+
+1: rate slow
+2: rate default
+3: rate fast
+4: rate max
+w: CW/CCW 90 deg
+x: forward-> back 0.5m
+y: spin at 22.5deg/s
+
+f / b / l / r : small forward / back / left / right
+F / B / L / R : large forward / back / left / right
+o: freewheel
+p: pretty print
+q: quit
+
+Input?
+```
+
+### 
