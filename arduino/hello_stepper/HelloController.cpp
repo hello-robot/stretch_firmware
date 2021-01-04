@@ -94,6 +94,8 @@ float dt_max_us = 1000000/Fs;
 VelocityGenerator vg;
 MotionGenerator mg;
 
+
+
 float vs=0;
 float eff=0;
 float g_eff_pos=0;
@@ -186,6 +188,8 @@ bool receiving_calibration=false;
 
 bool flip_encoder_polarity = false;
 bool flip_effort_polarity = false;
+
+
 
 int runstop_read_last=0;
 int runstop_read=0;
@@ -390,23 +394,7 @@ int start_last=0;
 float mpos_d;
 #define STIFFNESS_SLEW .001
 float stiffness_target=0;
-/*
- * if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR)
-    {
-      float dv=cmd.v_des-v_des_slewed;
-      if(dv>0)
-      {
-        v_des_slewed=v_des_slewed+min(VELOCITY_SLEW,dv);
-      }
-      else if(dv<0)
-      {
-        v_des_slewed = v_des_slewed-min(VELOCITY_SLEW,-1*dv);
-      }
-      mg.setMaxVelocity(abs(rad_to_deg(v_des_slewed)));
-      mg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
-    } 
 
- */
 
 void stepHelloController()
 {
@@ -417,7 +405,7 @@ void stepHelloController()
 
     
     int start = micros();
-    //stat.debug=start-start_last;
+
     start_last=start;
     
     if (dirty_trigger)
@@ -498,7 +486,7 @@ void stepHelloController()
       wrap_count=(int)(mpos_d) / 360;
       mark_rem = mpos_d-360*wrap_count;
       mark_pos=yy-mark_rem;
-      //stat.debug=wrap_count;  
+
       y_1=yy;
       yw_1=0;        
       //Reset velocity measurements
@@ -571,8 +559,7 @@ void stepHelloController()
         {
           cmd.mode=cmd_in.mode; 
         }
-        //else
-        //  stat.debug++;
+
 
         if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
         {
@@ -588,7 +575,7 @@ void stepHelloController()
         cmd.i_contact_pos =cmd_in.i_contact_pos;
         cmd.i_contact_neg =cmd_in.i_contact_neg;
         
-        //stat.debug=cmd.x_des;
+
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
         {
@@ -607,12 +594,18 @@ void stepHelloController()
               break; 
             case MODE_VEL_TRAJ:
               vg.safe_switch_on(yw,v);
+              vg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+              
               break; 
             case MODE_POS_TRAJ:
               mg.safe_switch_on(yw,v);
+              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_POS_TRAJ_INCR:
               mg.safe_switch_on(yw,v);
+              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_CURRENT:
               u=0;
@@ -620,8 +613,10 @@ void stepHelloController()
               break; 
           };
         }
+
+      //Handle on-the-fly updates of velocity and accel commands  
       if (cmd.mode==MODE_VEL_TRAJ)
-        vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
+        vg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
         
       if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR)
       {
@@ -629,8 +624,10 @@ void stepHelloController()
           mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
         if(cmd_in.a_des !=cmd.a_des)
           mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+        
         cmd.v_des=cmd_in.v_des;
         cmd.a_des=cmd_in.a_des;
+        
       }
       if (cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_VEL_PID)
       {
@@ -675,7 +672,7 @@ void stepHelloController()
     diag_is_mg_accelerating=0;
     diag_is_mg_moving=0;
 
-        
+
       ////// Now run control cycle
 
       
@@ -711,8 +708,6 @@ void stepHelloController()
            } //else do a safety hold
            else
            {
-            stat.debug++;
-            //stat.debug=hold_pos;
             e = (hold_pos - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit
             if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
@@ -772,6 +767,7 @@ void stepHelloController()
             break;
         
         case MODE_VEL_TRAJ:
+ 
             xdes=vg.update(rad_to_deg(cmd.v_des),yw); //get target position
             e = (xdes - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit
@@ -798,7 +794,9 @@ void stepHelloController()
               {
                   x_des_incr=min(max(x_des_incr, rad_to_deg(motion_limits.pos_min)), rad_to_deg(motion_limits.pos_max));
               }
+              
               xdes=mg.update(x_des_incr); //get target position
+              
             }
             e = (xdes - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit
@@ -893,7 +891,6 @@ void stepHelloController()
       if (eff>g_eff_pos || eff<g_eff_neg)
       {
         guarded_event_cnt++;
-        //stat.debug=eff;
         if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ)) //Hit a new contact event, hold position
         {
           guarded_override=1;
@@ -906,7 +903,6 @@ void stepHelloController()
      {
       guarded_override=0;
       guarded_event_cnt=0;
-      //stat.debug=0;
      }
       
   ////////////////////
@@ -937,7 +933,7 @@ void stepHelloController()
       first_filter=false;
 
       int finish = micros();
-      //stat.debug=finish-start;
+
 }
 
 ///////////////////////// Commutation Loop ///////////////////////////
@@ -949,9 +945,6 @@ void stepHelloCommutation()
 {
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   { 
-    //int start = micros();
-    //stat.debug=start-start_last;
-    //start_last=start;
     y = lookup[readEncoder()];
      
     if (receiving_calibration)
@@ -962,9 +955,6 @@ void stepHelloCommutation()
     else
       output(-(y+PAY), round(U));
       
-    //int finish = micros();
-    //if (finish-start>dt_max_us)
-    //stat.debug=finish-start;//stat.debug+1;
     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
