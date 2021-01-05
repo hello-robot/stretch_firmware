@@ -250,6 +250,8 @@ Test that the arm is working by homing it.
 
 **Note: If powered the lift may drop during firmware upload. Apply a clamp to the mast below the shoulder prior to running the scripts.**
 
+**Note: When pushing the calibration data to the lift the motor will make a brief clanking noise. This is normal.**
+
 Upload the firmware for the Lift stepper board. Afterwards push the encoder calibration data to its flash memory.
 
 ```bash
