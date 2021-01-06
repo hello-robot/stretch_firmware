@@ -19,8 +19,7 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 //Version History
-// Stepper.V0.0.1: Initial production release for RE1
-// Stepper.V0.0.2: Bugfix for maxAcc mode switch for RE1
+// Stepper.V0.1: Initial production release for RE1
 #define FIRMWARE_VERSION_HR "Stepper.v0.0.2p0"
 #define BOARD_VERSION "Stepper.Guthrie.V1"
 
