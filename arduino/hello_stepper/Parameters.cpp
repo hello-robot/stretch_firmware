@@ -12,7 +12,7 @@
   --------------------------------------------------------------
 */
 
-#include <Stepper.h>
+
 
 //Contains the Mechaduino parameter defintions
 
