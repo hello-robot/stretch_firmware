@@ -45,6 +45,7 @@ Usage:
 If it isn't installed already, install arduino-cli and configure it:
 
 ```bash
+>>$ cd ~/
 >>$ curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=.local/bin/ sh
 >>$ arduino-cli config init
 >>$ arduino-cli core install arduino:samd@1.6.21
