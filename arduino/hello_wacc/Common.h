@@ -19,7 +19,7 @@
 //Version History
 // Wacc.V0.1: Initial production release for RE1
 #define FIRMWARE_VERSION "Wacc.v0.0.1p0"
-#define BOARD_VERSION "Wacc.Guthrie.V1"
+#define BOARD_VERSION "Wacc.Joplin.V1"
 
 /////////////////////////////////////////////////////////////////
 #define RPC_SET_WACC_CONFIG 1

@@ -21,7 +21,7 @@
 //Version History
 // Stepper.V0.1: Initial production release for RE1
 #define FIRMWARE_VERSION_HR "Stepper.v0.0.2p0"
-#define BOARD_VERSION "Stepper.Guthrie.V1"
+#define BOARD_VERSION "Stepper.Joplin.V1"
 
 /////////////////////////////////////////////////////////////////
 #define RUNSTOP D0

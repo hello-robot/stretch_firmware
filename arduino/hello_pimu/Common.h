@@ -19,7 +19,7 @@
 //Version History
 // Pimu.V0.1: Initial production release for RE1
 #define FIRMWARE_VERSION "Pimu.v0.0.1p0"
-#define BOARD_VERSION "Pimu.Guthrie.V1"
+#define BOARD_VERSION "Pimu.Joplin.V1"
 
 /////////////////////////////////////////////////////////////////
 #define BEEP_ID_OFF 0
