@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 import argparse
-import stretch_body.hello_utils as hu
 from subprocess import Popen, PIPE
 
 parser=argparse.ArgumentParser(description='Upload Stretch firmware to microcontrollers')
