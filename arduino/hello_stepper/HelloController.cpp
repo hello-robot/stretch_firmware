@@ -301,6 +301,7 @@ void update_status()
   //noInterrupts();
   //stat.timestamp=time_manager.get_encoder_timestamp();
   stat.timestamp_line_sync=0;
+  stat.effort= eff;
   stat.pos=deg_to_rad(ywd);
   stat.vel=deg_to_rad(vs);
   stat.err=deg_to_rad(e);               //controller error (inner loop)
@@ -329,6 +330,8 @@ void update_status()
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 }
+
+
 
 
 ///////////////////////// Controller Loop  ///////////////////////////
