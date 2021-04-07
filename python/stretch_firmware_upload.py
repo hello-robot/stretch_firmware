@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-import sys
+#!/usr/bin/env python2
+from __future__ import print_function
 import argparse
-import stretch_body.hello_utils as hu
 from subprocess import Popen, PIPE
 
 parser=argparse.ArgumentParser(description='Upload Stretch firmware to microcontrollers')
@@ -72,4 +71,4 @@ if port_name is not None:
     print('---------------Next Steps-------------------------')
     print(next_steps)
 else:
-    print 'Failed to upload...'
+    print('Failed to upload...')

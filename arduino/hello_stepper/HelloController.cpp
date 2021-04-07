@@ -570,15 +570,22 @@ void stepHelloController()
               break; 
             case MODE_VEL_TRAJ:
               vg.safe_switch_on(yw,v);
+              vg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_POS_TRAJ:
               mg.safe_switch_on(yw,v);
+              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_POS_TRAJ_INCR:
               mg.safe_switch_on(yw,v);
+              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_POS_TRAJ_WAYPOINT:
               mg.safe_switch_on(yw,v);
+              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               trajectory_manager.q=yw;
               break; 
             case MODE_CURRENT:
@@ -587,8 +594,7 @@ void stepHelloController()
               break; 
           };
         }
-      if (cmd.mode==MODE_VEL_TRAJ)
-        vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
+     
         
       if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_POS_TRAJ_WAYPOINT)
       {
@@ -604,6 +610,8 @@ void stepHelloController()
         cmd.v_des=cmd_in.v_des;
         cmd.a_des=cmd_in.a_des;
       }
+     if (cmd.mode==MODE_VEL_TRAJ)
+        vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
       dirty_cmd=0;
       }
     }
