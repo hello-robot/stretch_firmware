@@ -335,7 +335,9 @@ void handleNewRPC()
           num_byte_rpc_out=1;
           write_to_lookup(enc_calib_in.page_id, enc_calib_in.page);
           if (enc_calib_in.page_id==255)//done
-            receiving_calibration=false;
+          {
+            board_reset_cnt=100;
+          }
           break;
     case RPC_GET_STATUS: 
           rpc_out[0]=RPC_REPLY_STATUS;
