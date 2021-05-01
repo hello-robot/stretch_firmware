@@ -42,10 +42,11 @@ bool TrajectoryManager::is_trajectory_active()
   return state==TRAJ_STATE_ACTIVE;
 }
 
-void TrajectoryManager::halt()
+void TrajectoryManager::reset()
 {
   state=TRAJ_STATE_IDLE;
   seg_active_valid=false;
+  id_curr_seg=0;
 }
 
 void TrajectoryManager::step()

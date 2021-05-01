@@ -92,6 +92,7 @@ bool first_filter=true;
 bool led_on=false;
 unsigned long t_toggle_last=0;
 float hold_pos=0;
+float traj_hold_pos=0;
 
 void update_status();
 
@@ -288,6 +289,12 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
           //stat.debug=trajectory_manager.dirty_seg_in;
+          break;
+    case RPC_RESET_TRAJECTORY: 
+          rpc_out[0]=RPC_REPLY_RESET_TRAJECTORY;
+          num_byte_rpc_out=1;
+          traj_hold_pos=yw;
+          trajectory_manager.reset();
           break;
    default:
         break;
@@ -587,6 +594,7 @@ void stepHelloController()
               mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
               mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               trajectory_manager.q=yw;
+              traj_hold_pos=yw;
               break; 
             case MODE_CURRENT:
               u=0;
@@ -825,10 +833,15 @@ void stepHelloController()
             }
             else
             {
-              if (motion_limits_set)
-                xdes=mg.update(rad_to_deg(min(max(trajectory_manager.q, motion_limits.pos_min), motion_limits.pos_max)));
+              if(trajectory_manager.is_trajectory_active())
+              {
+                if (motion_limits_set)
+                  xdes=mg.update(rad_to_deg(min(max(trajectory_manager.q, motion_limits.pos_min), motion_limits.pos_max)));
+                else
+                  xdes=mg.update(rad_to_deg(trajectory_manager.q)); //get target position
+              }
               else
-                xdes=mg.update(rad_to_deg(trajectory_manager.q)); //get target position
+                  xdes=traj_hold_pos;
             }
             e = (xdes - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit
@@ -909,7 +922,7 @@ void stepHelloController()
           
           if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
           {
-            trajectory_manager.halt();
+            trajectory_manager.reset();
             stat.debug++;
           }
           cmd.mode=MODE_SAFETY;
