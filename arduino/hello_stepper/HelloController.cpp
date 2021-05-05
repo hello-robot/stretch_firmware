@@ -839,6 +839,7 @@ void stepHelloController()
                   xdes=mg.update(rad_to_deg(min(max(trajectory_manager.q, motion_limits.pos_min), motion_limits.pos_max)));
                 else
                   xdes=mg.update(rad_to_deg(trajectory_manager.q)); //get target position
+                traj_hold_pos=yw;
               }
               else
                   xdes=traj_hold_pos;
