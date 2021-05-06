@@ -102,8 +102,10 @@ void TrajectoryManager::step()
  {
     float t2 = t*t;
     float t3 =t2*t;
+    float t4 =t3*t;
+    float t5 =t4*t;
     id_curr_seg=seg_active.id;
-    q = seg_active.a0 + seg_active.a1*t + seg_active.a2*t2 + seg_active.a3*t3;
+    q = seg_active.a0 + seg_active.a1*t + seg_active.a2*t2 + seg_active.a3*t3 + seg_active.a4*t4 + seg_active.a5*t5;
     if (t<seg_active.tf) 
       t=min(seg_active.tf,t+.001); //Called at 1Khz, increment time for next cycle (Todo: user timer based clock?)
     else //Finished segment
