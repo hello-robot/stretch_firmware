@@ -132,11 +132,7 @@ Firmware version: Wacc.v0.0.1p0
 
 ```
 
-# Emulating on a Development Machine
 
-It is possible to emulate the Wacc on a standard Ubuntu machine in the case the Stretch Robot is not available to the user. 
-
-[Coming soon.]
 
 
 
