@@ -13,7 +13,7 @@ class WaccSerialExt(Wacc):
         Wacc.__init__(self,verbose=verbose,
                       ext_status_cb=self.ext_unpack_status, #Set callback to unpack status
                       ext_command_cb=self.ext_pack_command) #Set callback to pack command
-        self.valid_firmware_protocol = 'p9' #Ensure the custom protocol identifier matches that in the Common.h of the custom Wacc Serial firmware
+        self.valid_firmware_protocol = 'p99' #Ensure the custom protocol identifier matches that in the Common.h of the custom Wacc Serial firmware
         self.n_float=10
         self._command['serial_ext']=range(self.n_float)   #Extend command dictionary with custom fields
         self.status['serial_ext'] =[0.0]*self.n_float     #Extend status dictionary with custom fields
