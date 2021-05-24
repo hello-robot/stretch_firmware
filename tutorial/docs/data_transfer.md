@@ -106,7 +106,7 @@ memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Wacc_Status));
 
 The variable `cmd`, which contains the command to the calculator, is automatically updated with fresh data via the RPC mechanism.
 
-Finally, we want to bump the protocol version in order to tell the user that this is a custom protocol. Currently nothing is done with the protocol version information, but it is useful to ensure future compatibility and readability.
+Finally, we want to bump the protocol version in order to tell the user that this is a custom protocol. Currently nothing is done with the protocol version information, but it is useful to ensure future compatibility and readability. For the tutorial we pick a arbitrary large number, 99, that is cleary different than the mainline protocols of Stretch Firmware. 
 
 In [Common.h](../arduino/hello_wacc_calc/Common.h) , we bump from Protocol '0' 
 
@@ -114,10 +114,10 @@ In [Common.h](../arduino/hello_wacc_calc/Common.h) , we bump from Protocol '0'
 #define FIRMWARE_VERSION "Wacc.v0.0.1p0"
 ```
 
- to Protocol 'MyCalc'
+ to Protocol '99'
 
 ```c
-#define FIRMWARE_VERSION "Wacc.v0.0.1pMyCalc"
+#define FIRMWARE_VERSION "Wacc.v0.0.1p99"
 ```
 
 
@@ -142,6 +142,7 @@ class WaccCalc(Wacc):
 
         self._command['calc']={'op':0,'var1':0,'var2':0} #Extend command dictionary with custom fields
         self.status['calc'] =0.0                         #Extend status dictionary with custom fields
+        self.valid_firmware_protocol = 'pMyCalc'
 
     def calculate(self,op,var1,var2):
         """
