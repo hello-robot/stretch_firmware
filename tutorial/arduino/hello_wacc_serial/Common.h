@@ -18,7 +18,7 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Wacc.V0.1: Initial production release for RE1
-#define FIRMWARE_VERSION "Wacc.v0.0.1p9"
+#define FIRMWARE_VERSION "Wacc.v0.0.1p99"
 #define BOARD_VERSION "Wacc.Hank.V1"
 
 /////////////////////////////////////////////////////////////////
