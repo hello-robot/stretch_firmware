@@ -1,6 +1,6 @@
-![](../images/HelloRobotLogoBar.png)
+![](../images/banner.png)
 
-# Overview
+# Integrating Custom Hardware
 
 These tutorials demonstrate how to use the Stretch wrist expansion header to integrate custom hardware into [Stretch Body](https://docs.hello-robot.com/stretch_body_guide/).
 
@@ -18,9 +18,9 @@ These tutorials demonstrate how to use the Stretch wrist expansion header to int
 | [I2C Sensor](./docs/i2c_sensor.md)                | How to integrate an I2C sensor                               |
 | [Serial Sensor](./docs/serial_sensor.md)          | How to integrate a Serial UART sensor                        |
 
-**Note: These tutorials require version 0.0.10 or later of Stretch Body. If necessary, please update your install:**
+**Note: These tutorials may require the latest version of Stretch Body. If necessary, please update your install:**
 
 ```bash
->>$ pip2 install hello-robot-stretch-body
+>>$ python -m pip install --upgrade hello-robot-stretch-body
 ```
 

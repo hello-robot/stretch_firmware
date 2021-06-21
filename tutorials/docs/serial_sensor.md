@@ -1,6 +1,6 @@
-![](../../images/HelloRobotLogoBar.png)
+![](../images/banner.png)
 
-# Overview
+# Integrating a Serial Device
 
 This tutorial illustrates the integration of a UART device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). We recommend first reading [Data Transfer](./data_transfer.md) tutorial to understand how data is transfered back and forth from Stretch Body to the SAMD uC. 
 
