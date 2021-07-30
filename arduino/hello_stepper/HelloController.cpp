@@ -162,6 +162,7 @@ void setupHelloController()
   memset(&trg_in, 0, sizeof(Trigger));
   memset(&stat, 0, sizeof(Status));
   memset(&stat_out, 0, sizeof(Status));
+  memset(&stat_sync, 0, sizeof(Status));
   memset(&motion_limits, 0, sizeof(MotionLimits));
   
   memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
@@ -335,6 +336,7 @@ void update_status()
   //stat.debug = sync_manager.last_pulse_duration;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
+  memcpy((uint8_t *) (&stat_sync),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 }
 
