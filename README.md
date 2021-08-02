@@ -8,8 +8,8 @@ Minor version updates to Stretch Body may occasionally require the robot's firmw
 The repository includes: 
 
 * hello_stepper: firmware for stepper motor controller based on the Mechaduino project
-* hello_pimu:  firmware for power and imu board (Pimu) in the base
 * hello_wacc: firmware for wrist accelerometer board (Wacc) in the wrist 
+* hello_pimu:  firmware for power and imu board (Pimu) in the base
 * Hello_Serial_Transport: serial communication library
 * [Tutorial](./tutorials/docs/updating_firmware.md) on how to update the robot's firmware
 * [Tutorials](./tutorials/docs/README.md) on how to integrate custom hardware on to the Stretch Wacc board
