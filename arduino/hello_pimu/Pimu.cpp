@@ -51,9 +51,9 @@ bool dirty_trigger=false;
 //////////////////////////////////////
 Pimu_Config cfg_in, cfg;
 Pimu_Trigger trg_in, trg;
-Pimu_Status stat, stat_out, stat_sync;
+Pimu_Status stat, stat_out;
 Pimu_Board_Info board_info;
-Pimu_Timestamp status_sync_reply;
+
 
 void setupTimer4_and_5();
 void toggle_led(int rate_ms);
@@ -141,10 +141,7 @@ void handleNewRPC()
           break;
     case RPC_GET_PIMU_STATUS: 
           rpc_out[0]=RPC_REPLY_PIMU_STATUS;
-          if (cfg.sync_mode_enabled)
-            memcpy(rpc_out + 1, (uint8_t *) (&stat_sync), sizeof(Pimu_Status)); //Collect the status data
-          else
-            memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Pimu_Status)); //Collect the status data
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Pimu_Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Pimu_Status)+1;
           break; 
      case RPC_GET_PIMU_BOARD_INFO:
@@ -156,13 +153,6 @@ void handleNewRPC()
           rpc_out[0]=RPC_REPLY_MOTOR_SYNC;
           num_byte_rpc_out=1;
           sync_manager.trigger_motor_sync();
-          break; 
-     case RPC_SET_STATUS_SYNC:
-          rpc_out[0]=RPC_REPLY_STATUS_SYNC;
-          sync_manager.trigger_status_sync();
-          status_sync_reply.timestamp=time_manager.current_time_us();
-          memcpy(rpc_out + 1, (uint8_t *) (&status_sync_reply), sizeof(Pimu_Timestamp)); //Collect the status data
-          num_byte_rpc_out=sizeof(Pimu_Timestamp)+1;
           break; 
      case RPC_SET_CLOCK_ZERO:
           rpc_out[0]=RPC_REPLY_CLOCK_ZERO;
@@ -473,7 +463,7 @@ void TC4_Handler() {                // gets called with FsMg frequency
 
   if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
     time_manager.ts_base++;
-    sync_manager.step(&stat_sync, &stat_out, &cfg);
+    sync_manager.step(&stat);
   TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }

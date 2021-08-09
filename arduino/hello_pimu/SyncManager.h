@@ -18,17 +18,14 @@
 class SyncManager {    
   public: 
     SyncManager();
-    void trigger_status_sync();
     void trigger_motor_sync();
     void trigger_runstop();
     void clear_runstop();
-    void step(Pimu_Status * stat_sync, Pimu_Status * stat_out, Pimu_Config * cfg);
+    void step(Pimu_Status * stat);
   private:
     volatile uint16_t pulse_len_ms; 
-    volatile bool dirty_status_sync;
     volatile bool runstop_active;
     volatile bool dirty_motor_sync;
-    volatile bool pulse_polarity;
 };
 
 extern SyncManager sync_manager;

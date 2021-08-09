@@ -35,7 +35,7 @@ void write_to_lookup(uint8_t page_id, float * data);
 Command cmd,cmd_in;
 Gains gains, gains_in;
 Trigger trg, trg_in;
-Status stat,stat_out, stat_sync;
+Status stat,stat_out;
 EncCalib enc_calib_in;
 MotionLimits motion_limits;
 TrajectorySegment traj_seg_in;
@@ -259,10 +259,7 @@ void handleNewRPC()
           break;
     case RPC_GET_STATUS: 
           rpc_out[0]=RPC_REPLY_STATUS;
-          if (sync_manager.sync_mode_enabled)
-            memcpy(rpc_out + 1, (uint8_t *) (&stat_sync), sizeof(Status)); //Collect the status data
-          else
-            memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Status)+1;
           break;
     case RPC_LOAD_TEST:
@@ -307,7 +304,6 @@ void update_status()
 {
   //noInterrupts();
   //stat.timestamp=time_manager.get_encoder_timestamp();
-  stat.timestamp_line_sync=0;
   stat.effort= eff;
   stat.pos=deg_to_rad(ywd);
   stat.vel=deg_to_rad(vs);
@@ -334,7 +330,7 @@ void update_status()
   stat.traj_id=trajectory_manager.get_id_current_segment();
 
 
-  //stat.debug = sync_manager.last_pulse_duration;
+  stat.debug = sync_manager.last_pulse_duration;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
@@ -357,7 +353,6 @@ void stepHelloController()
   
  
   //noInterrupts();
-  //time_manager.timestamp_encoder(sync_manager.sync_cnt);
   stat.timestamp=time_manager.current_time_us();
   float yy = lookup[readEncoder()];
   //interrupts();
@@ -515,13 +510,7 @@ void stepHelloController()
       safety_override=false;
 
     
-    /*
-     * Update data for RPC replies
-     * The flag status_sync_triggered will have been set prior to this ISR
-     * We cache this status in stat_sync until there is a RPC_GET_STATUS_SYNC
-     */
     update_status();
-
 
       /////////// Copy in new Command Data  ///////////
       

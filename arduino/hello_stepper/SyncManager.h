@@ -24,31 +24,14 @@ class SyncManager{
     
     volatile bool runstop_active;
     volatile bool motor_sync_triggered;
-
     void setupSyncManager();
-    void start_pulse_measure();
-    void end_pulse_measure();
     void step();
-    
-    int last_pulse_duration;
     bool sync_mode_enabled;
-    
-    bool in_pulse;
-    uint32_t sync_cnt;
-    private:
-    
-    void enableTC3Interrupts();
-    void disableTC3Interrupts();
-    
-    volatile int sync_duration_base_start;
-    volatile int sync_duration_cntr_start;
-    volatile int sync_duration_base_end;
-    volatile int sync_duration_cntr_end;
-    
-    
-    int pulse_start_count;
-    
-    
+    int last_pulse_duration;
+  private:
+    int pulse_count;
+    uint8_t rs_last;
+    uint8_t in_pulse;
 };
 
 extern SyncManager sync_manager;

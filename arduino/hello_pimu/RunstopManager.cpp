@@ -86,7 +86,7 @@ void RunstopManager::step(Pimu_Config * cfg) //Called at 100hz from TC4 loop
     state_runstop_event=0;
   else
     state_runstop_event=cfg->stop_at_runstop;
-  
+
 }
 
 void RunstopManager::toggle_led(int rate_ms)
