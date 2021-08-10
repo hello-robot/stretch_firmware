@@ -24,8 +24,9 @@ class RunstopManager {
     void toggle_led(int rate_ms);
     bool state_runstop_event;
     bool runstop_led_on;
-    bool alert_trigger_runstop;
+    
   private:
+    bool trigger_runstop_event;
     volatile uint8_t runstop_mode;
     unsigned long runstop_t_toggle_last;
     int depressed_last;
@@ -33,6 +34,5 @@ class RunstopManager {
     
 };
 
-extern RunstopManager runstop_manager;
 
 #endif

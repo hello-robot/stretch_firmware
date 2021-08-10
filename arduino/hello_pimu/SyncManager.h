@@ -14,21 +14,22 @@
 #define  __SYNC_MANAGER_H__
 
 #include "Common.h"
+#include "RunstopManager.h"
 
 class SyncManager {    
   public: 
-    SyncManager();
+    SyncManager(RunstopManager * r);
     void trigger_motor_sync();
-    void trigger_runstop();
-    void clear_runstop();
     void step(Pimu_Status * stat);
+    volatile uint16_t pulse_len_ms;
   private:
-    volatile uint16_t pulse_len_ms; 
-    volatile bool runstop_active;
+     
+    volatile bool motor_stop_enabled;
     volatile bool dirty_motor_sync;
+    int sync_cntr;
+    RunstopManager * rm;
 };
 
-extern SyncManager sync_manager;
 
 
 #endif

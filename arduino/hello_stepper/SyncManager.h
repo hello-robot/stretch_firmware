@@ -28,10 +28,9 @@ class SyncManager{
     void step();
     bool sync_mode_enabled;
     int last_pulse_duration;
-  private:
     int pulse_count;
+  private:
     uint8_t rs_last;
-    uint8_t in_pulse;
 };
 
 extern SyncManager sync_manager;

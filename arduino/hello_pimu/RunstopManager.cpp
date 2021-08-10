@@ -16,7 +16,6 @@
 
 #include "Common.h"
 
-RunstopManager runstop_manager;
 
 
 #define MODE_RUNSTOP_NOT_ACTIVE 0
@@ -33,26 +32,28 @@ RunstopManager::RunstopManager()
   runstop_led_on=false;                 //LED state
   runstop_t_toggle_last=0;              //Time led was last toggled
   depressed_last=0;                     //Time button was last depressed
-  alert_trigger_runstop=false;          //External even triggered runstop (RPC, low volage)
+  trigger_runstop_event=0;              //External event triggered runstop (RPC, low volage)
   state_runstop_event=false;            //Runstop active + YAML enabled
 }
    
 void RunstopManager::activate_runstop() //Called from TC4 ISR
 {
-  alert_trigger_runstop=1;
+  trigger_runstop_event=1;
 }
 
 void RunstopManager::deactivate_runstop() //Called from TC4 ISR
 {
   runstop_mode=MODE_RUNSTOP_NOT_ACTIVE;
   state_runstop_event=0;
+  trigger_runstop_event=0;
 }
+
 
 void RunstopManager::step(Pimu_Config * cfg) //Called at 100hz from TC4 loop
 {
   int button_depressed=(digitalRead(RUNSTOP_SW)==0);
 
-  if (!depressed_last && button_depressed  || alert_trigger_runstop) //button pushed
+  if (!depressed_last && button_depressed  || trigger_runstop_event) //button pushed
   {
     
     if (runstop_mode==MODE_RUNSTOP_NOT_ACTIVE)
@@ -60,12 +61,12 @@ void RunstopManager::step(Pimu_Config * cfg) //Called at 100hz from TC4 loop
       runstop_mode=MODE_RUNSTOP_ACTIVE;
       beep_manager.do_beep(BEEP_ID_SINGLE_SHORT);
     }
-    else if (runstop_mode==MODE_RUNSTOP_ACTIVE && !alert_trigger_runstop) //already triggered, not an alert, so must be a start of a reset
+    else if (runstop_mode==MODE_RUNSTOP_ACTIVE && !trigger_runstop_event) //already triggered, not an alert, so must be a start of a reset
     {
       t_low=time_manager.get_elapsed_time_ms();
       runstop_mode=MODE_RESET_ACTIVE;
     }
-    alert_trigger_runstop=false;
+    trigger_runstop_event=0;
   }
   else 
   {

@@ -26,7 +26,6 @@ SyncManager::SyncManager()
   runstop_active=1;
   pulse_count=0;
   rs_last=0;
-  in_pulse=0;
   sync_mode_enabled = false;
   motor_sync_triggered=false;
   last_pulse_duration=0;
@@ -53,31 +52,26 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
   else
   {
     uint8_t rs=digitalRead(RUNSTOP);
-    
-    if(!rs_last && rs)//rising edge
-      in_pulse=1;
-
-    if(in_pulse)
-      pulse_count++;
-    else
-      pulse_count=0;
-
-    if(rs_last && !rs && in_pulse) //falling ege
+    if (rs)
     {
-      last_pulse_duration=pulse_count;
-      if(pulse_count>SYNC_PULSE_MIN_MS && pulse_count<SYNC_PULSE_MAX_MS)
-        motor_sync_triggered=true;
-      in_pulse=0;
+      pulse_count=min(pulse_count+1,RUNSTOP_TRIGGER_MS); //count how long has been high
+      if(pulse_count==RUNSTOP_TRIGGER_MS)
+      {
+        runstop_active=1;
+        last_pulse_duration=RUNSTOP_TRIGGER_MS;
+      }    
     }
-    
-    if(pulse_count==RUNSTOP_TRIGGER_MS)
+    else
     {
-      runstop_active=1;
-      last_pulse_duration=RUNSTOP_TRIGGER_MS;
-      in_pulse=0;
-    }    
-    if(!rs)
+      if(rs_last) //falling ege
+      {
+        last_pulse_duration=pulse_count;
+        if(pulse_count>SYNC_PULSE_MIN_MS && pulse_count<SYNC_PULSE_MAX_MS)
+          motor_sync_triggered=true;
+      }
       runstop_active=0;
+      pulse_count=0;
+    }
     rs_last=rs;
   }
 }
