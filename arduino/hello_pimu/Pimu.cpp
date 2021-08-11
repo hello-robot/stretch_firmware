@@ -46,11 +46,6 @@ bool state_over_tilt_alert=false;
 RunstopManager runstop_manager;
 SyncManager sync_manager(&runstop_manager);
 
-/*
- * Note: Race condition on motor_sync, runstop_reset
- * 
- */
-
 
 //////////////////////////////////////
 Pimu_Config cfg_in, cfg;
@@ -78,9 +73,20 @@ float rad_to_deg(float x)
 #define US_PER_TC5_CYCLE 1000000/FS //10000 at 100Hz
 #define US_PER_TC5_TICK 1000000.0*16/48000000 //0.33us resolution
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+void handle_trigger();
+void update_config();
+void update_fan();
+void update_imu();
+void update_voltage_monitor();
+void update_current_monitor();
+void update_tilt_monitor();
+void update_board_reset();
+void update_cliff_monitor();
+void update_status();
+void toggle_led(int rate_ms);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 void setupPimu() {  
 
@@ -96,37 +102,37 @@ void setupPimu() {
   setupTimer4_and_5();
   time_manager.clock_zero();
 }
-
-
-///////////////////// LED /////////////////////////////////////////
-
-
-bool led_on=false;
-unsigned long t_toggle_last=0;
-
-
-void toggle_led(int rate_ms)
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+void stepPimuController()
 {
-  unsigned long t = time_manager.get_elapsed_time_ms();
-  if (t-t_toggle_last>rate_ms)
-  {
-    t_toggle_last=t;
-    if (!led_on)
-    {
-          digitalWrite(LED, HIGH);  //LED
-    }
-      else
-      {
-          digitalWrite(LED,LOW);   //LED
-      }
-     led_on=!led_on;
-  }
-}
+  cycle_cnt++;
+  toggle_led(500);
 
-void handle_trigger();
-void update_status();
-void update_config();
-///////////////////////////RPC ////////////////////////////////////
+  runstop_manager.step(&cfg);
+  beep_manager.step();
+  analog_manager.step(&stat, &cfg);
+  update_fan();  
+  update_imu();
+  update_board_reset();
+  
+  startup_cnt=max(0,startup_cnt-1);
+  if(startup_cnt==0)
+  {
+    update_voltage_monitor();
+    update_current_monitor();
+    update_tilt_monitor();
+    update_cliff_monitor();
+  }
+  
+  if (runstop_manager.state_runstop_event)
+    runstop_manager.toggle_led(500);
+  else
+    digitalWrite(RUNSTOP_LED, HIGH);
+
+  update_status();
+
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void handleNewRPC()
 {
@@ -142,7 +148,9 @@ void handleNewRPC()
           break;
     case RPC_SET_PIMU_TRIGGER: 
           memcpy(&trg, rpc_in+1, sizeof(Pimu_Trigger)); //copy in
+          noInterrupts();
           handle_trigger();
+          interrupts();
           rpc_out[0]=RPC_REPLY_PIMU_TRIGGER;
           memcpy(rpc_out+1,(uint8_t *)&(trg_in.data),sizeof(uint32_t));
           num_byte_rpc_out=1+sizeof(uint32_t);
@@ -163,7 +171,7 @@ void handleNewRPC()
           num_byte_rpc_out=1;
           noInterrupts();
           sync_manager.trigger_motor_sync();
-          sync_manager.step(&stat);
+          sync_manager.step();
           interrupts();
           break; 
      case RPC_SET_CLOCK_ZERO:
@@ -182,7 +190,7 @@ void stepPimuRPC()
 }
 
 
-////////////////////////Controller///////////////////////////////////////
+////////////////////////////
 uint8_t board_reset_cnt=0;
 bool first_config = 1;
 int fan_on_cnt=0;
@@ -199,20 +207,18 @@ void handle_trigger()
     {
           board_reset_cnt=100;
     }
-    noInterrupts();
     if (trg.data & TRIGGER_RUNSTOP_RESET)
     {
           runstop_manager.deactivate_runstop();
           runstop_manager.step(&cfg);
-          sync_manager.step(&stat);
+          sync_manager.step();
     }
     if (trg.data & TRIGGER_RUNSTOP_ON)
     {
           runstop_manager.activate_runstop();
           runstop_manager.step(&cfg);
-          sync_manager.step(&stat);
+          sync_manager.step();
     }
-    interrupts();
     if (trg.data & TRIGGER_CLIFF_EVENT_RESET)
     {
           state_cliff_event = false;
@@ -246,6 +252,7 @@ void handle_trigger()
     }
 }
 ////////////////////////////
+
 void update_config()
 {
     analog_manager.update_config(&cfg_in, &cfg);
@@ -273,6 +280,7 @@ void update_config()
     setIMUCalibration();
 }
 ////////////////////////////
+
 void update_fan()
 {
   //Turn off fan automatically after a bit of time
@@ -284,6 +292,7 @@ void update_fan()
   }
 }
 ////////////////////////////
+
 void update_imu()
 {
   stat.timestamp= time_manager.current_time_us();  //Tag timestamp just before reading IMU
@@ -310,6 +319,7 @@ void update_voltage_monitor()
     low_voltage_alert_cnt=max(0,low_voltage_alert_cnt-1);
 }
 ////////////////////////////
+
 void update_current_monitor()
 {
   if(analog_manager.current>high_current_alert && cfg.stop_at_high_current) //dropped below
@@ -323,6 +333,7 @@ void update_current_monitor()
     }
 }
 ////////////////////////////
+
 void update_tilt_monitor()
 {
   if(isIMUOrientationValid() && (abs(stat.imu.pitch)>over_tilt_alert_deg || abs(stat.imu.roll)>over_tilt_alert_deg) && cfg.stop_at_tilt) //over tilt
@@ -336,6 +347,7 @@ void update_tilt_monitor()
       }
 }
 ////////////////////////////
+
 void update_board_reset()
 {
   if (board_reset_cnt)
@@ -346,6 +358,7 @@ void update_board_reset()
     }
 }
 ////////////////////////////
+
 void update_cliff_monitor()
 {
   uint8_t cliff_last = state_cliff_event;
@@ -357,6 +370,7 @@ void update_cliff_monitor()
 }
 
 ////////////////////////////
+
 void update_status()
 {
   if(stat.imu.bump>cfg.bump_thresh)
@@ -381,39 +395,6 @@ void update_status()
   
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 }
-
-////////////////////////////
-void stepPimuController()
-{
-  cycle_cnt++;
-  toggle_led(500);
-
-  runstop_manager.step(&cfg);
-  beep_manager.step();
-  analog_manager.step(&stat, &cfg);
-  update_fan();  
-  update_imu();
-  update_board_reset();
-  
-  startup_cnt=max(0,startup_cnt-1);
-  if(startup_cnt==0)
-  {
-    update_voltage_monitor();
-    update_current_monitor();
-    update_tilt_monitor();
-    update_cliff_monitor();
-  }
-  
-  if (runstop_manager.state_runstop_event)
-    runstop_manager.toggle_led(500);
-  else
-    digitalWrite(RUNSTOP_LED, HIGH);
-
-  update_status();
-
-}
-
-
 
 ////////////////////// Timer5 /////////////////////////////////////////
 
@@ -500,10 +481,33 @@ void TC4_Handler() {                // gets called with FsMg frequency
 
   if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
     time_manager.ts_base++;
-    sync_manager.step(&stat);
+    sync_manager.step();
   TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
 
 
-//////////////////////////////////////
+///////////////////// LED /////////////////////////////////////////
+
+
+bool led_on=false;
+unsigned long t_toggle_last=0;
+
+
+void toggle_led(int rate_ms)
+{
+  unsigned long t = time_manager.get_elapsed_time_ms();
+  if (t-t_toggle_last>rate_ms)
+  {
+    t_toggle_last=t;
+    if (!led_on)
+    {
+          digitalWrite(LED, HIGH);  //LED
+    }
+      else
+      {
+          digitalWrite(LED,LOW);   //LED
+      }
+     led_on=!led_on;
+  }
+}

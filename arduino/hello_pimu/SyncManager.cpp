@@ -25,7 +25,6 @@ SyncManager::SyncManager(RunstopManager * r)
   pulse_len_ms=0;
   motor_stop_enabled=0;
   dirty_motor_sync=0;
-  sync_cntr=0;
   rm=r;
 }
 
@@ -35,7 +34,7 @@ void SyncManager::trigger_motor_sync() //Called aperiodically from RPC
 }
 
 
-void SyncManager::step(Pimu_Status * stat) //Called at 1Khz from TC4 ISR
+void SyncManager::step() //Called at 1Khz from TC4 ISR
 {
   //Disable motors or generate sync pulse to trigger motors  
   noInterrupts();
@@ -43,8 +42,7 @@ void SyncManager::step(Pimu_Status * stat) //Called at 1Khz from TC4 ISR
   {
       pulse_len_ms=SYNC_PULSE_MOTOR+1; //+1 so step loop comes out correct
       dirty_motor_sync=0;
-      //time_manager.start_duration_measure();
-      stat->debug=++sync_cntr;
+      time_manager.start_duration_measure();
   }    
   
   if (rm->state_runstop_event || pulse_len_ms)
@@ -53,8 +51,10 @@ void SyncManager::step(Pimu_Status * stat) //Called at 1Khz from TC4 ISR
     digitalWrite(RUNSTOP_M1, HIGH);
     digitalWrite(RUNSTOP_M2, HIGH);
     digitalWrite(RUNSTOP_M3, HIGH);
-
+    if(pulse_len_ms==1)
+      duration_last_pulse=time_manager.end_duration_measure();
     pulse_len_ms=max(0,pulse_len_ms-1);
+   
   }
   else 
   {//Enable motors

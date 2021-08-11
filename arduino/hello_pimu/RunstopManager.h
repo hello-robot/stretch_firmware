@@ -24,7 +24,6 @@ class RunstopManager {
     void toggle_led(int rate_ms);
     bool state_runstop_event;
     bool runstop_led_on;
-    
   private:
     bool trigger_runstop_event;
     volatile uint8_t runstop_mode;

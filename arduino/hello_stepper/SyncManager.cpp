@@ -39,6 +39,7 @@ SyncManager::SyncManager()
 #define SYNC_PULSE_MAX_MS 50 
 #define RUNSTOP_TRIGGER_MS 80
 
+
 void  SyncManager::step() //Called at 1Khz from TC4 loop
 {
    

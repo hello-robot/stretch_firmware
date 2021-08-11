@@ -20,13 +20,13 @@ class SyncManager {
   public: 
     SyncManager(RunstopManager * r);
     void trigger_motor_sync();
-    void step(Pimu_Status * stat);
+    void step();
     volatile uint16_t pulse_len_ms;
+    int duration_last_pulse;
   private:
      
     volatile bool motor_stop_enabled;
     volatile bool dirty_motor_sync;
-    int sync_cntr;
     RunstopManager * rm;
 };
 

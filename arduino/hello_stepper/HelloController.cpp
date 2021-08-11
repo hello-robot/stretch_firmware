@@ -330,13 +330,11 @@ void update_status()
   stat.traj_id=trajectory_manager.get_id_current_segment();
 
 
-  stat.debug = digitalRead(RUNSTOP);//sync_manager.pulse_count;//last_pulse_duration;
+  stat.debug = sync_manager.last_pulse_duration;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 }
-
-
 
 
 ///////////////////////// Controller Loop  ///////////////////////////
@@ -503,6 +501,7 @@ void stepHelloController()
      diag_runstop_on=(sync_manager.runstop_active && runstop_enabled);
      if (diag_runstop_on)
      {
+        cmd_in.mode=MODE_SAFETY;
         cmd.mode=MODE_SAFETY;
         safety_override=true;
      }
