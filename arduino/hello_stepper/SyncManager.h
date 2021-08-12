@@ -29,6 +29,7 @@ class SyncManager{
     bool sync_mode_enabled;
     int last_pulse_duration;
     int pulse_count;
+    int runstop_trigger_cnt;
   private:
     uint8_t rs_last;
 };

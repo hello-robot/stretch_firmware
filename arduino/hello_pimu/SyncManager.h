@@ -27,6 +27,7 @@ class SyncManager {
      
     volatile bool motor_stop_enabled;
     volatile bool dirty_motor_sync;
+    int pulse_wait_ms;
     RunstopManager * rm;
 };
 

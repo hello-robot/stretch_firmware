@@ -330,7 +330,7 @@ void update_status()
   stat.traj_id=trajectory_manager.get_id_current_segment();
 
 
-  stat.debug = sync_manager.last_pulse_duration;
+  stat.debug = sync_manager.runstop_trigger_cnt;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();

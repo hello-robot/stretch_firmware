@@ -29,6 +29,7 @@ SyncManager::SyncManager()
   sync_mode_enabled = false;
   motor_sync_triggered=false;
   last_pulse_duration=0;
+  runstop_trigger_cnt=0;
 }
     
 //Pimu will generate a 40ms pulse on the runstop line to signal a motor sync
@@ -43,22 +44,15 @@ SyncManager::SyncManager()
 void  SyncManager::step() //Called at 1Khz from TC4 loop
 {
    
-  //Poll runstop at 1Khz
-  if (!sync_mode_enabled)
-  { 
-    runstop_active = digitalRead(RUNSTOP);
-    motor_sync_triggered=false;
-    last_pulse_duration=0;
-  }
-  else
-  {
+  //Poll line at 1Khz
     uint8_t rs=digitalRead(RUNSTOP);
     if (rs)
     {
       pulse_count=min(pulse_count+1,RUNSTOP_TRIGGER_MS); //count how long has been high
-      if(pulse_count==RUNSTOP_TRIGGER_MS)
+      if(pulse_count==RUNSTOP_TRIGGER_MS && !runstop_active)
       {
         runstop_active=1;
+        runstop_trigger_cnt++;
         last_pulse_duration=RUNSTOP_TRIGGER_MS;
       }    
     }
@@ -67,14 +61,15 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
       if(rs_last) //falling ege
       {
         last_pulse_duration=pulse_count;
-        if(pulse_count>SYNC_PULSE_MIN_MS && pulse_count<SYNC_PULSE_MAX_MS)
+        if(sync_mode_enabled && pulse_count>SYNC_PULSE_MIN_MS && pulse_count<SYNC_PULSE_MAX_MS)
           motor_sync_triggered=true;
+        else
+          motor_sync_triggered=false;
       }
       runstop_active=0;
       pulse_count=0;
     }
     rs_last=rs;
-  }
 }
 /////////////////////////////////////////////////////////////////
 
