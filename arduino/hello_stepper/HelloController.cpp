@@ -823,7 +823,10 @@ void stepHelloController()
             else
             {
               if (motion_limits_set)
+              {
                 cmd.x_des=min(max(cmd.x_des, motion_limits.pos_min), motion_limits.pos_max);
+                stat.debug=motion_limits.pos_min;
+              }
               xdes=mg.update(rad_to_deg(cmd.x_des)); //get target position
             }
             e = (xdes - yw);
