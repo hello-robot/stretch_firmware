@@ -42,6 +42,15 @@ bool TrajectoryManager::is_trajectory_active()
   return state==TRAJ_STATE_ACTIVE;
 }
 
+bool TrajectoryManager::is_trajectory_waiting_on_sync()
+{
+  return state==TRAJ_STATE_WAITING_ON_SYNC;
+}
+bool TrajectoryManager::is_trajectory_idle()
+{
+  return state==TRAJ_STATE_IDLE;
+}
+    
 void TrajectoryManager::reset()
 {
   state=TRAJ_STATE_IDLE;
@@ -128,7 +137,8 @@ void TrajectoryManager::step()
 }
 
 //Called from RPC loop
-uint8_t TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s)
+//Return 1 for success
+bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s)
 {
   if (state==TRAJ_STATE_ACTIVE) //Don't allow starting of new trajectory until current one is done
   {
@@ -142,7 +152,8 @@ uint8_t TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s)
 }
 
 //Called from RPC loop
-uint8_t TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync)
+//Return 1 for success
+bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync)
 {
   if (state==TRAJ_STATE_IDLE) //Don't allow starting of new trajectory until current one is done
   {
@@ -150,7 +161,7 @@ uint8_t TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait
     seg_in=*s;
     dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
     waiting_on_sync=wait_on_sync;
-    return 1; //signal that is loaded
+    return 1;
   }
-  return 0; //signal that is not loaded
+  return 0;
 }

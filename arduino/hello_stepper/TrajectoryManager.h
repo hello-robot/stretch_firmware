@@ -23,15 +23,20 @@ class  TrajectoryManager{
    public: 
     TrajectoryManager();
     void step(); //Called at 1Khz by TC4 loop
-    uint8_t set_next_trajectory_segment(TrajectorySegment * s);
-    uint8_t start_new_trajectory(TrajectorySegment * s,  bool wait_on_sync);
+    bool set_next_trajectory_segment(TrajectorySegment * s);
+    bool start_new_trajectory(TrajectorySegment * s,  bool wait_on_sync);
     void reset();
-    
-    float q; //current position target
-    uint8_t id_curr_seg;
-    float t;
     bool is_trajectory_active();
+    bool is_trajectory_waiting_on_sync();
+    bool is_trajectory_idle();
+    uint16_t get_id_current_segment(){return id_curr_seg;}
+    float q; //current position target
     bool waiting_on_sync;
+  private:
+    
+    uint16_t id_curr_seg;
+    float t;
+    
     uint8_t state;
 
     TrajectorySegment seg_active;
@@ -39,14 +44,10 @@ class  TrajectoryManager{
     bool seg_active_valid;
     bool seg_next_valid;
     
-    
     TrajectorySegment seg_in;
     bool dirty_seg_in;
     bool start_new;
-    
-      private:
 
-    
      
 };
 

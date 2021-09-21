@@ -277,14 +277,14 @@ void handleNewRPC()
           break;
     case RPC_SET_NEXT_TRAJECTORY_SEG: 
           memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
-          traj_seg_reply.id_curr_seg=trajectory_manager.set_next_trajectory_segment(&traj_seg_in);
+          traj_seg_reply.success=trajectory_manager.set_next_trajectory_segment(&traj_seg_in);
           rpc_out[0]=RPC_REPLY_SET_NEXT_TRAJECTORY_SEG;
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
           break;
     case RPC_START_NEW_TRAJECTORY: 
           memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
-          traj_seg_reply.id_curr_seg=trajectory_manager.start_new_trajectory(&traj_seg_in, sync_manager.sync_mode_enabled );
+          traj_seg_reply.success=trajectory_manager.start_new_trajectory(&traj_seg_in, sync_manager.sync_mode_enabled );
           rpc_out[0]=RPC_REPLY_START_NEW_TRAJECTORY;
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
@@ -327,10 +327,12 @@ void update_status()
   stat.diag= guarded_override ?         stat.diag|DIAG_IN_GUARDED_EVENT : stat.diag;
   stat.diag = safety_override?          stat.diag| DIAG_IN_SAFETY_EVENT: stat.diag;
   stat.diag = diag_waiting_on_sync?     stat.diag| DIAG_WAITING_ON_SYNC: stat.diag;
-  stat.diag = trajectory_manager.is_trajectory_active()? stat.diag| DIAG_TRAJ_ACTIVE: stat.diag;
   stat.diag = sync_manager.sync_mode_enabled?     stat.diag| DIAG_IN_SYNC_MODE: stat.diag;
+  stat.diag = trajectory_manager.is_trajectory_active()? stat.diag| DIAG_TRAJ_ACTIVE: stat.diag;
+  stat.diag = trajectory_manager.is_trajectory_waiting_on_sync()? stat.diag| DIAG_TRAJ_WAITING_ON_SYNC: stat.diag;
+  stat.traj_setpoint=trajectory_manager.q;
+  stat.traj_id=trajectory_manager.get_id_current_segment();
 
-  //stat.debug=trajectory_manager.q;
 
   //stat.debug = sync_manager.last_pulse_duration;
   noInterrupts();
@@ -362,7 +364,7 @@ void stepHelloController()
   
   sync_manager.step();
   trajectory_manager.step();
-  stat.pos_traj=trajectory_manager.q;
+
   
     if (!diag_calibration_rcvd)
     {
@@ -524,7 +526,7 @@ void stepHelloController()
       /////////// Copy in new Command Data  ///////////
       
     //Determine new controller mode / controller settings
-    diag_waiting_on_sync = sync_manager.sync_mode_enabled && ((!sync_manager.motor_sync_triggered && dirty_cmd)||trajectory_manager.waiting_on_sync);
+    diag_waiting_on_sync = sync_manager.sync_mode_enabled && ((!sync_manager.motor_sync_triggered && dirty_cmd)||trajectory_manager.is_trajectory_waiting_on_sync());
 
  
     if (dirty_cmd)

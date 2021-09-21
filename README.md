@@ -2,6 +2,7 @@
 
 # Overview
 
+
 The stretch_firmware repository provides the Arduino based firmware for the Stretch robot. The user is not typically expected to modify the firmware. However, it may occasionally be necessary to update the Stretch firmware while doing a Hello Robot recommended software upgrade. 
 
 The repository includes: 

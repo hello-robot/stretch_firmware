@@ -76,9 +76,12 @@
 #define DIAG_CALIBRATION_RCVD 256      //Is the calibration table in flash
 #define DIAG_IN_GUARDED_EVENT 512     //Guarded event occured
 #define DIAG_IN_SAFETY_EVENT 1024     //Guarded event occured
-#define DIAG_WAITING_ON_SYNC 2048     //Command rcvd but no sync trigger yet
-#define DIAG_TRAJ_ACTIVE 4096         //Currently executing a splined trajectory
-#define DIAG_IN_SYNC_MODE 8192        //Currently running in sync mode
+#define DIAG_WAITING_ON_SYNC 2048         //Command rcvd but no sync trigger yet
+#define DIAG_TRAJ_ACTIVE 4096             //Currently executing a splined trajectory
+#define DIAG_TRAJ_WAITING_ON_SYNC 8192    //Currently waiting on a sync signal before starting trajectory
+#define DIAG_IN_SYNC_MODE 16384           //Currently running in sync mode
+
+
 
 #define TRIGGER_MARK_POS  1
 #define TRIGGER_RESET_MOTION_GEN  2
@@ -151,7 +154,8 @@ struct __attribute__ ((packed)) Status{
   uint64_t timestamp_line_sync; //us of time of when status sync was triggered (since power-on)
   float debug; 
   uint32_t guarded_event;       //counter of guarded events since power-up
-  float pos_traj;                 //Target of waypoint trajectory
+  float traj_setpoint;          //Target of waypoint trajectory
+  uint16_t traj_id;             //Id of active trajectory segment
 };
 
 /////////////////////////////////////////////////////////////////
@@ -196,7 +200,7 @@ struct __attribute__ ((packed)) TrajectorySegment{
 
 
 struct __attribute__ ((packed)) TrajectorySegmentReply{
-  uint8_t id_curr_seg;
+  uint8_t success;
 };
 
 /////////////////////////////////////////////////////////////////
