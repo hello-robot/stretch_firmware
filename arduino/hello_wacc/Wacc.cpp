@@ -21,9 +21,9 @@
 //////////////////////////////////////
 Wacc_Config cfg, cfg_in;
 Wacc_Command cmd, cmd_in;
-Wacc_Status stat, stat_out, stat_sync;
+Wacc_Status stat, stat_out;
 Wacc_Board_Info board_info;
-Wacc_Timestamp status_sync_reply;
+
 
 float accel_LPFa = 0.0; 
 float accel_LPFb = 1.0;
@@ -46,7 +46,6 @@ void setupWacc() {
   memset(&cmd_in, 0, sizeof(Wacc_Command));
   memset(&stat, 0, sizeof(Wacc_Status));
   memset(&stat_out, 0, sizeof(Wacc_Status));
-  memset(&stat_sync, 0, sizeof(Wacc_Status));
   memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   setupTimer4_and_5();
@@ -73,10 +72,7 @@ void handleNewRPC()
     case RPC_GET_WACC_STATUS: 
           rpc_out[0]=RPC_REPLY_WACC_STATUS;
           noInterrupts();
-          if (cfg.sync_mode_enabled)
-            memcpy(rpc_out + 1, (uint8_t *) (&stat_sync), sizeof(Wacc_Status)); //Collect the status data
-          else
-            memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Wacc_Status)); //Collect the status data
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Wacc_Status)); //Collect the status data
           interrupts();
           num_byte_rpc_out=sizeof(Wacc_Status)+1;
           break; 
@@ -84,21 +80,6 @@ void handleNewRPC()
           rpc_out[0]=RPC_REPLY_WACC_BOARD_INFO;
           memcpy(rpc_out + 1, (uint8_t *) (&board_info), sizeof(Wacc_Board_Info)); //Collect the status data
           num_byte_rpc_out=sizeof(Wacc_Board_Info)+1;
-          break; 
-    case RPC_SET_STATUS_SYNC:
-          noInterrupts();
-          memcpy((uint8_t *)&stat_sync,(uint8_t *)&stat_out,sizeof(Wacc_Status)); //Cache most recent status
-          interrupts();
-          rpc_out[0]=RPC_REPLY_STATUS_SYNC;
-          status_sync_reply.timestamp=time_manager.current_time_us();
-          memcpy(rpc_out + 1, (uint8_t *) (&status_sync_reply), sizeof(Wacc_Timestamp)); //Collect the status data
-          num_byte_rpc_out=sizeof(Wacc_Timestamp)+1;
-
-          break; 
-    case RPC_SET_CLOCK_ZERO:
-          rpc_out[0]=RPC_REPLY_CLOCK_ZERO;
-          num_byte_rpc_out=1;
-          time_manager.clock_zero();
           break; 
    default:
         break;
