@@ -27,13 +27,12 @@ extern void stepHelloController();
 extern void stepHelloCommutation();
 extern void stepHelloControllerRPC();
 extern void toggle_led(int rate_ms);
-//extern void on_runstop_change();
 extern float debug;
 extern void setupMGInterrupts();
 extern void enableMGInterrupts();
 extern void disableMGInterrupts(); 
 extern float FsCtrl;
-extern Status stat,stat_sync,stat_out;
+extern Status stat, stat_out;
 
 
 #define TC4_LOOP_RATE 1000                                             //Update rate of control loop Hz

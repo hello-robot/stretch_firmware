@@ -151,7 +151,6 @@ struct __attribute__ ((packed)) Status{
   float err;                    //controller error (inner loop)
   uint32_t diag;                //diagnostic codes     
   uint64_t timestamp;           //us of time of when encoder was read (since power-on)
-  uint64_t timestamp_line_sync; //us of time of when status sync was triggered (since power-on)
   float debug; 
   uint32_t guarded_event;       //counter of guarded events since power-up
   float traj_setpoint;          //Target of waypoint trajectory

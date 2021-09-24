@@ -52,7 +52,7 @@ void TimeManager::start_duration_measure()
   duration_base=ts_base;
   duration_cntr = TC4->COUNT16.COUNT.reg;
 }
-    
+
 int TimeManager::end_duration_measure()
 {
   int cntr = TC4->COUNT16.COUNT.reg;
