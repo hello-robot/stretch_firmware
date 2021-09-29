@@ -1,6 +1,6 @@
-![](/home/hello-robot/repos/stretch_firmware/images/HelloRobotLogoBar.png)
+![](../images/banner.png)
 
-# Overview
+# Integrating an I2C Device
 
 This tutorial illustrates the integration of a I2C device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). It extends t. We recommend doing the [Data Transfer](./data_transfer.md) tutorial first. 
 

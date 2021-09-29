@@ -18,11 +18,11 @@
 #include "Arduino.h"
 /////////////////////////////////////////////////////////////////
 //Version History
-//Version History
 // Protocol 0: Initial production release for RE1
-// Protocol 1: Add support for timestamp management
-#define FIRMWARE_VERSION_HR "Stepper.v0.0.1p1"
-#define BOARD_VERSION "Stepper.Irma.V1"
+// Protocol 1: Add support for waypoint management
+#define FIRMWARE_VERSION_HR "Stepper.v0.1.0p1"
+#define BOARD_VERSION "Stepper.Kendrick.V1"
+
 
 /////////////////////////////////////////////////////////////////
 #define RUNSTOP D0

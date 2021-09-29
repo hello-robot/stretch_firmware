@@ -1,6 +1,6 @@
 /*
   -------------------------------------------------------------
-  Hello Robot - Hello Wacc I2C
+  Hello Robot - Hello Wacc Spi
 
   All materials released under the GNU General Public License v3.0 (GNU GPLv3).
   https://www.gnu.org/licenses/gpl-3.0.html
@@ -18,7 +18,7 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Wacc.V0.1: Initial production release for RE1
-#define FIRMWARE_VERSION "Wacc.v0.0.1pMyI2C"
+#define FIRMWARE_VERSION "Wacc.v0.0.1p99"
 #define BOARD_VERSION "Wacc.Guthrie.V1"
 
 /////////////////////////////////////////////////////////////////

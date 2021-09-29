@@ -1,6 +1,6 @@
-![](../../images/HelloRobotLogoBar.png)
+![](../images/banner.png)
 
-# Overview
+# Integrating an SPI Device
 
 This tutorial illustrates the integration of a SPI device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). It extends the [Data Transfer](./data_transfer.md) tutorial. We recommend doing this tutorial prior to doing this one.
 

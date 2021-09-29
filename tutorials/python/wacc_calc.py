@@ -16,6 +16,7 @@ class WaccCalc(Wacc):
 
         self._command['calc']={'op':0,'var1':0,'var2':0} #Extend command dictionary with custom fields
         self.status['calc'] =0.0                         #Extend status dictionary with custom fields
+        self.valid_firmware_protocol = ‘p99’
 
     def calculate(self,op,var1,var2):
         """

@@ -18,8 +18,8 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Wacc.V0.1: Initial production release for RE1
-#define FIRMWARE_VERSION "Wacc.v0.0.1pMyCalc"
-#define BOARD_VERSION "Wacc.Guthrie.V1"
+#define FIRMWARE_VERSION "Wacc.v0.0.1p99"
+#define BOARD_VERSION "Wacc.Hank.V1"
 
 /////////////////////////////////////////////////////////////////
 #define RPC_SET_WACC_CONFIG 1
@@ -43,20 +43,22 @@
 //Expansion Header
 #define HEADER_SPI_SS SS
 #define HEADER_SPI_SCK SCK
-#define HEADER_SPI_MISO MISO
+#define HEADER_SPI_MISO MISO 
 #define HEADER_SPI_MOSI MOSI
 #define HEADER_I2C_SCL PIN_WIRE_SCL
 #define HEADER_I2C_SDA PIN_WIRE_SDA
-#define HEADER_ANA0 PIN_A0
+#define HEADER_ANA0 PIN_A0 
+
 
 /////////////////////////////////////////////////////////////////
-struct __attribute__ ((packed)) Calc_Command{
-  float var1;
-  float var2;
-  uint8_t op;
+//Data packets to and from the custom serial device
+//If modifying the structure ensure that the corresponding
+//Pack and Unpack in your Wacc class matches the byte size /ordering
+struct __attribute__ ((packed)) SerialExtCommand{
+  float data[10];
 };
-struct __attribute__ ((packed)) Calc_Status{
-  float result;
+struct __attribute__ ((packed)) SerialExtStatus{
+  float data[10];
 };
 /////////////////////////////////////////////////////////////////
 
@@ -64,7 +66,7 @@ struct __attribute__ ((packed)) Calc_Status{
 //See https://arduino.stackexchange.com/questions/9899/serial-structure-data-transfer-between-an-arduino-and-a-linux-pc
 
 struct __attribute__ ((packed)) Wacc_Command{
-  Calc_Command calc;
+  SerialExtCommand serial;
   uint8_t d2;
   uint8_t d3;
   uint32_t trigger;
@@ -80,7 +82,7 @@ struct __attribute__ ((packed)) Wacc_Config{
 };
 
 struct __attribute__ ((packed)) Wacc_Status{
-  Calc_Status calc;
+  SerialExtStatus serial;
   float ax;	//Accelerometer AX
   float ay;	//Accelerometer AY
   float az;	//Accelerometer AZ

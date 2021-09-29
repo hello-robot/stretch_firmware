@@ -1,6 +1,6 @@
-![](../../images/HelloRobotLogoBar.png)
+![](../images/banner.png)
 
-# Overview
+# Emulating the Wacc
 
 In this tutorial we describe how to emulate the Arduino based Stretch Wacc (Wrist + Accelerometer) board using an off-the-shelf Arduino. This enables users to develop and test custom code for the Wacc board prior to deploying it to the actual robot hardware.
 
@@ -132,11 +132,7 @@ Firmware version: Wacc.v0.0.1p0
 
 ```
 
-# Emulating on a Development Machine
 
-It is possible to emulate the Wacc on a standard Ubuntu machine in the case the Stretch Robot is not available to the user. 
-
-[Coming soon.]
 
 
 

@@ -93,12 +93,10 @@ static const uint8_t D3  = PIN_D3;
  * Serial interfaces
  */
 // Serial1
-#define PIN_SERIAL1_RX       (0ul)
+#define PIN_SERIAL1_RX       (2ul)
 #define PIN_SERIAL1_TX       (1ul)
-//Todo: Check pads
-#define PAD_SERIAL1_TX       (UART_TX_PAD_2)
-#define PAD_SERIAL1_RX       (SERCOM_RX_PAD_3)
-
+#define PAD_SERIAL1_TX       (UART_TX_PAD_0)
+#define PAD_SERIAL1_RX       (SERCOM_RX_PAD_2)
 
 /*
  * SPI Interfaces
@@ -160,7 +158,7 @@ extern SERCOM sercom3;
 extern SERCOM sercom4;
 extern SERCOM sercom5;
 
-extern Uart Serial1;
+extern Uart SerialExt;
 
 //Hello Hack for Serial based libraries (Framer) to work with Zero.
 #define Serial SerialUSB

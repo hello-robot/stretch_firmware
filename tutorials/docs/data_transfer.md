@@ -1,8 +1,8 @@
-![](../../images/HelloRobotLogoBar.png)
+![](../images/banner.png)
 
-# Overview
+# Integrating Custom Data
 
-In this tutorial we explore how to plumb custom data to and from the Arduino based Stretch Wacc (Wrist + Accelerometer) board. This enables users to integrate custom sensors and actuators on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). 
+In this tutorial we explore how to plumb custom data to and from the Arduino based Stretch Wacc (Wrist + Accelerometer) board. This enables users to integrate custom sensors and actuators on to the [Wrist Expansion header](https://docs.hello-robot.com/docs/guides/hardware_user_guide/#wrist). 
 
 ## How Data Transfer Happens in Stretch Body
 
@@ -17,19 +17,20 @@ As an example, consider the transfer of a `Status` data message from the Wacc to
 
 Similarly, data can go the other direction (e.g., `Command` messages ).
 
-![](../../images/data_pipeline.png)
+![](../images/data_pipeline.png)
 
-Fortunately, the data transfer is managed automatically for the developer. In order to integrate your custom data you will simply:
+Fortunately, the data transfer is managed automatically for the developer. In order to integrate your custom data you will:
 
 * Extend the firmware  `Status` and `Command` structs to include your data
 * Derive your own class from the Stretch Body `Wacc` class that packs and unpacks your custom data
 
-# Calculator Example
+## Calculator Example
 
-As a simple example we will extend the Wacc to be an embedded calculator (not very useful but illustrative). The implementation is found in the [Wacc_Calc Arduino sketch](../arduino/hello_wacc_calc) and the corresponding [WaccCalc Python class](../python/wacc_calc.py).
+As a simple example we will extend the Wacc to be an embedded calculator. The implementation is found in the [Wacc_Calc Arduino sketch](../arduino/hello_wacc_calc) and the corresponding [WaccCalc Python class](../python/wacc_calc.py).
 
 ### Arduino
 
+#### Define data structures
 First, we define the data to be sent back and forth in [Common.h](../arduino/hello_wacc_calc/Common.h) of the firmware.
 
 ```c
@@ -40,7 +41,7 @@ struct __attribute__ ((packed)) Calc_Command{
 };
 struct __attribute__ ((packed)) Calc_Status{
   float result;
-};c
+};
 ```
 
 Our calculator will perform the computation: `result=op(var1,var2)`.
@@ -50,30 +51,18 @@ Now add these structs to the  `Status` and  `Command` structs in  [Common.h](../
 ```c
 struct __attribute__ ((packed)) Wacc_Command{
   Calc_Command calc;
-  uint8_t d2;
-  uint8_t d3;
-  uint32_t trigger;
+  ...
 };
 
 struct __attribute__ ((packed)) Wacc_Status{
   Calc_Status calc;
-  float ax;	//Accelerometer AX
-  float ay;	//Accelerometer AY
-  float az;	//Accelerometer AZ
-  int16_t a0; //expansion header analog in
-  uint8_t d0; //expansion header digital in
-  uint8_t d1; //expansion header digital in
-  uint8_t d2; //expansion header digital out
-  uint8_t d3; //expansion header digital out
-  uint32_t single_tap_count; //Accelerometer tap count
-  uint32_t state;
-  uint32_t timestamp; //ms, overflows every 50 days
-  uint32_t debug;
+  ...
 };
 ```
 
-The ordering of the data is important.  Your custom data should be at the start of the struct as shown.
+The ordering of the data is important.  Your custom data should be at the start of the struct as the Python class will unpack this data first.
 
+#### Define calculator function
 Next we add the calculator function to  [Wacc.cpp](../arduino/hello_wacc_calc/Wacc.cpp):
 
 ```c
@@ -88,12 +77,12 @@ float my_calc(uint8_t op, float var1, float var2)
   return 0;
 }
 ```
-
-Finally, we integrate our calculator into the embedded control loop. 
+#### Integrate calculator into the control loop
+Finally, we integrate our calculator into the embedded control loop in [Wacc.cpp](../arduino/hello_wacc_calc/Wacc.cpp). 
 
 The function `stepWaccController()` in  [Wacc.cpp](../arduino/hello_wacc_calc/Wacc.cpp) is called by Timer5 at 700Hz. The calculator is fairly lightweight so its computation time should not interfere with the existing Wacc timing. Heavier computation would require careful integration with an eye to loop timing.
 
-Next we add our call to `stepWaccController()`  just prior to the `Status` data being copied out for transmittal back. 
+Add the call to `stepWaccController()`  -- just prior to the `Status` data being copied out for transmittal back. 
 
 ```c
 void stepWaccController()
@@ -106,7 +95,10 @@ memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Wacc_Status));
 
 The variable `cmd`, which contains the command to the calculator, is automatically updated with fresh data via the RPC mechanism.
 
-Finally, we want to bump the protocol version in order to tell the user that this is a custom protocol. Currently nothing is done with the protocol version information, but it is useful to ensure future compatibility and readability.
+#### Bump protocol versions
+The packet definition of data exchanged between Python and the Arduino is tagged with a protocol version. This allows the Python Device to ensure it is exchanging compatible data. 
+
+The mainline release of Stretch Firmware starts with protocol version `0` and increments with each new protocol release. To avoid conflicts, for this tutorial we pick an arbitrary large number (99). 
 
 In [Common.h](../arduino/hello_wacc_calc/Common.h) , we bump from Protocol '0' 
 
@@ -114,13 +106,11 @@ In [Common.h](../arduino/hello_wacc_calc/Common.h) , we bump from Protocol '0'
 #define FIRMWARE_VERSION "Wacc.v0.0.1p0"
 ```
 
- to Protocol 'MyCalc'
+ to Protocol '99'
 
 ```c
-#define FIRMWARE_VERSION "Wacc.v0.0.1pMyCalc"
+#define FIRMWARE_VERSION "Wacc.v0.0.1p99"
 ```
-
-
 
 ### Python
 
@@ -142,6 +132,7 @@ class WaccCalc(Wacc):
 
         self._command['calc']={'op':0,'var1':0,'var2':0} #Extend command dictionary with custom fields
         self.status['calc'] =0.0                         #Extend status dictionary with custom fields
+        self.valid_firmware_protocol = 'pMyCalc'
 
     def calculate(self,op,var1,var2):
         """
@@ -181,11 +172,9 @@ class WaccCalc(Wacc):
         sidx += 1
         return sidx
 
-
 ```
 
 The class registers two callbacks for packing `Command` data and unpacking `Status` data.  They are fairly self-explanatory and can be easily extended to match your custom data.  Looking at the unpacking code:
-
 ```python
   def ext_unpack_status(self,s):
         """
@@ -224,9 +213,9 @@ sidx += 1
 
 We're ready to try out our calculator. First,
 
-* Install and setup the Arduino IDE if it isn't already as described in the [Stretch Firmware guide](https://github.com/hello-robot/stretch_firmware/blob/master/README.md).
+* Install and setup the Arduino IDE if it isn't already as described in the [Updating Firmware tutorial](./updating_firmware.md).
 * Open the [Wacc_Calc Arduino sketch](../arduino/hello_wacc_calc) in the Arduino IDE.  
-* Select the `hello_wacc` board, the  `ttyACMx` port that maps to the Wacc board. Then burn the firmware as described in the [Stretch Firmware guide](https://github.com/hello-robot/stretch_firmware/blob/master/README.md). 
+* Select the `hello_wacc` board, the  `ttyACMx` port that maps to the Wacc board. Then burn the firmware as described in the the [Updating Firmware tutorial](./updating_firmware.md).
 
 Now, lets try it out:
 
@@ -288,44 +277,7 @@ Enter Var1
 12
 Enter Var2
 13
------- MENU -------
-m: menu
-r: reset board
-a: set D2 on
-b: set D2 off
-c: set D3 on
-d: set D3 off
-X: do calculation
--------------------
-
-------------------------------
-Ax (m/s^2) 0.0488623343408
-Ay (m/s^2) 0.155020624399
-Az (m/s^2) -10.0049753189
-A0 349
-D0 (In) 0
-D1 (In) 1
-D2 (Out) 70
-D3 (Out) 0
-Single Tap Count 26
-State  0
-Debug 0
-Timestamp 1591588745.27
-Board version: Wacc.Guthrie.V1
-Firmware version: Wacc.v0.0.1pMySPI
-Calc: 156.0
------- MENU -------
-m: menu
-r: reset board
-a: set D2 on
-b: set D2 off
-c: set D3 on
-d: set D3 off
-X: do calculation
--------------------
-
 ```
-
 ## 
 
 ## Adding YAML Parameters
