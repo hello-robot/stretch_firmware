@@ -142,14 +142,37 @@ void TrajectoryManager::step()
 //Return 1 for success
 bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool motion_limits_set, MotionLimits * m, Command * c)
 {
-  if (state==TRAJ_STATE_ACTIVE) //Don't allow starting of new trajectory until current one is done
+  if (!is_segment_valid(s, motion_limits_set, m, c))
   {
-    seg_in=*s;
-    dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
-    return seg_active.id;
+    // 'seg_load_error_message' set within call to 'is_segment_valid'
+    return 0;
+  }
+
+  if (state==TRAJ_STATE_IDLE)
+  {
+    strncpy(seg_load_error_message, "cannot set next trajectory segment while no previous trajectory active", 100);
+    return 0;
   }
   if (state==TRAJ_STATE_WAITING_ON_SYNC)
+  {
+    strncpy(seg_load_error_message, "cannot set next trajectory segment while previous trajectory waiting on sync", 100);
+    return 0;
+  }
+  if (state==TRAJ_STATE_ACTIVE) //Don't allow setting of next segment until current one is started
+  {
+    if (s->id != seg_active.id + 1)
+    {
+      strncpy(seg_load_error_message, "next trajectory segment id must follow previous segment id", 100);
+      return 0;
+    }
+
+    seg_in=*s;
+    dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
+    strncpy(seg_load_error_message, "", 100);
     return 1;
+  }
+
+  strncpy(seg_load_error_message, "unknown error", 100);
   return 0;
 }
 
@@ -157,14 +180,39 @@ bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool 
 //Return 1 for success
 bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync, bool motion_limits_set, MotionLimits * m, Command * c)
 {
+  if (!is_segment_valid(s, motion_limits_set, m, c))
+  {
+    // 'seg_load_error_message' set within call to 'is_segment_valid'
+    return 0;
+  }
+
   if (state==TRAJ_STATE_IDLE) //Don't allow starting of new trajectory until current one is done
   {
+    if (s->id != 2)
+    {
+      strncpy(seg_load_error_message, "starting trajectory segment id must be 2", 100);
+      return 0;
+    }
+
     start_new=true;
     seg_in=*s;
     dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
     waiting_on_sync=wait_on_sync;
+    strncpy(seg_load_error_message, "", 100);
     return 1;
   }
+  if (state==TRAJ_STATE_WAITING_ON_SYNC)
+  {
+    strncpy(seg_load_error_message, "cannot start new trajectory while previous trajectory waiting on sync", 100);
+    return 0;
+  }
+  if (state==TRAJ_STATE_ACTIVE)
+  {
+    strncpy(seg_load_error_message, "cannot start new trajectory while previous trajectory active", 100);
+    return 0;
+  }
+
+  strncpy(seg_load_error_message, "unknown error", 100);
   return 0;
 }
 
