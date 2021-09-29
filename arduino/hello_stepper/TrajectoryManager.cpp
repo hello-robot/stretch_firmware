@@ -140,7 +140,7 @@ void TrajectoryManager::step()
 
 //Called from RPC loop
 //Return 1 for success
-bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, MotionLimits * m, Command * c)
+bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool motion_limits_set, MotionLimits * m, Command * c)
 {
   if (state==TRAJ_STATE_ACTIVE) //Don't allow starting of new trajectory until current one is done
   {
@@ -155,7 +155,7 @@ bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, Motio
 
 //Called from RPC loop
 //Return 1 for success
-bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync, MotionLimits * m, Command * c)
+bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync, bool motion_limits_set, MotionLimits * m, Command * c)
 {
   if (state==TRAJ_STATE_IDLE) //Don't allow starting of new trajectory until current one is done
   {
@@ -171,7 +171,7 @@ bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on
 //Determines whether a segment is executable by evaluating along it
 //and checking for infeasible positions, velocities, and accelerations
 //Return 1 for valid segment
-bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, MotionLimits * m, Command * c)
+bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, bool motion_limits_set, MotionLimits * m, Command * c)
 {
   TrajectorySegment a = *s;
   float t1 = 0.0;
@@ -187,7 +187,7 @@ bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, MotionLimits * m
     float acc_t = (2.0 * a.a2) + (6.0 * a.a3 * t1) + (12 * a.a4 * t2) + (20 * a.a5 * t3);
 
     // check position within soft motion limits
-    if (pos_t < m->pos_min || pos_t > m->pos_max) {
+    if (motion_limits_set && (pos_t < m->pos_min || pos_t > m->pos_max)) {
       strncpy(seg_load_error_message, "invalid segment exceeds position limits", 100);
       return 0;
     }

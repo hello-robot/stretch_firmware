@@ -23,13 +23,13 @@ class  TrajectoryManager{
    public: 
     TrajectoryManager();
     void step(); //Called at 1Khz by TC4 loop
-    bool set_next_trajectory_segment(TrajectorySegment * s, MotionLimits * m, Command * c);
-    bool start_new_trajectory(TrajectorySegment * s,  bool wait_on_sync, MotionLimits * m, Command * c);
+    bool set_next_trajectory_segment(TrajectorySegment * s, bool motion_limits_set, MotionLimits * m, Command * c);
+    bool start_new_trajectory(TrajectorySegment * s,  bool wait_on_sync, bool motion_limits_set, MotionLimits * m, Command * c);
     void reset();
     bool is_trajectory_active();
     bool is_trajectory_waiting_on_sync();
     bool is_trajectory_idle();
-    bool is_segment_valid(TrajectorySegment * s, MotionLimits * m, Command * c);
+    bool is_segment_valid(TrajectorySegment * s, bool motion_limits_set, MotionLimits * m, Command * c);
     uint16_t get_id_current_segment(){return id_curr_seg;}
     float q; //current position target
     bool waiting_on_sync;
