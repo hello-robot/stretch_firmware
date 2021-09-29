@@ -20,7 +20,7 @@
 
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for long timestamps
-#define FIRMWARE_VERSION "Pimu.v0.0.2p1"
+#define FIRMWARE_VERSION "Pimu.v0.1.0p1"
 #define BOARD_VERSION "Pimu.Kenrick.V1"
 
 #define FS 100 //Loop rate in Hz for TC5
