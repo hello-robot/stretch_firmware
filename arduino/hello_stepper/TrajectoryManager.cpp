@@ -140,10 +140,10 @@ void TrajectoryManager::step()
 
 //Called from RPC loop
 //Return 1 for success
-bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool motion_limits_set, MotionLimits * m, Command * c)
+bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool motion_limits_set, bool diag_pos_calibrated, MotionLimits * m, Command * c)
 {
   memset(&(seg_load_error_message), 0, 100);
-  // if (!is_segment_valid(s, motion_limits_set, m, c))
+  // if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
   // {
   //   // 'seg_load_error_message' set within call to 'is_segment_valid'
   //   return 0;
@@ -179,10 +179,10 @@ bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool 
 
 //Called from RPC loop
 //Return 1 for success
-bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync, bool motion_limits_set, MotionLimits * m, Command * c)
+bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync, bool motion_limits_set, bool diag_pos_calibrated, MotionLimits * m, Command * c)
 {
   memset(&(seg_load_error_message), 0, 100);
-  // if (!is_segment_valid(s, motion_limits_set, m, c))
+  // if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
   // {
   //   // 'seg_load_error_message' set within call to 'is_segment_valid'
   //   return 0;
@@ -221,7 +221,7 @@ bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on
 //Determines whether a segment is executable by evaluating along it
 //and checking for infeasible positions, velocities, and accelerations
 //Return 1 for valid segment
-bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, bool motion_limits_set, MotionLimits * m, Command * c)
+bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, bool motion_limits_set, bool diag_pos_calibrated, MotionLimits * m, Command * c)
 {
   TrajectorySegment a = *s;
   float t1 = 0.0;
@@ -237,7 +237,7 @@ bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, bool motion_limi
     float acc_t = (2.0 * a.a2) + (6.0 * a.a3 * t1) + (12 * a.a4 * t2) + (20 * a.a5 * t3);
 
     // check position within soft motion limits
-    if (motion_limits_set && (pos_t < m->pos_min || pos_t > m->pos_max)) {
+    if (motion_limits_set && diag_pos_calibrated && (pos_t < m->pos_min || pos_t > m->pos_max)) {
       strncpy(seg_load_error_message, "invalid segment exceeds position limits", 100);
       return 0;
     }
