@@ -23,7 +23,6 @@ TrajectoryManager trajectory_manager;
 #define TRAJ_STATE_WAITING_ON_SYNC 1
 #define TRAJ_STATE_ACTIVE 2 
 
-#define STEP_RATE (0.001)
     
 TrajectoryManager::TrajectoryManager()
 {
@@ -118,7 +117,7 @@ void TrajectoryManager::step()
     id_curr_seg=seg_active.id;
     q = seg_active.a0 + seg_active.a1*t + seg_active.a2*t2 + seg_active.a3*t3 + seg_active.a4*t4 + seg_active.a5*t5;
     if (t<seg_active.tf) 
-      t=min(seg_active.tf,t+STEP_RATE); //Called at 1Khz, increment time for next cycle (Todo: user timer based clock?)
+      t=min(seg_active.tf,t+.001); //Called at 1Khz, increment time for next cycle (Todo: user timer based clock?)
     else //Finished segment
     { 
       if(!seg_next_valid) //Finished trajectory
@@ -143,11 +142,12 @@ void TrajectoryManager::step()
 bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool motion_limits_set, bool diag_pos_calibrated, MotionLimits * m, Command * c)
 {
   memset(&(seg_load_error_message), 0, 100);
-  // if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
-  // {
-  //   // 'seg_load_error_message' set within call to 'is_segment_valid'
-  //   return 0;
-  // }
+
+  if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
+  {
+    // 'seg_load_error_message' set within call to 'is_segment_valid'
+    return 0;
+  }
 
   if (state==TRAJ_STATE_IDLE)
   {
@@ -182,11 +182,12 @@ bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool 
 bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync, bool motion_limits_set, bool diag_pos_calibrated, MotionLimits * m, Command * c)
 {
   memset(&(seg_load_error_message), 0, 100);
-  // if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
-  // {
-  //   // 'seg_load_error_message' set within call to 'is_segment_valid'
-  //   return 0;
-  // }
+
+  if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
+  {
+    // 'seg_load_error_message' set within call to 'is_segment_valid'
+    return 0;
+  }
 
   if (state==TRAJ_STATE_IDLE) //Don't allow starting of new trajectory until current one is done
   {
@@ -225,7 +226,7 @@ bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, bool motion_limi
 {
   TrajectorySegment a = *s;
   float t1 = 0.0;
-  while (t1 < a.tf) {
+  while (t1 <= a.tf) {
     float t2 = t1 * t1;
     float t3 = t2 * t1;
     float t4 = t3 * t1;
@@ -233,30 +234,29 @@ bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, bool motion_limi
 
     // evaluate quintic polynomial at t1 for position, velocity, and acceleration
     float pos_t = a.a0 + (a.a1 * t1) + (a.a2 * t2) + (a.a3 * t3) + (a.a4 * t4) + (a.a5 * t5);
-    float vel_t = a.a1 + (2.0 * a.a2 * t1) + (3.0 * a.a3 * t2) + (4.0 * a.a4 + t3) + (5.0 * a.a5 + t4);
+    float vel_t = a.a1 + (2.0 * a.a2 * t1) + (3.0 * a.a3 * t2) + (4.0 * a.a4 * t3) + (5.0 * a.a5 * t4);
     float acc_t = (2.0 * a.a2) + (6.0 * a.a3 * t1) + (12 * a.a4 * t2) + (20 * a.a5 * t3);
 
     // check position within soft motion limits
     if (motion_limits_set && diag_pos_calibrated && (pos_t < m->pos_min || pos_t > m->pos_max)) {
-      strncpy(seg_load_error_message, "invalid segment exceeds position limits", 100);
+      strcpy(seg_load_error_message, "invalid segment exceeds position limits");
       return 0;
     }
 
     // check velocity within commanded velocity
     if (abs(vel_t) > c->v_des) {
-      strncpy(seg_load_error_message, "invalid segment exceeds velocity limits", 100);
+      strcpy(seg_load_error_message, "invalid segment exceeds velocity limits");
       return 0;
     }
 
     // check acceleration within commanded acceleration
     if (abs(acc_t) > c->a_des) {
-      strncpy(seg_load_error_message, "invalid segment exceeds acceleration limits", 100);
+      strcpy(seg_load_error_message, "invalid segment exceeds acceleration limits");
       return 0;
     }
 
-    t1 = min(a.tf, t1 + STEP_RATE);
+    t1 = min(a.tf, t1 + 0.5); // sample along segment every 0.5 seconds
   }
 
-  strncpy(seg_load_error_message, "", 100);
   return 1;
 }
