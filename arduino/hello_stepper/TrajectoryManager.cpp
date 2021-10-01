@@ -143,28 +143,28 @@ bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool 
 {
   memset(&(seg_load_error_message), 0, 100);
 
-  if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
-  {
-    // 'seg_load_error_message' set within call to 'is_segment_valid'
-    return 0;
-  }
+  // if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
+  // {
+  //   // 'seg_load_error_message' set within call to 'is_segment_valid'
+  //   return 0;
+  // }
 
   if (state==TRAJ_STATE_IDLE)
   {
     strcpy(seg_load_error_message, "cannot set next trajectory segment while no previous trajectory active");
-    return 0;
+    return 1;
   }
   if (state==TRAJ_STATE_WAITING_ON_SYNC)
   {
     strcpy(seg_load_error_message, "cannot set next trajectory segment while previous trajectory waiting on sync");
-    return 0;
+    return 1;
   }
   if (state==TRAJ_STATE_ACTIVE) //Don't allow setting of next segment until current one is started
   {
     if (s->id != seg_active.id + 1)
     {
       strcpy(seg_load_error_message, "next trajectory segment id must follow previous segment id");
-      return 0;
+      return 1;
     }
 
     seg_in=*s;
@@ -183,11 +183,11 @@ bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on
 {
   memset(&(seg_load_error_message), 0, 100);
 
-  if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
-  {
-    // 'seg_load_error_message' set within call to 'is_segment_valid'
-    return 0;
-  }
+  // if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
+  // {
+  //   // 'seg_load_error_message' set within call to 'is_segment_valid'
+  //   return 0;
+  // }
 
   if (state==TRAJ_STATE_IDLE) //Don't allow starting of new trajectory until current one is done
   {
