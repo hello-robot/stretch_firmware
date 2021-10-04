@@ -200,6 +200,7 @@ struct __attribute__ ((packed)) TrajectorySegment{
 
 struct __attribute__ ((packed)) TrajectorySegmentReply{
   uint8_t success;
+  char error_message[100];
 };
 
 /////////////////////////////////////////////////////////////////
