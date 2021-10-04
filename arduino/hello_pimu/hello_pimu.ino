@@ -1,3 +1,4 @@
+
 /*
   -------------------------------------------------------------
   Hello Robot - Hello Pimu
@@ -37,6 +38,7 @@ void setup()        // This code runs once at startup
   digitalWrite(BUZZER, LOW);
   digitalWrite(IMU_RESET, HIGH);
   digitalWrite(FAN_FET, LOW);
+
   setupIMU();
   SerialUSB.begin(2000000);// When using SerialUSB the baudrate is ignored since running at USB rate  
   setupPimu();              // configure controller interrupt
@@ -49,4 +51,6 @@ void setup()        // This code runs once at startup
 void loop()
 {    
   stepPimuRPC();
+
+  
 }

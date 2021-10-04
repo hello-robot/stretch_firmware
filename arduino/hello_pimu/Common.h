@@ -17,16 +17,13 @@
 
 /////////////////////////////////////////////////////////////////
 //Version History
-// Pimu.V0.1: Initial production release for RE1
-#define FIRMWARE_VERSION "Pimu.v0.0.1p0"
-#define BOARD_VERSION "Pimu.Joplin.V1"
 
-/////////////////////////////////////////////////////////////////
-#define BEEP_ID_OFF 0
-#define BEEP_ID_SINGLE_SHORT 1
-#define BEEP_ID_SINGLE_LONG 2
-#define BEEP_ID_DOUBLE_SHORT 3
-#define BEEP_ID_DOUBLE_LONG 4
+// Protocol 0: Initial production release for RE1
+// Protocol 1: Add support for long timestamps
+#define FIRMWARE_VERSION "Pimu.v0.1.0p1"
+#define BOARD_VERSION "Pimu.Kenrick.V1"
+
+#define FS 100 //Loop rate in Hz for TC5
 
 /////////////////////////////////////////////////////////////////
 #define RPC_SET_PIMU_CONFIG 1
@@ -39,6 +36,9 @@
 #define RPC_REPLY_PIMU_BOARD_INFO 8
 #define RPC_SET_MOTOR_SYNC 9
 #define RPC_REPLY_MOTOR_SYNC 10
+#define RPC_SET_CLOCK_ZERO 13
+#define RPC_REPLY_CLOCK_ZERO 14
+
 /////////////////////////////////////////////////////////////////
 //From hello_pimu/variants.h
 #define ANA_V_BATT A0
@@ -86,10 +86,12 @@
 #define TRIGGER_RUNSTOP_ON 256
 #define TRIGGER_BEEP 512
 
+
 /////////////////////////////////////////////////////////////////
 
 //Note, to serialize to Linux must pack structs given use of sizeof()
 //See https://arduino.stackexchange.com/questions/9899/serial-structure-data-transfer-between-an-arduino-and-a-linux-pc
+
 
 struct __attribute__ ((packed)) IMU_Status{
   
@@ -110,10 +112,10 @@ struct __attribute__ ((packed)) IMU_Status{
   float qy;
   float qz;
   float bump;
-  uint32_t timestamp;
 };
 
 /////////////////////////////////////////////////////////////////
+
 
 struct __attribute__ ((packed)) Pimu_Config{
   float cliff_zero[NUM_CLIFF];
@@ -146,7 +148,7 @@ struct __attribute__ ((packed)) Pimu_Status{
   float temp;
   float cliff_range[NUM_CLIFF];
   uint32_t state;      
-  uint32_t timestamp; //us
+  uint64_t timestamp; //us
   uint16_t bump_event_cnt;
   float debug;
 };

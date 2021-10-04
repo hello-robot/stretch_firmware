@@ -17,11 +17,13 @@
 
 
 extern void setupPimu();         
+extern void setupADC();
 extern void stepPimuRPC();
 extern void toggle_led(int rate_ms);
-void TC5_Handler();
+
 
 extern void on_runstop();
 extern void do_beep(int bid);
+
 
 #endif

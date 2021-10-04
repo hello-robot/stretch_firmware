@@ -25,6 +25,10 @@
 #include <FlashStorage.h>
 #include "Controller.h"
 
+#include "SyncManager.h"
+#include "TimeManager.h"
+#include "TrajectoryManager.h"
+
 void write_to_lookup(uint8_t page_id, float * data);
 
 
@@ -34,6 +38,8 @@ Trigger trg, trg_in;
 Status stat,stat_out;
 EncCalib enc_calib_in;
 MotionLimits motion_limits;
+TrajectorySegment traj_seg_in;
+TrajectorySegmentReply traj_seg_reply;
 
 Stepper_Board_Info board_info;
 FlashStorage(flash_gains, Gains);
@@ -42,7 +48,7 @@ LoadTest load_test;
 bool dirty_cmd=false;
 bool dirty_gains=false;
 bool dirty_trigger=false;
-
+bool dirty_traj_seg=false;
 
 bool diag_pos_calibrated = 0;
 bool diag_runstop_on=0;
@@ -54,6 +60,7 @@ bool diag_is_mg_accelerating=0;
 bool diag_is_mg_moving=0;
 bool diag_calibration_rcvd=0;
 bool diag_waiting_on_sync=0;
+
 
 int switch_to_menu_cnt=0;
 int board_reset_cnt=0;
@@ -85,11 +92,9 @@ bool first_filter=true;
 bool led_on=false;
 unsigned long t_toggle_last=0;
 float hold_pos=0;
+float traj_hold_pos=0;
 
 void update_status();
-unsigned long get_elapsed_time_ms();
-
-float dt_max_us = 1000000/Fs;
 
 VelocityGenerator vg;
 MotionGenerator mg;
@@ -102,7 +107,19 @@ float g_eff_pos=0;
 float g_eff_neg=0;
 double ywd=0;
 float PAY = 0;
-int cycle_time_max=0;
+
+float FsCtrl = TC4_LOOP_RATE;
+bool receiving_calibration=false;
+bool flip_encoder_polarity = false;
+bool flip_effort_polarity = false;
+
+
+bool runstop_enabled=false;
+bool guarded_mode_enabled = false;
+
+bool safety_override = false;
+bool guarded_override=false;
+int first_step_safety=10; //count down
 
 ///////////////////////// UTIL ///////////////////////////
 
@@ -124,7 +141,7 @@ return max(-255,min(255,(255/3.3)*(x*10*rSense)));
 
 void toggle_led(int rate_ms)
 {
-  unsigned long t = get_elapsed_time_ms();
+  unsigned long t = time_manager.get_elapsed_time_ms();
   if (t-t_toggle_last>rate_ms)
   {
     t_toggle_last=t;
@@ -135,6 +152,7 @@ void toggle_led(int rate_ms)
      led_on=!led_on;
   }
 }
+
 
 void setupHelloController()
 {
@@ -151,109 +169,15 @@ void setupHelloController()
   memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
 
+  sync_manager.setupSyncManager();
+  time_manager.setupTimeManager();
+   
   Gains fg;
   fg=flash_gains.read();
   memcpy(&gains_in, &fg, sizeof(Gains));
   dirty_gains=1; //force load of gains
   analogFastWrite(VREF_2, 0);     //set phase currents to zero
-  analogFastWrite(VREF_1, 0); 
-}
-
-
-///////////////////////// RUNSTOP & SAFETY ///////////////////////////
-/*
-* An active runstop will put the motor in the SAFETY_STATE (if runstop_enabled==true (can override from client)) 
-* The runstop is active when the digital input has been high over 200ms
-* The digital input is pulled high internally such that a disconnected cable will make the runstop active
-* Pulling the digital input low will make the runstop non-active, allowing the motors to be in CTRL_STATE
- */
-
-#define RUNSTOP_STATE_ACTIVE 0
-#define RUNSTOP_STATE_NOT_ACTIVE 1
-uint8_t runstop_state=RUNSTOP_STATE_ACTIVE;
-
-unsigned long t_runstop_pulse=0;
-unsigned long t_now=0;
-unsigned long t_runstop_high=0;
-unsigned long t_last_low=0;
-
-bool sync_mode_enabled = false;
-bool guarded_mode_enabled = false;
-bool sync_triggered = false;
-bool runstop_enabled=false;
-bool safety_override = false;
-bool guarded_override=false;
-int first_step_safety=10; //count down
-bool receiving_calibration=false;
-
-bool flip_encoder_polarity = false;
-bool flip_effort_polarity = false;
-
-
-
-int runstop_read_last=0;
-int runstop_read=0;
-
-float x_des_incr=0;
-
-void step_safety_logic()
-{
-  
-  
-  if (!diag_calibration_rcvd)
-  {
-    if (lookup[0]!=0 && lookup[16383]!=0)
-      diag_calibration_rcvd=1;
-  }
-  
-  ////////////////////
-  //Poll runstop line
-  //Check for sync pulse vs runstop active
-  //Update runstop state and/or trigger sync
-  t_now= get_elapsed_time_ms();
-  
-  runstop_read=digitalRead(RUNSTOP); //0 is all-ok, 1 is active
-
-  if(!runstop_read_last && runstop_read) //Start of a high pulse, trigger sync
-  {
-    sync_triggered=true;
-  }
-  
-  if (runstop_read) //Monitor how long line has been high
-    t_runstop_high = t_now-t_last_low; //TODO: handle rollover of elapsed_time
-  else
-  {
-    t_runstop_high=0;
-    t_last_low=t_now;
-  }
-  runstop_read_last=runstop_read;
-  
-  
-  if (t_runstop_high>200 ) //has been high over 200ms, activate runstop
-  {
-    runstop_state = RUNSTOP_STATE_ACTIVE;
-  }
-  else
-  {
-    runstop_state = RUNSTOP_STATE_NOT_ACTIVE;
-  }
-  
-  ////////////////////
-  //Manage safety mode
-   if (first_step_safety>0)
-   {
-    hold_pos=yw; //Grab position at startup
-    first_step_safety--;
-   }
-   
-   diag_runstop_on=(runstop_state==RUNSTOP_STATE_ACTIVE) && runstop_enabled;
-   if (diag_runstop_on)
-   {
-      cmd.mode=MODE_SAFETY;
-      safety_override=true;
-   }
-   else
-    safety_override=false;
+  analogFastWrite(VREF_1, 0);
 }
 
 
@@ -279,7 +203,8 @@ void stepHelloControllerRPC()
 
 void handleNewRPC()
 {
-  int ll,idx,ii;
+  int ll,idx;
+
   switch(rpc_in[0])
   {
     case RPC_GET_STEPPER_BOARD_INFO:
@@ -317,16 +242,13 @@ void handleNewRPC()
           num_byte_rpc_out=1;
           switch_to_menu_cnt=5; //allow 5 rpc cycles to pass before switch to menu mode, allows any RPC replies to go out
           break; 
-          
     case RPC_SET_TRIGGER: 
           memcpy(&trg_in, rpc_in+1, sizeof(Trigger)); //copy in the config
           dirty_trigger=1;
           rpc_out[0]=RPC_REPLY_SET_TRIGGER;
           num_byte_rpc_out=1;
-    
           if (trg_in.data & TRIGGER_WRITE_GAINS_TO_FLASH)
            flash_gains.write(gains);
-
           break;
     case RPC_SET_ENC_CALIB: 
           receiving_calibration=true;
@@ -341,10 +263,9 @@ void handleNewRPC()
           break;
     case RPC_GET_STATUS: 
           rpc_out[0]=RPC_REPLY_STATUS;
-          //update_status();
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Status)+1;
-          break; 
+          break;
     case RPC_LOAD_TEST:
           memcpy(&load_test, rpc_in+1, sizeof(LoadTest)); //copy in the command
           ll=load_test.data[0];
@@ -355,17 +276,42 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&load_test), sizeof(LoadTest)); 
           num_byte_rpc_out=sizeof(LoadTest)+1;
           break;
+    case RPC_SET_NEXT_TRAJECTORY_SEG: 
+          memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
+          traj_seg_reply.success=trajectory_manager.set_next_trajectory_segment(&traj_seg_in, motion_limits_set, diag_pos_calibrated, &motion_limits, &cmd_in);
+          memset(&(traj_seg_reply.error_message), 0, 100);
+          strcpy(traj_seg_reply.error_message, trajectory_manager.seg_load_error_message);
+          rpc_out[0]=RPC_REPLY_SET_NEXT_TRAJECTORY_SEG;
+          memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
+          num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
+          break;
+    case RPC_START_NEW_TRAJECTORY: 
+          memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
+          traj_seg_reply.success=trajectory_manager.start_new_trajectory(&traj_seg_in, sync_manager.sync_mode_enabled, motion_limits_set, diag_pos_calibrated, &motion_limits, &cmd_in);
+          memset(&(traj_seg_reply.error_message), 0, 100);
+          strcpy(traj_seg_reply.error_message, trajectory_manager.seg_load_error_message);
+          rpc_out[0]=RPC_REPLY_START_NEW_TRAJECTORY;
+          memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
+          num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
+          //stat.debug=trajectory_manager.dirty_seg_in;
+          break;
+    case RPC_RESET_TRAJECTORY: 
+          rpc_out[0]=RPC_REPLY_RESET_TRAJECTORY;
+          num_byte_rpc_out=1;
+          traj_hold_pos=yw;
+          trajectory_manager.reset();
+          break;
    default:
         break;
   };
 }
 
-
 ///////////////////////// Status ///////////////////////////
 
 void update_status()
 {
-  stat.timestamp=micros(); 
+  //noInterrupts();
+  //stat.timestamp=time_manager.get_encoder_timestamp();
   stat.effort= eff;
   stat.pos=deg_to_rad(ywd);
   stat.vel=deg_to_rad(vs);
@@ -385,15 +331,25 @@ void update_status()
   stat.diag= guarded_override ?         stat.diag|DIAG_IN_GUARDED_EVENT : stat.diag;
   stat.diag = safety_override?          stat.diag| DIAG_IN_SAFETY_EVENT: stat.diag;
   stat.diag = diag_waiting_on_sync?     stat.diag| DIAG_WAITING_ON_SYNC: stat.diag;
+  stat.diag = sync_manager.sync_mode_enabled?     stat.diag| DIAG_IN_SYNC_MODE: stat.diag;
+  stat.diag = trajectory_manager.is_trajectory_active()? stat.diag| DIAG_TRAJ_ACTIVE: stat.diag;
+  stat.diag = trajectory_manager.is_trajectory_waiting_on_sync()? stat.diag| DIAG_TRAJ_WAITING_ON_SYNC: stat.diag;
+  stat.traj_setpoint=trajectory_manager.q;
+  stat.traj_id=trajectory_manager.get_id_current_segment();
+
+
+  stat.debug = sync_manager.runstop_trigger_cnt;
+  noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
+  interrupts();
 }
 
 
 ///////////////////////// Controller Loop  ///////////////////////////
-//Called every control cycle via TC4 interrupt
-float FsCtrl = 1000.0;//Update rate of control loop Hz
-int start_last=0;
+//Called every control cycle waypoint TC4 interrupt
+
 float mpos_d;
+float x_des_incr=0;
 #define STIFFNESS_SLEW .001
 float stiffness_target=0;
 
@@ -402,14 +358,22 @@ void stepHelloController()
 {
   float xdes;
   
-  int ii;
-  float yy=y; //Grab current value in case commutation loop changes it. 0-360, wraps
+ 
+  //noInterrupts();
+  stat.timestamp=time_manager.current_time_us();
+  float yy = lookup[readEncoder()];
+  //interrupts();
+  
+  sync_manager.step();
+  trajectory_manager.step();
+  
+    if (!diag_calibration_rcvd)
+    {
+      if (lookup[0]!=0 && lookup[16383]!=0)
+        diag_calibration_rcvd=1;
+    }
+  
 
-    
-    int start = micros();
-
-    start_last=start;
-    
     if (dirty_trigger)
     {
         memcpy((uint8_t *) (&trg),(uint8_t *) (&trg_in),sizeof(Trigger));
@@ -458,7 +422,7 @@ void stepHelloController()
       memcpy((uint8_t *) (&gains),(uint8_t *) (&gains_in),sizeof(Gains));
 
       runstop_enabled = gains.config & CONFIG_ENABLE_RUNSTOP;
-      sync_mode_enabled = gains.config & CONFIG_ENABLE_SYNC_MODE;
+      sync_manager.sync_mode_enabled = gains.config & CONFIG_ENABLE_SYNC_MODE;
       guarded_mode_enabled = gains.config & CONFIG_ENABLE_GUARDED_MODE;
       flip_encoder_polarity = gains.config & CONFIG_FLIP_ENCODER_POLARITY;
       flip_effort_polarity = gains.config & CONFIG_FLIP_EFFORT_POLARITY;
@@ -533,25 +497,43 @@ void stepHelloController()
     v = vLPFa*v +  vLPFb*(yw-yw_1);     //compute velocity for vel PID
     vs = vsLPFa*vs +  vsLPFb*(yw-yw_1);     //compute velocity status msg
 
-      //////// Determine new controller mode / controller settings
 
-    uint8_t mode_last=cmd.mode;
+    /////////// Safety Logic ////////////
     
-    step_safety_logic(); //May override commanded control mode.
+    //May override commanded control mode.
+     uint8_t mode_last=cmd.mode;
+     if (first_step_safety>0)
+     {
+      hold_pos=yw; //Grab position at startup
+      first_step_safety--;
+     }
+     
+     diag_runstop_on=(sync_manager.runstop_active && runstop_enabled);
+     if (diag_runstop_on)
+     {
+        cmd_in.mode=MODE_SAFETY;
+        cmd.mode=MODE_SAFETY;
+        safety_override=true;
+     }
+     else
+      safety_override=false;
 
     
-    
-    //Update data for RPC replies
-    //if (!sync_mode_enabled || (sync_mode_enabled && sync_triggered))
-    update_status(); //Todo: sync status with command
+    update_status();
 
-    ////// Copy in new Command Data
+      /////////// Copy in new Command Data  ///////////
+      
+    //Determine new controller mode / controller settings
+    diag_waiting_on_sync = sync_manager.sync_mode_enabled && ((!sync_manager.motor_sync_triggered && dirty_cmd)||trajectory_manager.is_trajectory_waiting_on_sync());
+
+ 
     if (dirty_cmd)
     {
-      diag_waiting_on_sync = sync_mode_enabled && !sync_triggered;
-      if (!sync_mode_enabled || (sync_mode_enabled && sync_triggered) || (sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
+      
+      if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
-        sync_triggered=false;
+        
+        
         diag_waiting_on_sync=false;
 
         if (guarded_override) //Reset on new command to track
@@ -561,7 +543,6 @@ void stepHelloController()
         {
           cmd.mode=cmd_in.mode; 
         }
-
 
         if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
         {
@@ -576,7 +557,6 @@ void stepHelloController()
         cmd.stiffness=cmd_in.stiffness;
         cmd.i_contact_pos =cmd_in.i_contact_pos;
         cmd.i_contact_neg =cmd_in.i_contact_neg;
-        
 
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
@@ -597,7 +577,6 @@ void stepHelloController()
             case MODE_VEL_TRAJ:
               vg.safe_switch_on(yw,v);
               vg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
-              
               break; 
             case MODE_POS_TRAJ:
               mg.safe_switch_on(yw,v);
@@ -608,6 +587,13 @@ void stepHelloController()
               mg.safe_switch_on(yw,v);
               mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
               mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+              break; 
+            case MODE_POS_TRAJ_WAYPOINT:
+              mg.safe_switch_on(yw,v);
+              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+              trajectory_manager.q=yw;
+              traj_hold_pos=yw;
               break; 
             case MODE_CURRENT:
               u=0;
@@ -620,7 +606,7 @@ void stepHelloController()
       if (cmd.mode==MODE_VEL_TRAJ)
         vg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
         
-      if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR)
+      if (cmd.mode==MODE_POS_TRAJ || cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_POS_TRAJ_WAYPOINT)
       {
         if(cmd_in.v_des!=cmd.v_des)
           mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
@@ -636,9 +622,17 @@ void stepHelloController()
         cmd.v_des=cmd_in.v_des;
         cmd.a_des=cmd_in.a_des;
       }
+     if (cmd.mode==MODE_VEL_TRAJ)
+        vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
       dirty_cmd=0;
       }
     }
+
+    
+    if (sync_manager.motor_sync_triggered)
+      trajectory_manager.waiting_on_sync=false;
+    
+    sync_manager.motor_sync_triggered=false;
 
   if(cmd.mode!=MODE_SAFETY)
   {    
@@ -674,9 +668,7 @@ void stepHelloController()
     diag_is_mg_accelerating=0;
     diag_is_mg_moving=0;
 
-
       ////// Now run control cycle
-
       
       switch (cmd.mode)
       {
@@ -841,6 +833,39 @@ void stepHelloController()
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
             break;
+        case MODE_POS_TRAJ_WAYPOINT:
+            if (stiffness_target==0.0)
+            {
+              mg.follow(yw,v); //floating so force mg to track
+              xdes=yw;
+            }
+            else
+            {
+              if(trajectory_manager.is_trajectory_active())
+              {
+                if (motion_limits_set)
+                  xdes=mg.update(rad_to_deg(min(max(trajectory_manager.q, motion_limits.pos_min), motion_limits.pos_max)));
+                else
+                  xdes=mg.update(rad_to_deg(trajectory_manager.q)); //get target position
+                traj_hold_pos=yw;
+              }
+              else
+                  xdes=traj_hold_pos;
+            }
+            e = (xdes - yw);
+            ITerm += (gains.pKi * e);                             //Integral wind up limit
+            if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
+            else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;      
+            DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
+            u = (gains.pKp * e) + ITerm + DTerm;
+            u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+            
+            //stat.debug=xdes;
+            diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
+            diag_near_vel_setpoint=0;
+            diag_is_mg_accelerating=mg.isAccelerating();
+            diag_is_mg_moving=mg.isMoving();
+            break;
                
       };
 
@@ -891,16 +916,26 @@ void stepHelloController()
 
      if (guarded_mode_enabled)
      {
+        
         g_eff_pos=current_to_effort(abs(cmd.i_contact_pos));
         g_eff_neg=current_to_effort(-1*abs(cmd.i_contact_neg));
+        
       if (eff>g_eff_pos || eff<g_eff_neg)
       {
         guarded_event_cnt++;
-        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ)) //Hit a new contact event, hold position
+
+        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT)) //Hit a new contact event, hold position
         {
           guarded_override=1;
           hold_pos=yw;
+          
+          if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
+          {
+            trajectory_manager.reset();
+            stat.debug++;
+          }
           cmd.mode=MODE_SAFETY;
+          
         }
       }
      }
@@ -928,20 +963,14 @@ void stepHelloController()
     diag_is_moving=0;
     diag_is_moving=abs(vs)>gains.vel_near_setpoint_d;
       
-      ////// Now copy out new Status data
-
-      //update_status();
-
-      //sync_triggered=false;
-      //wait_on_new_status=false;
-      trg.data=0; //Clear triggers
-      first_filter=false;
-
-      int finish = micros();
-
+    //Cleanup
+    trg.data=0; //Clear triggers
+    first_filter=false;
 }
 
 ///////////////////////// Commutation Loop ///////////////////////////
+
+
 
 //Called every control cycle via interrupt (6.5Khz, sync)
 //The desired effort (U) and Phase Advance (PAY) is updated in the control loop at a lower rate
@@ -949,9 +978,11 @@ void stepHelloController()
 void stepHelloCommutation()
 {
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
-  { 
+  {
+    noInterrupts();
     y = lookup[readEncoder()];
-     
+    interrupts();
+    
     if (receiving_calibration)
     {
       analogFastWrite(VREF_2, 0);     //set phase currents to zero
@@ -959,7 +990,6 @@ void stepHelloCommutation()
     }
     else
       output(-(y+PAY), round(U));
-      
     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
@@ -967,31 +997,24 @@ void stepHelloCommutation()
 ///////////////////////// Control Loop ///////////////////////////
 
 
-float DT_ms= 1000/FsCtrl;
-unsigned long cycle_cnt=0;
-
-
-//Avoid using millis() in ISR
-unsigned long get_elapsed_time_ms(){
-  return (unsigned long)((float)(DT_ms*(float)cycle_cnt));
-}
-
 void TC4_Handler() {                // gets called with FsMg frequency
 
   if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
-    cycle_cnt++;
-    toggle_led(500);
-    if (hello_interface)
-      stepHelloController();
-
-  TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
+      TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
+      time_manager.ts_base++;
+    
+      toggle_led(500);
+      if (hello_interface)
+        stepHelloController();
+  
   }
 }
 
 
-
 void setupMGInterrupts() {  // configure the controller interrupt
 
+ ////////////////////////// Counter 4 ///////////////////////////
+ 
   // Enable GCLK for TC4 and TC5 (timer counter input clock)
   GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID(GCM_TC4_TC5));
   while (GCLK->STATUS.bit.SYNCBUSY);
@@ -1008,29 +1031,36 @@ void setupMGInterrupts() {  // configure the controller interrupt
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV2;   // Set perscaler
   WAIT_TC16_REGS_SYNC(TC4)
 
-  TC4->COUNT16.CC[0].reg = (int)( round(48000000 / FsCtrl / 2)); //0x3E72; //0x4AF0;
+  TC4->COUNT16.CC[0].reg =  TC4_COUNT_PER_CYCLE; //(int)( round(48000000 / FsCtrl / 2)); //0x3E72; //0x4AF0;
   WAIT_TC16_REGS_SYNC(TC4)
 
   TC4->COUNT16.INTENSET.reg = 0;              // disable all interrupts
   TC4->COUNT16.INTENSET.bit.OVF = 1;          // enable overfollow
   TC4->COUNT16.INTENSET.bit.MC0 = 1;         // enable compare match to CC0
 
+
+   ////////////////////////// Setup Interrupts ///////////////////////////
+
 //Set interrupt priority so Controller (TC4) preempts Commutation (TC5) (Inverted numbering scheme)
 //This ensures stable time base for controller filters
 //Jitter on commutation seems to be OK for performance
 
-  NVIC_SetPriority(TC4_IRQn, 1);              
-  NVIC_SetPriority(TC5_IRQn, 2);              
+
+  NVIC_SetPriority(TC4_IRQn, 1);      //1        see https://github.com/arduino/ArduinoCore-samd/blob/master/cores/arduino/cortex_handlers.c#L84
+  NVIC_SetPriority(TC5_IRQn, 2);      //2        
+
   // Enable InterruptVector
   NVIC_EnableIRQ(TC4_IRQn);
+
 
   // Enable TC
   //  TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;
   //  WAIT_TC16_REGS_SYNC(TC5)
 }
 
+
 void enableMGInterrupts() {   //enables the controller interrupt ("closed loop mode")
-  TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC5
+  TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC4
   WAIT_TC16_REGS_SYNC(TC4)                      //wait for sync
 }
 

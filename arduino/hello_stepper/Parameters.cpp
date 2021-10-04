@@ -13,9 +13,7 @@
 */
 
 
-
 //Contains the Mechaduino parameter defintions
-
 
 
 #include <Wire.h>
