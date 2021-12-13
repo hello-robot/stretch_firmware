@@ -24,7 +24,8 @@ Before doing an upgrade first ensure the latest Stretch Body is installed as wel
 ```
 ## Firmware Update Tool
 
-The firmware update tool will automatically recommend and install latest version of firmware found on GitHub. It will only recommend versions that are compatible with the currently installed Stretch Body.
+The firmware update tool will automatically recommend and install latest version of firmware found on GitHub. It will only recommend versions that are compatible with the currently installed Stretch Body. **Note: The firmware updater only works on Ubuntu 18.04 currently. Attempting to use the latest version of the firmware updater in Ubuntu 20.04 will error out.**
+
 ```bash
 >>$ RE1_firmware_updater.py --help
 usage: RE1_firmware_updater.py [-h]
