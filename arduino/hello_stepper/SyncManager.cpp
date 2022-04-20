@@ -45,7 +45,7 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
 {
    
   //Poll line at 1Khz
-    uint8_t rs=digitalRead(RUNSTOP);
+    uint8_t rs=digitalRead(BOARD_DEF_PIN_RUNSTOP);
     if (rs)
     {
       pulse_count=min(pulse_count+1,RUNSTOP_TRIGGER_MS); //count how long has been high
