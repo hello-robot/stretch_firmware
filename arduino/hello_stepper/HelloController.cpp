@@ -120,6 +120,7 @@ bool guarded_mode_enabled = false;
 bool safety_override = false;
 bool guarded_override=false;
 int first_step_safety=10; //count down
+uint8_t board_id=0;
 
 ///////////////////////// UTIL ///////////////////////////
 
@@ -154,6 +155,32 @@ void toggle_led(int rate_ms)
 }
 
 
+
+extern uint8_t    BOARD_DEF_ID;
+extern uint8_t    BOARD_DEF_DRV8842;
+extern uint8_t    BOARD_DEF_PIN_RUNSTOP;
+extern void setupBoardDefs();
+
+void setupBoardDefs()
+{
+  //Setup board ID. Default is zero for boards prior to Mitski
+  pinMode(BOARD_ID_0, INPUT);
+  pinMode(BOARD_ID_1, INPUT);
+  pinMode(BOARD_ID_2, INPUT);
+  pinMode(BOARD_ID_0, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_1, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_2, INPUT_PULLDOWN);  
+  BOARD_DEF_DRV8842=0;
+  BOARD_DEF_PIN_RUNSTOP=PIN_RS0;
+  BOARD_DEF_ID=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1<<1)|digitalRead(BOARD_ID_0);
+  if (BOARD_DEF_ID>0)
+  {
+    BOARD_DEF_DRV8842=1;
+    BOARD_DEF_PIN_RUNSTOP=PIN_RS1;
+  }
+}
+
+
 void setupHelloController()
 {
   memset(&cmd, 0, sizeof(Command));
@@ -165,8 +192,8 @@ void setupHelloController()
   memset(&stat, 0, sizeof(Status));
   memset(&stat_out, 0, sizeof(Status));
   memset(&motion_limits, 0, sizeof(MotionLimits));
-  
-  memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
+
+  sprintf(&(board_info.board_version), "BoardID.%d", BOARD_DEF_ID);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
 
   sync_manager.setupSyncManager();

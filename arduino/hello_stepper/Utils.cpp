@@ -59,16 +59,17 @@ void setupPins() {
   IN_2_HIGH();   //  digitalWrite(IN_2, HIGH);
   IN_1_LOW();    //  digitalWrite(IN_1, LOW);
 
-  #ifdef HELLO_DRV8842
-  pinMode(NSLEEP_A, OUTPUT);
-  pinMode(NSLEEP_B, OUTPUT);
+if(BOARD_DEF_DRV8842)
+{
+  pinMode(DRV8842_NSLEEP_A, OUTPUT);
+  pinMode(DRV8842_NSLEEP_B, OUTPUT);
 
-  digitalWrite(NSLEEP_A, HIGH); //Logic high enables driver
-  digitalWrite(NSLEEP_B, HIGH); //Logic high enables driver
+  digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
+  digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
 
-  pinMode(FAULT_A, INPUT);
-  pinMode(FAULT_B, INPUT);
-#endif
+  pinMode(DRV8842_FAULT_A, INPUT);
+  pinMode(DRV8842_FAULT_B, INPUT);
+}
 }
 
 void setupSPI() {

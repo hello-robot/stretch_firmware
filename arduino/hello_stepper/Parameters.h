@@ -20,7 +20,6 @@
 
 
 #define HELLO   //Turn on and off the Hello Codebase
-//#define HELLO_DRV8842 //Enable DRV8842 board (dev)
 
 #ifdef HELLO
 #define firmware_version "0.1"            //firmware version
@@ -80,13 +79,11 @@ extern const int sin_1[];
 
 #ifdef HELLO
 #define ledPin  0
-#ifdef HELLO_DRV8842
 //Pins for DRV8842
-#define FAULT_A 17 //PA4
-#define FAULT_B 18 //PA5
-#define NSLEEP_A 38 //PA13
-#define NSLEEP_B 2 //PA14
-#endif
+#define DRV8842_FAULT_A 17 //PA4
+#define DRV8842_FAULT_B 18 //PA5
+#define DRV8842_NSLEEP_A 38 //PA13
+#define DRV8842_NSLEEP_B 2 //PA14
 #else
 #define ledPin  13
 #endif
