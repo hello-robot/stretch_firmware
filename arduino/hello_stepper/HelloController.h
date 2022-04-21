@@ -34,10 +34,10 @@ extern void disableMGInterrupts();
 extern float FsCtrl;
 extern Status stat, stat_out;
 
-extern uint8_t    BOARD_DEF_ID;
-extern uint8_t    BOARD_DEF_DRV8842;
-extern uint8_t    BOARD_DEF_PIN_RUNSTOP;
-extern void setupBoardDefs();
+extern uint8_t    BOARD_VARIANT;
+extern uint8_t    BOARD_VARIANT_DRV8842;
+extern uint8_t    BOARD_VARIANT_PIN_RUNSTOP;
+extern void setupBoardVariants();
 
 #define TC4_LOOP_RATE 1000                                             //Update rate of control loop Hz
 #define TC4_COUNT_PER_CYCLE (int)( round(48000000 / 2/ TC4_LOOP_RATE))  //24,000 at 1Khz, 2:1 prescalar TC4 is 32bit timer 

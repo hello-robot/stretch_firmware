@@ -59,7 +59,7 @@ void setupPins() {
   IN_2_HIGH();   //  digitalWrite(IN_2, HIGH);
   IN_1_LOW();    //  digitalWrite(IN_1, LOW);
 
-if(BOARD_DEF_DRV8842)
+if(BOARD_VARIANT_DRV8842)
 {
   pinMode(DRV8842_NSLEEP_A, OUTPUT);
   pinMode(DRV8842_NSLEEP_B, OUTPUT);

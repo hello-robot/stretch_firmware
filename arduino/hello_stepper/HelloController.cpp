@@ -156,12 +156,12 @@ void toggle_led(int rate_ms)
 
 
 
-uint8_t    BOARD_DEF_ID;
-uint8_t    BOARD_DEF_DRV8842;
-uint8_t    BOARD_DEF_PIN_RUNSTOP;
+uint8_t    BOARD_VARIANT;
+uint8_t    BOARD_VARIANT_DRV8842;
+uint8_t    BOARD_VARIANT_PIN_RUNSTOP;
 
 
-void setupBoardDefs()
+void setupBoardVariants()
 {
   //Setup board ID. Default is zero for boards prior to Mitski
   pinMode(BOARD_ID_0, INPUT);
@@ -170,14 +170,20 @@ void setupBoardDefs()
   pinMode(BOARD_ID_0, INPUT_PULLDOWN);
   pinMode(BOARD_ID_1, INPUT_PULLDOWN);
   pinMode(BOARD_ID_2, INPUT_PULLDOWN);  
-  BOARD_DEF_DRV8842=0;
-  BOARD_DEF_PIN_RUNSTOP=PIN_RS0;
-  BOARD_DEF_ID=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1)<<1)|digitalRead(BOARD_ID_0);
-  if (BOARD_DEF_ID>0)
+  BOARD_VARIANT_DRV8842=0;
+  BOARD_VARIANT_PIN_RUNSTOP=PIN_RS0;
+  BOARD_VARIANT=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1)<<1)|digitalRead(BOARD_ID_0);
+
+  if (BOARD_VARIANT==1)
   {
-    BOARD_DEF_DRV8842=1;
-    BOARD_DEF_PIN_RUNSTOP=PIN_RS1;
+    BOARD_VARIANT_DRV8842=1;
+    BOARD_VARIANT_PIN_RUNSTOP=PIN_RS1;
+    pinMode(PIN_SYNC, INPUT);
+    //attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), sync_manager.on_runstop_change, CHANGE);
+    //attachInterrupt(digitalPinToInterrupt(PIN_SYNC), sync_manager.on_sync_change, CHANGE);
   }
+  pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT);
+  pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT_PULLUP); //Default to high if no cable (disables motor)
 }
 
 
@@ -193,8 +199,9 @@ void setupHelloController()
   memset(&stat_out, 0, sizeof(Status));
   memset(&motion_limits, 0, sizeof(MotionLimits));
 
-  sprintf(board_info.board_version, "BoardID.%d", BOARD_DEF_ID);
+  sprintf(board_info.hardware_version, "Stepper.hw_id.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
+
 
   sync_manager.setupSyncManager();
   time_manager.setupTimeManager();
@@ -365,7 +372,7 @@ void update_status()
   stat.traj_id=trajectory_manager.get_id_current_segment();
 
 
-  stat.debug = sync_manager.runstop_trigger_cnt;
+  //stat.debug = sync_manager.runstop_trigger_cnt;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();

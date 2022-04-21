@@ -17,22 +17,27 @@
 
 #include "Common.h"
 
-
+/* For RE1   (BOARD_VARIANT==0) the sync line and runstop line are shared
+ * For RE1.1 (BOARD_VARIANT==1) the lines are seperated 
+ * We handle each case seperately 
+ */
 class SyncManager{
    public: 
     SyncManager();
-    
     volatile bool runstop_active;
     volatile bool motor_sync_triggered;
     void setupSyncManager();
     void step();
     bool sync_mode_enabled;
-    int last_pulse_duration;
-    int pulse_count;
     int runstop_trigger_cnt;
+    void on_runstop_change();
+    void on_sync_change();
   private:
     uint8_t rs_last;
+    int last_pulse_duration;
+    int pulse_count;
 };
 
 extern SyncManager sync_manager;
+
 #endif

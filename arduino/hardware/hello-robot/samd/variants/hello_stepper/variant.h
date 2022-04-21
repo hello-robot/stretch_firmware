@@ -109,8 +109,10 @@ static const uint8_t D0  = PIN_D0;
 static const uint8_t RS0  = PIN_RS0;
 
 //Runstop Board ID 1+
-#define PIN_RS1               (1ul)
+#define PIN_RS1               (1ul) //PA10
 static const uint8_t RS1  = PIN_RS1;
+
+#define PIN_SYNC              (3ul) //PA9
 
 static const uint8_t A0  = PIN_A0;
 static const uint8_t A1  = PIN_A1;
