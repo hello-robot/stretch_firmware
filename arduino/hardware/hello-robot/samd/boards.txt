@@ -35,7 +35,8 @@ hello_pimu.build.usb_product="Hello Pimu"
 hello_pimu.build.usb_manufacturer="Hello Robot Inc"
 hello_pimu.build.board=SAMD_ZERO
 hello_pimu.build.core=arduino
-hello_pimu.build.extra_flags=-D__SAMD21G18A__ {build.usb_flags}
+#Define for Adafruit to allow Zero Neopixel DMA library to work
+hello_pimu.build.extra_flags=-D__SAMD21G18A__ {build.usb_flags} -D ARDUINO_SAMD_ADAFRUIT
 hello_pimu.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
 hello_pimu.build.openocdscript=openocd_scripts/arduino_zero.cfg
 hello_pimu.build.variant=hello_pimu
