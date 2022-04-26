@@ -60,6 +60,7 @@
 #define BUZZER D1
 #define IMU_RESET D6
 
+#define NEOPIXEL 32
 /////////////////////////////////////////////////////////////////
 #define NUM_CLIFF 4
 

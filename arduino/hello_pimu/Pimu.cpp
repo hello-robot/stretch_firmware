@@ -21,6 +21,7 @@
 #include "AnalogManager.h"
 #include "SyncManager.h"
 #include "RunstopManager.h"
+#include "LEDStripManager.h"
 
 #define V_TO_RAW(v) v*1024/20.0 //per circuit
 #define I_TO_RAW(i) (i*1000)*0.408*1024.0/3300 //per circuit
@@ -99,8 +100,10 @@ void setupPimu() {
   memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
+  strip_manager.setupLEDStripManager();
   setupTimer4_and_5();
   time_manager.clock_zero();
+  
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void stepPimuController()
@@ -111,6 +114,7 @@ void stepPimuController()
   runstop_manager.step(&cfg);
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
+  strip_manager.step();
   update_fan();  
   update_imu();
   update_board_reset();
