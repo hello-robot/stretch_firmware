@@ -128,7 +128,7 @@ static const uint8_t D10  = PIN_D10;
  * SPI Interfaces
  */
 #define SPI_INTERFACES_COUNT 1
-
+/*
 #define PIN_SPI_MISO         (18u)
 #define PIN_SPI_MOSI         (19u)
 #define PIN_SPI_SCK          (20u)
@@ -136,9 +136,18 @@ static const uint8_t D10  = PIN_D10;
 //Todo: check pads
 #define PAD_SPI_TX           SPI_PAD_2_SCK_3
 #define PAD_SPI_RX           SERCOM_RX_PAD_0
+*/
+
+#define PIN_SPI_MOSI         (32u)
+#define PIN_SPI_SCK          (33u)
+#define PIN_SPI_MISO         (26u)
+#define PERIPH_SPI           sercom1
+//Todo: check pads
+#define PAD_SPI_TX           SPI_PAD_2_SCK_3 //MOSI on Pad 2, SCK on Pad 3
+#define PAD_SPI_RX           SERCOM_RX_PAD_0 //MISO on Pad 0
 
 //Todo: check which SERCOM4 pad is present on D2
-static const uint8_t SS	  = PIN_D2 ;	// SERCOM4 last PAD is present on D2 but HW SS isn't used. Set here only for reference.
+//static const uint8_t SS	  = PIN_D2 ;	// SERCOM4 last PAD is present on D2 but HW SS isn't used. Set here only for reference.
 static const uint8_t MOSI = PIN_SPI_MOSI ;
 static const uint8_t MISO = PIN_SPI_MISO ;
 static const uint8_t SCK  = PIN_SPI_SCK ;

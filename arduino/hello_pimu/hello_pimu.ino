@@ -17,6 +17,8 @@
 #include "Transport.h"
 #include "Pimu.h"
 #include "IMU.h"
+#include "BeepManager.h"
+
 
 
 void setup()        // This code runs once at startup
@@ -32,25 +34,26 @@ void setup()        // This code runs once at startup
   pinMode(RUNSTOP_M1, OUTPUT);
   pinMode(RUNSTOP_M2, OUTPUT);
   pinMode(RUNSTOP_M3, OUTPUT);
-
   digitalWrite(LED, LOW);
   digitalWrite(RUNSTOP_LED, LOW);
   digitalWrite(BUZZER, LOW);
   digitalWrite(IMU_RESET, HIGH);
   digitalWrite(FAN_FET, LOW);
 
+  //if Mitski
+  pinMode(NEOPIXEL, OUTPUT);
+
+
   setupIMU();
   SerialUSB.begin(2000000);// When using SerialUSB the baudrate is ignored since running at USB rate  
   setupPimu();              // configure controller interrupt
   setupTransport();
-  //do_beep(BEEP_ID_SINGLE_SHORT);
 
-  
 }
+
 
 void loop()
 {    
   stepPimuRPC();
 
-  
 }
