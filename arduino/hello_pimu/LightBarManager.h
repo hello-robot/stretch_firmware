@@ -10,22 +10,32 @@
   --------------------------------------------------------------
 */
 
-#ifndef __LED_STRIP_MANAGER_H__
-#define  __LED_STRIP_MANAGER_H__
+#ifndef __LIGHT_BAR_MANAGER_H__
+#define  __LIGHT_BAR_MANAGER_H__
 
 #include "Common.h"
+#include <Adafruit_NeoPixel_ZeroDMA.h>
 
-class LEDStripManager {    
+
+class LightBarManager {    
   public: 
-    LEDStripManager();
+    LightBarManager();
     void step();
-    void setupLEDStripManager();
+    void setupLightBarManager();
+    void set_mode(uint8_t m);
   private:
   int pix_id;
-
-    
+  uint8_t brightness;
+  uint8_t dir;
+  Adafruit_NeoPixel_ZeroDMA * pixels;
+  uint8_t mode;
+  void step_mode_white_blink_slow();
+  void step_mode_off();
+  //void step_mode_cylon_bounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay);
+  int idx_1;
+  int idx_2;
 };
 
-extern LEDStripManager strip_manager;
+
 
 #endif

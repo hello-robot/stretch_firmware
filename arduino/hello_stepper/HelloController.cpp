@@ -199,7 +199,7 @@ void setupHelloController()
   memset(&stat_out, 0, sizeof(Status));
   memset(&motion_limits, 0, sizeof(MotionLimits));
 
-  sprintf(board_info.hardware_version, "Stepper.hw_id.%d", BOARD_VARIANT);
+  sprintf(board_info.board_variant, "Stepper.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
 
 

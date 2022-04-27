@@ -15,10 +15,14 @@
 
 #include "Common.h"
 
+extern uint8_t    BOARD_VARIANT;
+extern uint8_t    BOARD_VARIANT_DEDICATED_SYNC;
 
 extern void setupPimu();         
 extern void setupADC();
 extern void stepPimuRPC();
+extern void setupBoardVariants();
+
 extern void toggle_led(int rate_ms);
 
 

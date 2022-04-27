@@ -21,7 +21,7 @@
 #include "AnalogManager.h"
 #include "SyncManager.h"
 #include "RunstopManager.h"
-#include "LEDStripManager.h"
+#include "LightBarManager.h"
 
 #define V_TO_RAW(v) v*1024/20.0 //per circuit
 #define I_TO_RAW(i) (i*1000)*0.408*1024.0/3300 //per circuit
@@ -46,6 +46,7 @@ bool state_over_tilt_alert=false;
 
 RunstopManager runstop_manager;
 SyncManager sync_manager(&runstop_manager);
+LightBarManager light_bar_manager;
 
 
 //////////////////////////////////////
@@ -89,6 +90,31 @@ void toggle_led(int rate_ms);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+uint8_t    BOARD_VARIANT;
+uint8_t    BOARD_VARIANT_DEDICATED_SYNC;
+
+
+void setupBoardVariants()
+{
+  //Setup board ID. Default is zero for boards prior to Mitski
+  pinMode(BOARD_ID_0, INPUT);
+  pinMode(BOARD_ID_1, INPUT);
+  pinMode(BOARD_ID_2, INPUT);
+  pinMode(BOARD_ID_0, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_1, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_2, INPUT_PULLDOWN);  
+  BOARD_VARIANT=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1)<<1)|digitalRead(BOARD_ID_0);
+  BOARD_VARIANT_DEDICATED_SYNC=0;
+  
+  if (1)//BOARD_VARIANT==1)
+  {
+    BOARD_VARIANT_DEDICATED_SYNC=1;
+    light_bar_manager.setupLightBarManager();
+   
+  }
+}
+
 void setupPimu() {  
 
   memset(&cfg_in, 0, sizeof(Pimu_Config));
@@ -97,10 +123,9 @@ void setupPimu() {
   memset(&trg_in, 0, sizeof(Pimu_Trigger));
   memset(&trg, 0, sizeof(Pimu_Trigger));
   memset(&stat, 0, sizeof(Pimu_Status));
-  memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
+  sprintf(board_info.board_variant, "Pimu.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
-  strip_manager.setupLEDStripManager();
   setupTimer4_and_5();
   time_manager.clock_zero();
   
@@ -114,7 +139,7 @@ void stepPimuController()
   runstop_manager.step(&cfg);
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
-  strip_manager.step();
+  light_bar_manager.step();
   update_fan();  
   update_imu();
   update_board_reset();

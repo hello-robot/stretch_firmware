@@ -21,7 +21,6 @@
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for long timestamps
 #define FIRMWARE_VERSION "Pimu.v0.1.0p1"
-#define BOARD_VERSION "Pimu.Kenrick.V1"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -59,8 +58,8 @@
 #define FAN_FET D2
 #define BUZZER D1
 #define IMU_RESET D6
+#define NEOPIXEL PIN_SPI_MOSI
 
-#define NEOPIXEL 32
 /////////////////////////////////////////////////////////////////
 #define NUM_CLIFF 4
 
@@ -159,7 +158,7 @@ struct __attribute__ ((packed)) Pimu_Trigger{
 };
 
 struct __attribute__ ((packed)) Pimu_Board_Info{
-  char board_version[20];
+  char board_variant[20];
   char firmware_version[20];
 };
 

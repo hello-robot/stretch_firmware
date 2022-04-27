@@ -177,7 +177,7 @@ struct __attribute__ ((packed)) EncCalib{
 };
 
 struct __attribute__ ((packed)) Stepper_Board_Info{
-    char hardware_version[20];
+    char board_variant[20];
     char firmware_version_hr[20];
 };
 

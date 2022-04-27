@@ -123,6 +123,10 @@ static const uint8_t D10  = PIN_D10;
 #define PAD_SERIAL1_TX       (UART_TX_PAD_2)
 #define PAD_SERIAL1_RX       (SERCOM_RX_PAD_3)
 
+//Board ID Pins
+#define BOARD_ID_0          (35ul) //PB22
+#define BOARD_ID_1          (36ul) //PB23
+#define BOARD_ID_2          (37ul) //PA27
 
 /*
  * SPI Interfaces
@@ -140,11 +144,12 @@ static const uint8_t D10  = PIN_D10;
 
 #define PIN_SPI_MOSI         (32u)
 #define PIN_SPI_SCK          (33u)
-#define PIN_SPI_MISO         (26u)
+#define PIN_SPI_MISO         (24u)
 #define PERIPH_SPI           sercom1
 //Todo: check pads
 #define PAD_SPI_TX           SPI_PAD_2_SCK_3 //MOSI on Pad 2, SCK on Pad 3
-#define PAD_SPI_RX           SERCOM_RX_PAD_0 //MISO on Pad 0
+#define PAD_SPI_RX           SERCOM_RX_PAD_1 //MISO on Pad 0
+
 
 //Todo: check which SERCOM4 pad is present on D2
 //static const uint8_t SS	  = PIN_D2 ;	// SERCOM4 last PAD is present on D2 but HW SS isn't used. Set here only for reference.
