@@ -16,24 +16,17 @@
 #include "Common.h"
 #include <Adafruit_NeoPixel_ZeroDMA.h>
 
-
+enum  lightbar_mode {OFF,BOOTING, CHARGING_REQUIRED, CHARGING_RUNSTOP_ON, CHARGING_RUNSTOP_OFF, NORMAL_RUNSTOP_OFF, NORMAL_RUNSTOP_ON };
+class LightBarPatterns;
 class LightBarManager {    
   public: 
     LightBarManager();
-    void step();
+    void step(bool not_booted, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on);
     void setupLightBarManager();
-    void set_mode(uint8_t m);
+    uint8_t get_mode(){return (uint8_t) mode;}
   private:
-  int pix_id;
-  uint8_t brightness;
-  uint8_t dir;
-  Adafruit_NeoPixel_ZeroDMA * pixels;
-  uint8_t mode;
-  void step_mode_white_blink_slow();
-  void step_mode_off();
-  //void step_mode_cylon_bounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay);
-  int idx_1;
-  int idx_2;
+  LightBarPatterns * pixels;
+  lightbar_mode mode; 
 };
 
 

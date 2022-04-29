@@ -38,7 +38,7 @@
 #define RPC_SET_CLOCK_ZERO 13
 #define RPC_REPLY_CLOCK_ZERO 14
 
-/////////////////////////////////////////////////////////////////
+/////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
 #define ANA_V_BATT A0
 #define ANA_CLIFF_0 A1
@@ -51,13 +51,22 @@
 #define RUNSTOP_SW D0
 #define LED D3
 #define RUNSTOP_LED D5
+#define FAN_FET D2
+#define BUZZER D1
+#define IMU_RESET D6
+
+#define BOARD_ID_0  PIN_BOARD_ID_0
+#define BOARD_ID_1  PIN_BOARD_ID_1
+#define BOARD_ID_2  PIN_BOARD_ID_2
+
+//Variant 0
 #define RUNSTOP_M0 D7
 #define RUNSTOP_M1 D8
 #define RUNSTOP_M2 D9
 #define RUNSTOP_M3 D10
-#define FAN_FET D2
-#define BUZZER D1
-#define IMU_RESET D6
+//Variant 1
+#define RUNSTOP_OUT D7
+#define SYNC_OUT D8
 #define NEOPIXEL PIN_SPI_MOSI
 
 /////////////////////////////////////////////////////////////////

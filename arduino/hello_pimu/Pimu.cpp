@@ -105,13 +105,41 @@ void setupBoardVariants()
   pinMode(BOARD_ID_1, INPUT_PULLDOWN);
   pinMode(BOARD_ID_2, INPUT_PULLDOWN);  
   BOARD_VARIANT=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1)<<1)|digitalRead(BOARD_ID_0);
-  BOARD_VARIANT_DEDICATED_SYNC=0;
+
+  BOARD_VARIANT=1;//Temp for testing
+
+  //Common to all variants
+  pinMode(RUNSTOP_LED, OUTPUT);
+  pinMode(LED, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+  pinMode(FAN_FET, OUTPUT);
+  pinMode(IMU_RESET,OUTPUT);
+  pinMode(RUNSTOP_SW, INPUT);
+  //pinMode(RUNSTOP_SW, INPUT_PULLUP);
+  digitalWrite(RUNSTOP_LED, LOW);
+  digitalWrite(LED, LOW);
+  digitalWrite(BUZZER, LOW);
+  digitalWrite(FAN_FET, LOW);
+  digitalWrite(IMU_RESET, HIGH);
   
-  if (1)//BOARD_VARIANT==1)
+
+  if (BOARD_VARIANT==0)
+  {
+    pinMode(RUNSTOP_M0, OUTPUT);
+    pinMode(RUNSTOP_M1, OUTPUT);
+    pinMode(RUNSTOP_M2, OUTPUT);
+    pinMode(RUNSTOP_M3, OUTPUT);
+    BOARD_VARIANT_DEDICATED_SYNC=0;
+  }
+  
+  if (BOARD_VARIANT==1)
   {
     BOARD_VARIANT_DEDICATED_SYNC=1;
     light_bar_manager.setupLightBarManager();
-   
+    pinMode(RUNSTOP_OUT, OUTPUT);
+    pinMode(SYNC_OUT, OUTPUT);
+    digitalWrite(RUNSTOP_OUT, LOW);
+    digitalWrite(SYNC_OUT, LOW);
   }
 }
 
@@ -139,7 +167,11 @@ void stepPimuController()
   runstop_manager.step(&cfg);
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
-  light_bar_manager.step();
+  bool not_booted=false;
+  bool runstop_on = runstop_manager.state_runstop_event;
+  bool charger_on = true;
+  bool charging_required=false;
+  light_bar_manager.step(not_booted, runstop_on, charger_on, charging_required, runstop_manager.runstop_led_on);
   update_fan();  
   update_imu();
   update_board_reset();
@@ -154,9 +186,15 @@ void stepPimuController()
   }
   
   if (runstop_manager.state_runstop_event)
+  {
     runstop_manager.toggle_led(500);
+    //light_bar_manager.enable_runstop_toggle(digitalRead(RUNSTOP_LED));
+  }
   else
+  {
+    //light_bar_manager.disable_runstop_toggle();
     digitalWrite(RUNSTOP_LED, HIGH);
+  }
 
   update_status();
 
