@@ -192,7 +192,7 @@ void LightBarManager::setupLightBarManager()
    mode=OFF; 
     
 }
-void LightBarManager::step(bool not_booted, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on) 
+void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on) 
 {
   if (pixels)
   {
@@ -206,7 +206,7 @@ void LightBarManager::step(bool not_booted, bool runstop_on, bool charger_on, bo
     }
     else 
     {
-      if (not_booted) //second priority
+      if (!boot_detected) //second priority
       {
         if(mode!=BOOTING)
         {

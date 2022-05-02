@@ -20,7 +20,8 @@
 
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for long timestamps
-#define FIRMWARE_VERSION "Pimu.v0.1.0p1"
+// Protocol 2: Add support for Variant 1 (charge connect, Neopixel, etc)
+#define FIRMWARE_VERSION "Pimu.v0.2.0p1"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -35,8 +36,7 @@
 #define RPC_REPLY_PIMU_BOARD_INFO 8
 #define RPC_SET_MOTOR_SYNC 9
 #define RPC_REPLY_MOTOR_SYNC 10
-#define RPC_SET_CLOCK_ZERO 13
-#define RPC_REPLY_CLOCK_ZERO 14
+
 
 /////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
@@ -68,6 +68,7 @@
 #define RUNSTOP_OUT D7
 #define SYNC_OUT D8
 #define NEOPIXEL PIN_SPI_MOSI
+#define CHARGER_CONNECTED PIN_CHARGER_CONNECTED
 
 /////////////////////////////////////////////////////////////////
 #define NUM_CLIFF 4
@@ -83,6 +84,8 @@
 #define STATE_LOW_VOLTAGE_ALERT 256
 #define STATE_OVER_TILT_ALERT 512
 #define STATE_HIGH_CURRENT_ALERT 1024
+#define STATE_CHARGER_CONNECTED 2048
+#define STATE_BOOT_DETECTED 4096
 
 #define TRIGGER_BOARD_RESET  1
 #define TRIGGER_RUNSTOP_RESET  2

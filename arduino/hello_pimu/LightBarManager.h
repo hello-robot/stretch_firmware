@@ -21,7 +21,7 @@ class LightBarPatterns;
 class LightBarManager {    
   public: 
     LightBarManager();
-    void step(bool not_booted, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on);
+    void step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on);
     void setupLightBarManager();
     uint8_t get_mode(){return (uint8_t) mode;}
   private:

@@ -128,8 +128,10 @@ static const uint8_t D10  = PIN_D10;
 #define PIN_BOARD_ID_1          (36ul) //PB23
 #define PIN_BOARD_ID_2          (37ul) //PA27
 
+#define PIN_CHARGER_CONNECTED      (19ul) //PB10
 /*
  * SPI Interfaces
+ Conifgure SERCOM1 MOSI for Neopixel
  */
 #define SPI_INTERFACES_COUNT 1
 #define PIN_SPI_MOSI         (32u)

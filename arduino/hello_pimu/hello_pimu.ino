@@ -17,24 +17,18 @@
 #include "Transport.h"
 #include "Pimu.h"
 #include "IMU.h"
-#include "BeepManager.h"
-
-
 
 
 void setup()        // This code runs once at startup
 {     
   setupBoardVariants();
   setupIMU();
-  SerialUSB.begin(2000000);// When using SerialUSB the baudrate is ignored since running at USB rate  
-  setupPimu();              // configure controller interrupt
+  SerialUSB.begin(2000000); 
+  setupPimu();              
   setupTransport();
-
 }
-
 
 void loop()
 {    
   stepPimuRPC();
-
 }
