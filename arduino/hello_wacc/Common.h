@@ -19,8 +19,9 @@
 //Version History
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for long timestamps
-#define FIRMWARE_VERSION "Wacc.v0.1.0p1"
-#define BOARD_VERSION "Wacc.Kendrick.V1"
+// Version 0.2.0: Add support for RE1.1 (board variants)
+#define FIRMWARE_VERSION "Wacc.v0.2.0p1"
+
 
 /////////////////////////////////////////////////////////////////
 #define RPC_SET_WACC_CONFIG 1
@@ -50,6 +51,10 @@
 #define HEADER_I2C_SCL PIN_WIRE_SCL
 #define HEADER_I2C_SDA PIN_WIRE_SDA
 #define HEADER_ANA0 PIN_A0
+
+#define BOARD_ID_0  PIN_BOARD_ID_0
+#define BOARD_ID_1  PIN_BOARD_ID_1
+#define BOARD_ID_2  PIN_BOARD_ID_2
 
 /////////////////////////////////////////////////////////////////
 
@@ -87,7 +92,7 @@ struct __attribute__ ((packed)) Wacc_Status{
 };
 
 struct __attribute__ ((packed)) Wacc_Board_Info{
-  char board_version[20];
+  char board_variant[20];
   char firmware_version[20];
 };
 

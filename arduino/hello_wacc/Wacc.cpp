@@ -46,12 +46,40 @@ void setupWacc() {
   memset(&cmd_in, 0, sizeof(Wacc_Command));
   memset(&stat, 0, sizeof(Wacc_Status));
   memset(&stat_out, 0, sizeof(Wacc_Status));
-  memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
+  sprintf(board_info.board_variant, "Wacc.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   setupTimer4_and_5();
   time_manager.clock_zero();
 }
 
+
+uint8_t    BOARD_VARIANT;
+
+void setupBoardVariants()
+{
+  //Setup board ID. Default is zero for boards prior to Mitski
+  pinMode(BOARD_ID_0, INPUT);
+  pinMode(BOARD_ID_1, INPUT);
+  pinMode(BOARD_ID_2, INPUT);
+  pinMode(BOARD_ID_0, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_1, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_2, INPUT_PULLDOWN);  
+  BOARD_VARIANT=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1)<<1)|digitalRead(BOARD_ID_0);
+
+  //Common to all variants
+  pinMode(LED, OUTPUT);
+  pinMode(A0, INPUT);
+  pinMode(D0, INPUT);
+  pinMode(D1, INPUT);
+  pinMode(D2, OUTPUT);
+  pinMode(D3, OUTPUT);
+  pinMode(ACCEL_INT1, INPUT);
+  pinMode(ACCEL_INT2, INPUT);
+  digitalWrite(LED, LOW);
+  pinMode(D0, INPUT_PULLUP);
+  pinMode(D1, INPUT_PULLUP);
+  
+}
 
 void handleNewRPC()
 {

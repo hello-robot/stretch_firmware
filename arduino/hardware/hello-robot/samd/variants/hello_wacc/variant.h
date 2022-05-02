@@ -69,6 +69,10 @@ extern "C"
 #define PIN_INT1            (11u)
 #define PIN_INT2            (12u)
 
+//Board ID Pins
+#define PIN_BOARD_ID_0          (13ul) //PB22
+#define PIN_BOARD_ID_1          (14ul) //PB23
+#define PIN_BOARD_ID_2          (15ul) //PA27
 
 /*
  * Analog pins
