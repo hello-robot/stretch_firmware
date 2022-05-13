@@ -179,6 +179,16 @@ void setupBoardVariants()
     BOARD_VARIANT_DRV8842=1;
     BOARD_VARIANT_PIN_RUNSTOP=PIN_RS1;
     pinMode(PIN_SYNC, INPUT);
+
+    pinMode(DRV8842_NSLEEP_A, OUTPUT);
+    pinMode(DRV8842_NSLEEP_B, OUTPUT);
+  
+    digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
+    digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
+  
+    pinMode(DRV8842_FAULT_A, INPUT);
+    pinMode(DRV8842_FAULT_B, INPUT);
+
     //attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), sync_manager.on_runstop_change, CHANGE);
     //attachInterrupt(digitalPinToInterrupt(PIN_SYNC), sync_manager.on_sync_change, CHANGE);
   }
