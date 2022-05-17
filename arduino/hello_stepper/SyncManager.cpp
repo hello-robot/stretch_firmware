@@ -84,7 +84,7 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
    }
    if (BOARD_VARIANT==1)
    {
-    runstop_active=digitalRead(BOARD_VARIANT_PIN_RUNSTOP)==0;
+    runstop_active=digitalRead(BOARD_VARIANT_PIN_RUNSTOP);
     uint8_t sync=digitalRead(PIN_SYNC);
     if (sync && !sync_last && sync_mode_enabled )
       motor_sync_triggered=true;
