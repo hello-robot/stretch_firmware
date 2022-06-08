@@ -61,8 +61,8 @@ extern const float stepangle;
 
 extern volatile float PA;  //
 
-extern const float iMAX;
-extern const float rSense;
+extern volatile float iMAX;
+extern volatile float rSense;
 extern volatile int uMAX;
 
 

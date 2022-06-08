@@ -84,13 +84,28 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
    }
    if (BOARD_VARIANT==1)
    {
-    runstop_active=digitalRead(BOARD_VARIANT_PIN_RUNSTOP);
+    //Poll line at 1Khz
+      uint8_t rs=digitalRead(BOARD_VARIANT_PIN_RUNSTOP);
+      if (rs)
+      {
+        pulse_count=min(pulse_count+1,RUNSTOP_TRIGGER_MS); //count how long has been high
+        if(pulse_count==RUNSTOP_TRIGGER_MS && !runstop_active)
+          runstop_active=1;
+      }
+      else
+      {
+        runstop_active=0;
+        pulse_count=0;
+      }
+    rs_last=rs;
+    
     uint8_t sync=digitalRead(PIN_SYNC);
     if (sync && !sync_last && sync_mode_enabled )
       motor_sync_triggered=true;
     else
       motor_sync_triggered=false;
     sync_last=sync;
+    
    }
 }
 
