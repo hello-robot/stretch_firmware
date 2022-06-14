@@ -18,7 +18,7 @@
 #include "Common.h"
 
 /* For RE1   (BOARD_VARIANT==0) the sync line and runstop line are shared
- * For RE1.1 (BOARD_VARIANT==1) the lines are seperated 
+ * For RE1.5 (BOARD_VARIANT==1) the lines are seperated 
  * We handle each case seperately 
  */
 class SyncManager{

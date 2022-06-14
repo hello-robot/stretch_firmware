@@ -137,7 +137,7 @@ float rad_to_deg(float x)
 float current_to_effort(float x)
 {
   if (BOARD_VARIANT==1)
-    return max(-255,min(255,(255/3.3)*(x*5*rSense))); //RE1.1
+    return max(-255,min(255,(255/3.3)*(x*5*rSense))); //RE1.5
   else
     return max(-255,min(255,(255/3.3)*(x*10*rSense))); //RE1.0
 }
