@@ -58,11 +58,11 @@ volatile float vLPFb = (1.0-vLPFa)* Fs * 0.16666667;
 //Encoder calibration.
 const float __attribute__((__aligned__(256))) lookup[16384] = {};
 
-//Current limits
+//NOTE: This is recomputed in setupBoardVariants based on the variant ID as can depend on the board version
 //The board uses two  A4950ELJTR motor drivers. These are capable of 3.5A peak currents.
 // An iMax of 3.2A results in a uMax of 247. By default set at 8-bit pwm. 
-const float iMAX =3.2;        // Be careful adjusting this.  
-const float rSense = 0.1;   //Ohms per Franco board
+volatile float iMAX =3.2;        // Be careful adjusting this.  
+volatile float rSense = 0.1;   //Ohms per Franco board
 volatile int uMAX = (255/3.3)*(iMAX*10*rSense);   
 
 

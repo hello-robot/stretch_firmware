@@ -74,6 +74,7 @@ void RunstopManager::step(Pimu_Config * cfg) //Called at 100hz from TC4 loop
     {
       runstop_mode=MODE_RUNSTOP_NOT_ACTIVE;
       beep_manager.do_beep(BEEP_ID_SINGLE_SHORT);
+      runstop_t_toggle_last=0; 
     }
     else
     if(!button_depressed && runstop_mode==MODE_RESET_ACTIVE) //Not held down long enough

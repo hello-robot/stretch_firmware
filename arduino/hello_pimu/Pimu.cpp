@@ -21,11 +21,12 @@
 #include "AnalogManager.h"
 #include "SyncManager.h"
 #include "RunstopManager.h"
+#include "LightBarManager.h"
 
 #define V_TO_RAW(v) v*1024/20.0 //per circuit
 #define I_TO_RAW(i) (i*1000)*0.408*1024.0/3300 //per circuit
 
-float low_voltage_alert=V_TO_RAW(10.0);
+float low_voltage_alert=V_TO_RAW(10.5);
 int low_voltage_alert_cnt=0;
 float high_current_alert= I_TO_RAW(6.0);
 float over_tilt_alert_deg = 10.0;
@@ -41,10 +42,12 @@ bool state_buzzer_on=false;
 bool state_low_voltage_alert=false;
 bool state_high_current_alert=false;
 bool state_over_tilt_alert=false;
-
+bool state_charger_connected=false;
+bool state_boot_detected=false;
 
 RunstopManager runstop_manager;
 SyncManager sync_manager(&runstop_manager);
+LightBarManager light_bar_manager;
 
 
 //////////////////////////////////////
@@ -88,6 +91,60 @@ void toggle_led(int rate_ms);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+uint8_t    BOARD_VARIANT;
+uint8_t    BOARD_VARIANT_DEDICATED_SYNC;
+
+
+void setupBoardVariants()
+{
+  //Setup board ID. Default is zero for boards prior to Mitski
+  pinMode(BOARD_ID_0, INPUT);
+  pinMode(BOARD_ID_1, INPUT);
+  pinMode(BOARD_ID_2, INPUT);
+  pinMode(BOARD_ID_0, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_1, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_2, INPUT_PULLDOWN);  
+  BOARD_VARIANT=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1)<<1)|digitalRead(BOARD_ID_0);
+
+  //BOARD_VARIANT=1;//Temp for testing
+
+  //Common to all variants
+  pinMode(RUNSTOP_LED, OUTPUT);
+  pinMode(LED, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+  pinMode(FAN_FET, OUTPUT);
+  pinMode(IMU_RESET,OUTPUT);
+  pinMode(RUNSTOP_SW, INPUT);
+  //pinMode(RUNSTOP_SW, INPUT_PULLUP);
+  digitalWrite(RUNSTOP_LED, LOW);
+  digitalWrite(LED, LOW);
+  digitalWrite(BUZZER, LOW);
+  digitalWrite(FAN_FET, LOW);
+  digitalWrite(IMU_RESET, HIGH);
+  
+
+  if (BOARD_VARIANT==0)
+  {
+    pinMode(RUNSTOP_M0, OUTPUT);
+    pinMode(RUNSTOP_M1, OUTPUT);
+    pinMode(RUNSTOP_M2, OUTPUT);
+    pinMode(RUNSTOP_M3, OUTPUT);
+    BOARD_VARIANT_DEDICATED_SYNC=0;
+  }
+  
+  if (BOARD_VARIANT==1)
+  {
+    BOARD_VARIANT_DEDICATED_SYNC=1;
+    light_bar_manager.setupLightBarManager();
+    pinMode(RUNSTOP_OUT, OUTPUT);
+    pinMode(SYNC_OUT, OUTPUT);
+    pinMode(CHARGER_CONNECTED,INPUT);
+    digitalWrite(RUNSTOP_OUT, LOW);
+    digitalWrite(SYNC_OUT, LOW);
+  }
+}
+
 void setupPimu() {  
 
   memset(&cfg_in, 0, sizeof(Pimu_Config));
@@ -96,11 +153,12 @@ void setupPimu() {
   memset(&trg_in, 0, sizeof(Pimu_Trigger));
   memset(&trg, 0, sizeof(Pimu_Trigger));
   memset(&stat, 0, sizeof(Pimu_Status));
-  memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
+  sprintf(board_info.board_variant, "Pimu.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
   setupTimer4_and_5();
   time_manager.clock_zero();
+  
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void stepPimuController()
@@ -111,6 +169,8 @@ void stepPimuController()
   runstop_manager.step(&cfg);
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
+
+  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on);
   update_fan();  
   update_imu();
   update_board_reset();
@@ -125,9 +185,13 @@ void stepPimuController()
   }
   
   if (runstop_manager.state_runstop_event)
+  {
     runstop_manager.toggle_led(500);
+  }
   else
+  {
     digitalWrite(RUNSTOP_LED, HIGH);
+  }
 
   update_status();
 
@@ -165,6 +229,7 @@ void handleNewRPC()
           rpc_out[0]=RPC_REPLY_PIMU_BOARD_INFO;
           memcpy(rpc_out + 1, (uint8_t *) (&board_info), sizeof(Pimu_Board_Info)); //Collect the status data
           num_byte_rpc_out=sizeof(Pimu_Board_Info)+1;
+          state_boot_detected=true;
           break; 
      case RPC_SET_MOTOR_SYNC:
           rpc_out[0]=RPC_REPLY_MOTOR_SYNC;
@@ -173,11 +238,6 @@ void handleNewRPC()
           sync_manager.trigger_motor_sync();
           sync_manager.step();
           interrupts();
-          break; 
-     case RPC_SET_CLOCK_ZERO:
-          rpc_out[0]=RPC_REPLY_CLOCK_ZERO;
-          num_byte_rpc_out=1;
-          time_manager.clock_zero();
           break; 
    default:
         break;
@@ -302,21 +362,41 @@ void update_imu()
 ////////////////////////////
 void update_voltage_monitor()
 {
-  if(analog_manager.voltage<low_voltage_alert && cfg.stop_at_low_voltage) //dropped below
-    {
-      state_low_voltage_alert=true;
-      runstop_manager.activate_runstop();
-      if(low_voltage_alert_cnt==0) //start new beep sequence
+  if (BOARD_VARIANT==1)
+  {
+    //For Variant 1, indicate charging required on the Neopixel
+    state_charger_connected=digitalRead(CHARGER_CONNECTED);
+    if(analog_manager.voltage<low_voltage_alert) //dropped below
       {
-        low_voltage_alert_cnt=(int)FS*6;
-        beep_manager.do_beep(BEEP_ID_DOUBLE_SHORT);
+        state_low_voltage_alert=true;
+        if (cfg.stop_at_low_voltage)
+          runstop_manager.activate_runstop();
       }
-    }
-    else
-    {
-      state_low_voltage_alert=false;
-    }
-    low_voltage_alert_cnt=max(0,low_voltage_alert_cnt-1);
+      else
+      {
+        state_low_voltage_alert=false;
+      }
+  }
+  
+  if (BOARD_VARIANT==0)
+  {
+    //For Variant 0, do the double beep at low voltage and trigger the runstop
+    if(analog_manager.voltage<low_voltage_alert && cfg.stop_at_low_voltage) //dropped below
+      {
+        state_low_voltage_alert=true;
+        runstop_manager.activate_runstop();
+        if(low_voltage_alert_cnt==0) //start new beep sequence
+        {
+          low_voltage_alert_cnt=(int)FS*6;
+          beep_manager.do_beep(BEEP_ID_DOUBLE_SHORT);
+        }
+      }
+      else
+      {
+        state_low_voltage_alert=false;
+      }
+      low_voltage_alert_cnt=max(0,low_voltage_alert_cnt-1);
+  }
 }
 ////////////////////////////
 
@@ -391,6 +471,8 @@ void update_status()
   stat.state= state_buzzer_on ? stat.state|STATE_BUZZER_ON : stat.state;
   stat.state= state_low_voltage_alert ? stat.state|STATE_LOW_VOLTAGE_ALERT : stat.state;
   stat.state= state_high_current_alert ? stat.state|STATE_HIGH_CURRENT_ALERT : stat.state;
+  stat.state= state_charger_connected ? stat.state|STATE_CHARGER_CONNECTED : stat.state;
+  stat.state= state_boot_detected ? stat.state|STATE_BOOT_DETECTED : stat.state;
   stat.state= state_over_tilt_alert ? stat.state|STATE_OVER_TILT_ALERT : stat.state;
   
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));

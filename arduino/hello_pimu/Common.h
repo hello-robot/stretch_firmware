@@ -20,8 +20,8 @@
 
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for long timestamps
-#define FIRMWARE_VERSION "Pimu.v0.1.0p1"
-#define BOARD_VERSION "Pimu.Kenrick.V1"
+// Version 0.2.0: Add support for Variant 1 (BOARD_VARIANT_DEDICATED_SYNC, charge connect, Neopixel, etc)
+#define FIRMWARE_VERSION "Pimu.v0.2.0p1"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -36,10 +36,9 @@
 #define RPC_REPLY_PIMU_BOARD_INFO 8
 #define RPC_SET_MOTOR_SYNC 9
 #define RPC_REPLY_MOTOR_SYNC 10
-#define RPC_SET_CLOCK_ZERO 13
-#define RPC_REPLY_CLOCK_ZERO 14
 
-/////////////////////////////////////////////////////////////////
+
+/////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
 #define ANA_V_BATT A0
 #define ANA_CLIFF_0 A1
@@ -52,13 +51,24 @@
 #define RUNSTOP_SW D0
 #define LED D3
 #define RUNSTOP_LED D5
+#define FAN_FET D2
+#define BUZZER D1
+#define IMU_RESET D6
+
+#define BOARD_ID_0  PIN_BOARD_ID_0
+#define BOARD_ID_1  PIN_BOARD_ID_1
+#define BOARD_ID_2  PIN_BOARD_ID_2
+
+//Variant 0
 #define RUNSTOP_M0 D7
 #define RUNSTOP_M1 D8
 #define RUNSTOP_M2 D9
 #define RUNSTOP_M3 D10
-#define FAN_FET D2
-#define BUZZER D1
-#define IMU_RESET D6
+//Variant 1
+#define RUNSTOP_OUT D7
+#define SYNC_OUT D8
+#define NEOPIXEL PIN_SPI_MOSI
+#define CHARGER_CONNECTED PIN_CHARGER_CONNECTED
 
 /////////////////////////////////////////////////////////////////
 #define NUM_CLIFF 4
@@ -74,6 +84,8 @@
 #define STATE_LOW_VOLTAGE_ALERT 256
 #define STATE_OVER_TILT_ALERT 512
 #define STATE_HIGH_CURRENT_ALERT 1024
+#define STATE_CHARGER_CONNECTED 2048
+#define STATE_BOOT_DETECTED 4096
 
 #define TRIGGER_BOARD_RESET  1
 #define TRIGGER_RUNSTOP_RESET  2
@@ -158,7 +170,7 @@ struct __attribute__ ((packed)) Pimu_Trigger{
 };
 
 struct __attribute__ ((packed)) Pimu_Board_Info{
-  char board_version[20];
+  char board_variant[20];
   char firmware_version[20];
 };
 

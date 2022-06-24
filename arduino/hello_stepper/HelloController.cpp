@@ -120,6 +120,7 @@ bool guarded_mode_enabled = false;
 bool safety_override = false;
 bool guarded_override=false;
 int first_step_safety=10; //count down
+uint8_t board_id=0;
 
 ///////////////////////// UTIL ///////////////////////////
 
@@ -135,7 +136,10 @@ float rad_to_deg(float x)
 
 float current_to_effort(float x)
 {
-return max(-255,min(255,(255/3.3)*(x*10*rSense)));
+  if (BOARD_VARIANT==1)
+    return max(-255,min(255,(255/3.3)*(x*5*rSense))); //RE1.5
+  else
+    return max(-255,min(255,(255/3.3)*(x*10*rSense))); //RE1.0
 }
 
 
@@ -154,6 +158,64 @@ void toggle_led(int rate_ms)
 }
 
 
+
+uint8_t    BOARD_VARIANT;
+uint8_t    BOARD_VARIANT_DRV8842;
+uint8_t    BOARD_VARIANT_PIN_RUNSTOP;
+
+
+void setupBoardVariants()
+{
+  //Setup board ID. Default is zero for boards prior to Mitski
+  pinMode(BOARD_ID_0, INPUT);
+  pinMode(BOARD_ID_1, INPUT);
+  pinMode(BOARD_ID_2, INPUT);
+  pinMode(BOARD_ID_0, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_1, INPUT_PULLDOWN);
+  pinMode(BOARD_ID_2, INPUT_PULLDOWN);  
+  BOARD_VARIANT_DRV8842=0;
+  BOARD_VARIANT_PIN_RUNSTOP=PIN_RS0;
+  BOARD_VARIANT=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1)<<1)|digitalRead(BOARD_ID_0);
+
+  if (BOARD_VARIANT==0)
+  {
+    //The board uses two  A4950ELJTR motor drivers. These are capable of 3.5A peak currents.
+    // An iMax of 3.2A results in a uMax of 247. By default set at 8-bit pwm. 
+    iMAX =3.2;        // Be careful adjusting this.  
+    rSense = 0.1;   //Ohms per Franco board
+    uMAX = (255/3.3)*(iMAX*10*rSense);   
+  }
+  
+  if (BOARD_VARIANT==1)
+  {
+    //The board uses two DRV8842 motor drivers. These are capable of 5.0A peak currents / 3.5A RMS
+    // An iMax of 4.35A results in a uMax of 252. By default set at 8-bit pwm. 
+    iMAX =4.35;        // Be careful adjusting this.  
+    rSense = 0.15;   //Ohms per Franco board
+    uMAX = (255/3.3)*(iMAX*5*rSense);   
+    
+    
+    BOARD_VARIANT_DRV8842=1;
+    BOARD_VARIANT_PIN_RUNSTOP=PIN_RS1;
+    pinMode(PIN_SYNC, INPUT);
+
+    pinMode(DRV8842_NSLEEP_A, OUTPUT);
+    pinMode(DRV8842_NSLEEP_B, OUTPUT);
+  
+    digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
+    digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
+  
+    pinMode(DRV8842_FAULT_A, INPUT);
+    pinMode(DRV8842_FAULT_B, INPUT);
+
+    //attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), sync_manager.on_runstop_change, CHANGE);
+    //attachInterrupt(digitalPinToInterrupt(PIN_SYNC), sync_manager.on_sync_change, CHANGE);
+  }
+  pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT);
+  pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT_PULLUP); //Default to high if no cable (disables motor)
+}
+
+
 void setupHelloController()
 {
   memset(&cmd, 0, sizeof(Command));
@@ -165,9 +227,10 @@ void setupHelloController()
   memset(&stat, 0, sizeof(Status));
   memset(&stat_out, 0, sizeof(Status));
   memset(&motion_limits, 0, sizeof(MotionLimits));
-  
-  memcpy(&(board_info.board_version),BOARD_VERSION,min(20,strlen(BOARD_VERSION)));
+
+  sprintf(board_info.board_variant, "Stepper.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
+
 
   sync_manager.setupSyncManager();
   time_manager.setupTimeManager();
@@ -338,7 +401,7 @@ void update_status()
   stat.traj_id=trajectory_manager.get_id_current_segment();
 
 
-  stat.debug = sync_manager.runstop_trigger_cnt;
+  //stat.debug = sync_manager.runstop_trigger_cnt;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
@@ -509,8 +572,10 @@ void stepHelloController()
      }
      
      diag_runstop_on=(sync_manager.runstop_active && runstop_enabled);
+     //stat.debug=diag_runstop_on;//sync_manager.runstop_active;
      if (diag_runstop_on)
      {
+        stat.debug++;
         cmd_in.mode=MODE_SAFETY;
         cmd.mode=MODE_SAFETY;
         safety_override=true;
@@ -709,6 +774,7 @@ void stepHelloController()
             DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*gains.safety_stiffness+current_to_effort(gains.i_safety_feedforward);
+            //stat.debug=u;//current_to_effort(gains.i_safety_feedforward);//gains.i_safety_feedforward;//current_to_effort(gains.i_safety_feedforward);
             diag_near_pos_setpoint=abs(e)<gains.pos_near_setpoint_d;
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=0;
@@ -817,7 +883,7 @@ void stepHelloController()
               if (motion_limits_set)
               {
                 cmd.x_des=min(max(cmd.x_des, motion_limits.pos_min), motion_limits.pos_max);
-                stat.debug=motion_limits.pos_min;
+                //stat.debug=motion_limits.pos_min;
               }
               xdes=mg.update(rad_to_deg(cmd.x_des)); //get target position
             }
@@ -932,7 +998,7 @@ void stepHelloController()
           if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
           {
             trajectory_manager.reset();
-            stat.debug++;
+            //stat.debug++;
           }
           cmd.mode=MODE_SAFETY;
           

@@ -18,17 +18,7 @@
 
 void setup()        // This code runs once at startup
 {     
-  pinMode(LED, OUTPUT);
-  pinMode(A0, INPUT);
-  pinMode(D0, INPUT);
-  pinMode(D1, INPUT);
-  pinMode(D2, OUTPUT);
-  pinMode(D3, OUTPUT);
-  pinMode(ACCEL_INT1, INPUT);
-  pinMode(ACCEL_INT2, INPUT);
-  digitalWrite(LED, LOW);
-  pinMode(D0, INPUT_PULLUP);
-  pinMode(D1, INPUT_PULLUP);
+  setupBoardVariants();
   setupAccel();
   SerialUSB.begin(2000000);
   setupWacc();          

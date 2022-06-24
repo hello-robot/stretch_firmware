@@ -45,9 +45,7 @@ void setup()        // This code runs once at startup
   //delay(3000);                      // This delay seems to make it easier to establish a connection when the Mechaduino is configured to start in closed loop mode.  
   serialMenu();     // Prints menu to serial monitor
 #else
-  pinMode(RUNSTOP, INPUT);
-  pinMode(RUNSTOP, INPUT_PULLUP); //Default to high if no cable (disables motor)
-  //attachInterrupt(digitalPinToInterrupt(RUNSTOP), on_runstop_change, CHANGE);
+  setupBoardVariants();  
   setupMGInterrupts();
 #endif
  

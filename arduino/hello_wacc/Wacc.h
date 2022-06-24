@@ -13,8 +13,9 @@
 #define  __WACC_H__
 
 #include "Common.h"
-
+extern uint8_t    BOARD_VARIANT;
 extern void setupWacc();         
 extern void stepWaccRPC();
+extern void setupBoardVariants();
 void TC5_Handler();
 #endif

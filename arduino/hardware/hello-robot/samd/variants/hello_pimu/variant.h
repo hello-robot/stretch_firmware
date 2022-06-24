@@ -123,22 +123,23 @@ static const uint8_t D10  = PIN_D10;
 #define PAD_SERIAL1_TX       (UART_TX_PAD_2)
 #define PAD_SERIAL1_RX       (SERCOM_RX_PAD_3)
 
+//Board ID Pins
+#define PIN_BOARD_ID_0          (35ul) //PB22
+#define PIN_BOARD_ID_1          (36ul) //PB23
+#define PIN_BOARD_ID_2          (37ul) //PA27
 
+#define PIN_CHARGER_CONNECTED      (19ul) //PB10
 /*
  * SPI Interfaces
+ Conifgure SERCOM1 MOSI for Neopixel
  */
 #define SPI_INTERFACES_COUNT 1
-
-#define PIN_SPI_MISO         (18u)
-#define PIN_SPI_MOSI         (19u)
-#define PIN_SPI_SCK          (20u)
-#define PERIPH_SPI           sercom4
-//Todo: check pads
-#define PAD_SPI_TX           SPI_PAD_2_SCK_3
-#define PAD_SPI_RX           SERCOM_RX_PAD_0
-
-//Todo: check which SERCOM4 pad is present on D2
-static const uint8_t SS	  = PIN_D2 ;	// SERCOM4 last PAD is present on D2 but HW SS isn't used. Set here only for reference.
+#define PIN_SPI_MOSI         (32u)
+#define PIN_SPI_SCK          (33u)
+#define PIN_SPI_MISO         (24u)
+#define PERIPH_SPI           sercom1
+#define PAD_SPI_TX           SPI_PAD_2_SCK_3 //MOSI on Pad 2, SCK on Pad 3
+#define PAD_SPI_RX           SERCOM_RX_PAD_1 //MISO on Pad 0
 static const uint8_t MOSI = PIN_SPI_MOSI ;
 static const uint8_t MISO = PIN_SPI_MISO ;
 static const uint8_t SCK  = PIN_SPI_SCK ;
@@ -147,12 +148,10 @@ static const uint8_t SCK  = PIN_SPI_SCK ;
  * Wire Interfaces
  */
 #define WIRE_INTERFACES_COUNT 1
-
 #define PIN_WIRE_SDA         (9u)
 #define PIN_WIRE_SCL         (10u)
 #define PERIPH_WIRE          sercom3
 #define WIRE_IT_HANDLER      SERCOM3_Handler
-
 static const uint8_t SDA = PIN_WIRE_SDA;
 static const uint8_t SCL = PIN_WIRE_SCL;
 
