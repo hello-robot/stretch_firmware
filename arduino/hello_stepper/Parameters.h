@@ -20,7 +20,7 @@
 
 
 #define HELLO   //Turn on and off the Hello Codebase
-//#define HELLO_DRV8842 //Enable DRV8842 board (dev)
+#define HELLO_DRV8842 //Enable DRV8842 board (dev)
 
 #ifdef HELLO
 #define firmware_version "0.1"            //firmware version

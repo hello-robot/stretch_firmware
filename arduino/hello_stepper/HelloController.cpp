@@ -316,6 +316,10 @@ void update_status()
   stat.pos=deg_to_rad(ywd);
   stat.vel=deg_to_rad(vs);
   stat.err=deg_to_rad(e);               //controller error (inner loop)
+
+  stat.accel_mg=deg_to_rad(mg.acc);
+  stat.vel_mg=deg_to_rad(mg.vel);
+  
   stat.mode=cmd.mode; 
   stat.guarded_event = guarded_event_cnt;
   stat.diag=0;

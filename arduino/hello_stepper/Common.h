@@ -20,7 +20,9 @@
 //Version History
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for waypoint management
-#define FIRMWARE_VERSION_HR "Stepper.v0.1.0p1"
+// #define FIRMWARE_VERSION_HR "Stepper.v0.1.0p1"
+#define FIRMWARE_VERSION_HR "Stepper.v0.1.0p2"
+
 #define BOARD_VERSION "Stepper.Kendrick.V1"
 
 
@@ -155,7 +157,15 @@ struct __attribute__ ((packed)) Status{
   uint32_t guarded_event;       //counter of guarded events since power-up
   float traj_setpoint;          //Target of waypoint trajectory
   uint16_t traj_id;             //Id of active trajectory segment
+  float accel_mg;
+  float vel_mg;
+  float expected_current;       //Tells what expected current given the model should be
+  bool has_collided;            //Tells if motor has collided?
 };
+
+//struct __attribute__ ((packed)) CurrentModel{
+//  float expected_current;
+//}
 
 /////////////////////////////////////////////////////////////////
 struct __attribute__ ((packed)) Command{
