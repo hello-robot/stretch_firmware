@@ -348,6 +348,53 @@ void update_status()
   interrupts();
 }
 
+///////////////////////// Motor Model Check //////////////////////////
+
+float getExpectedEffort()
+{
+  bias = 1;
+  velocity = stat.vel;
+  hinged_velocity = sign(stat.vel)*min(0.0, stat.vel*sign(stat.accel));
+  hinged_acceleration = sign(stat.accel)*min(0.0, stat.accel*sign(stat.vel));
+
+  //////Return linear combination of features (each multiplied by the respective coefficient from the model)//////////////////////
+  expected_current = bias*gains.bias_coeff + velocity*gains.velocity_coeff + hinged_velocity*gains.hinged_velocity_coeff + hinged_acceleration*gains.hinged_acceleration_coeff;
+
+  return current_to_effort(expected_current);
+}
+
+
+///Util: Sign function /////////////
+int sign(float x)
+{
+  if (x>0) 
+  {
+    return 1
+  }
+  else if (x==0)
+  {
+    return 0
+  }
+  else 
+  {
+    return -1
+  }
+}
+
+///Check whether the model deviates from the expected by an amount greater than margin
+bool checkModelCollision()
+{
+  float expected_effort;
+  expected_effort = getExpectedEffort();
+  error = expected_effort - stat.effort;
+  if (abs(error) > gains.effort_margin) 
+  {
+    return true;
+  }
+
+  return false;
+  
+}
 
 ///////////////////////// Controller Loop  ///////////////////////////
 //Called every control cycle waypoint TC4 interrupt

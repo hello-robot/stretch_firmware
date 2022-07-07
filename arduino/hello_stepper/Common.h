@@ -133,6 +133,12 @@ struct __attribute__ ((packed)) Gains{
   float safety_stiffness; //0-1, for when safety mode is hold
   float i_safety_feedforward; //current (A), for when safety mode is hold
   uint8_t config;
+  float bias_coeff;
+  float velocity_coeff;
+  float hinged_velocity_coeff;
+  float hinged_acceleration_coeff;
+  float effort_margin
+  
 };
 
 struct __attribute__ ((packed)) MotionLimits{
@@ -159,8 +165,11 @@ struct __attribute__ ((packed)) Status{
   uint16_t traj_id;             //Id of active trajectory segment
   float accel_mg;
   float vel_mg;
+  /*
   float expected_current;       //Tells what expected current given the model should be
   bool has_collided;            //Tells if motor has collided?
+  */
+
 };
 
 //struct __attribute__ ((packed)) CurrentModel{
