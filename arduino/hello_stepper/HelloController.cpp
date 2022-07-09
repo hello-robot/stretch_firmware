@@ -349,7 +349,7 @@ void update_status()
 }
 
 ///////////////////////// Motor Model Check //////////////////////////
-
+///// If just want to get the expected current (not check for collision) can call this function then turn back to current
 float getExpectedEffort()
 {
   bias = 1;
@@ -382,6 +382,7 @@ int sign(float x)
 }
 
 ///Check whether the model deviates from the expected by an amount greater than margin
+///Add this function call in runtime loop to see if the motor is colliding
 bool checkModelCollision()
 {
   float expected_effort;
