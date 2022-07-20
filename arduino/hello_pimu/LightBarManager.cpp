@@ -19,6 +19,26 @@
 #define MODE_LB_CONSTANT_COLOR 2
 #define MODE_LB_CYCLING_COLOR 3
 
+
+#define PX_GREEN 0,64,0
+#define PX_YELLOW_GREEN 32,64,0
+#define PX_YELLOW 64,64,0
+#define PX_ORANGE 64,32,0 
+#define PX_RED 64,0,0
+
+#define PX_PINK 8,1,3
+#define PX_OFF 0,0,0
+#define PX_WHITE 128,128,128
+
+#define V_BAT_MIN 10.0
+#define V_BAT_MAX 12.0
+
+//Light bar interpolates from RED to GREEN over range V_BAT_MIN-->V_BAT_MAX
+
+uint8_t Red(uint32_t color){return (color >> 16) & 0xFF;}
+uint8_t Green(uint32_t color){return (color >> 8) & 0xFF;}
+uint8_t Blue(uint32_t color){return color & 0xFF;}
+
 //Slew a pixel color from bg to fg and back over duration_ms
 class SlewPixel
 {
@@ -27,8 +47,10 @@ class SlewPixel
   int rf,rb,bf,bb,gf,gb;
   float d_pct;
   float pct;
+  bool configured;
   SlewPixel()
   {
+    configured=false;
   }
   void Configure(uint32_t color_bg, uint32_t color_fg, float duration_ms, float init_pct)
   {
@@ -41,6 +63,7 @@ class SlewPixel
     pct=init_pct;
     d_pct = 10/duration_ms;
     SetPct(init_pct);
+    configured=true;
   }
   void SetPct(float pct) //pass in 0-1.0. O.5 is FG color 0/1.0 is BG color
   {
@@ -58,16 +81,18 @@ class SlewPixel
       b=bf*(1-pct*2)+bb*pct*2;
     }
   }
-  uint32_t Step()
+  //Return true if at the end of a cycle so can update the color
+  bool Step()
   {
     pct=min(1.0,pct+d_pct);
     SetPct(pct);
-    if(pct==1.0)
+    if(pct==1.0 || !configured)
+    {
       pct=0.0;
+      return true;
+    }
+    return false;
   }
-  uint8_t Red(uint32_t color){return (color >> 16) & 0xFF;}
-  uint8_t Green(uint32_t color){return (color >> 8) & 0xFF;}
-  uint8_t Blue(uint32_t color){return color & 0xFF;}
 };
 
 
@@ -81,13 +106,7 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
     }
     
     uint32_t Color1, Color2;  // What colors are in use
-    float db;
-    float brightness;
-    float min_brightness;
     SlewPixel p0, p1, p2, p3;
-    bool blink_ramp;
-    unsigned long t_toggle_last;
-    int blink_duration_ms;
   
     void Off()
     {
@@ -104,53 +123,7 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
         }
         show();
     }
-//////////////////////////////////////////////////////////////////////
-    void RunstopBlink(uint32_t color)
-    {
-      Color1=color;
-      ColorSet(Color1);
-    }
-    void RunstopBlinkUpdate(bool runstop_led_on)
-    {
-      if (runstop_led_on)
-        ColorSet(Color1);
-      else
-      {
-        clear();
-        show();
-      }
-      
-    }
-//////////////////////////////////////////////////////////////////////
-    void ColoredBlink(uint32_t color, float duration_ms, float min_b)
-    {
-      blink_duration_ms=duration_ms;
-      db=255/(duration_ms/10.0);
-      min_brightness=min_b;
-      Color1=color;
-      ColorSet(Color1);
-      brightness=0;
-      blink_ramp=true;
-      t_toggle_last=0;
-    }
-    void ColoredBlinkUpdate()
-    { 
-      unsigned long t = time_manager.get_elapsed_time_ms();
-      if (t-t_toggle_last>blink_duration_ms)
-      {
-        t_toggle_last=t;
-        blink_ramp=!blink_ramp;
-      }
-      
-      //allow negative brightness so can turn all the way off for a period
-      if(brightness<255 && blink_ramp) //ramp up
-          brightness=min(255,brightness+db);
-      
-      if(brightness>min_brightness && !blink_ramp) //ramp down
-        brightness=max(min_brightness,brightness-db);
-    setBrightness((uint8_t)max(0,brightness));
-    show();
-  }
+
 //////////////////////////////////////////////////////////////////////  
   void ColoredScan(uint32_t color_bg,uint32_t color_fg,float duration_ms)
   {
@@ -159,9 +132,10 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
     p2.Configure(color_bg, color_fg, duration_ms, 0.33);
     p3.Configure(color_bg, color_fg, duration_ms, 0.5);
   }
-  void ColoredScanUpdate()
+  bool ColoredScanUpdate()
   {
-    p0.Step();
+    
+    bool finished_cycle=p0.Step();
     p1.Step();
     p2.Step();
     p3.Step();
@@ -170,9 +144,74 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
     setPixelColor(2, Color(p2.r,p2.g,p2.b));
     setPixelColor(3, Color(p3.r,p3.g,p3.b));
     show();
+    return finished_cycle;
   }
 
-    
+////////////////////////////////////////////////////////////////////// 
+  
+  void ColoredBatteryLevel(float v_bat, float v_bat_min, float v_bat_max,bool runstop_on, bool runstop_led_on,bool charger_on)
+  {
+    if (runstop_led_on || !runstop_on)
+    {
+      float dv=(v_bat_max-v_bat_min)/4;
+      uint32_t c1, c2;
+      float interp;
+      if (v_bat<v_bat_min)
+      {
+        c1=Color(PX_RED);
+        c2=Color(PX_RED);
+        interp=1.0;
+      }
+      else if (v_bat>=v_bat_min && v_bat<(v_bat_min+dv))
+      {
+        c1=Color(PX_RED);
+        c2=Color(PX_ORANGE);
+        interp = (v_bat-v_bat_min)/dv;
+      }
+      else if (v_bat>=(v_bat_min+dv) && v_bat<(v_bat_min+2*dv))
+      {
+        c1=Color(PX_ORANGE);
+        c2=Color(PX_YELLOW);
+        interp = (v_bat-(v_bat_min+dv))/dv;
+      }
+      else if (v_bat>=(v_bat_min+2*dv) && v_bat<(v_bat_min+3*dv))
+      {
+        c1=Color(PX_YELLOW);
+        c2=Color(PX_YELLOW_GREEN);
+        interp = (v_bat-(v_bat_min+2*dv))/dv;
+      }
+      else if (v_bat>=(v_bat_min+3*dv) && v_bat<v_bat_max)
+      {
+        c1=Color(PX_YELLOW_GREEN);
+        c2=Color(PX_GREEN);
+        interp = (v_bat-(v_bat_min+3*dv))/dv;
+      }
+      else
+      {
+        c1=Color(PX_GREEN);
+        c2=Color(PX_GREEN);
+        interp=1.0;
+      }
+      uint8_t r = ((float)(Red(c2)-Red(c1)))*interp+Red(c1);
+      uint8_t g = ((float)(Green(c2)-Green(c1)))*interp+Green(c1);
+      uint8_t b = ((float)(Blue(c2)-Blue(c1)))*interp+Blue(c1);
+      if (charger_on)
+      {
+        if (ColoredScanUpdate())
+          ColoredScan(Color(r,g,b),Color(PX_OFF),2000);
+      }
+      else
+      {
+        ColorSet(Color(r,g,b));
+        show();
+      }
+    }
+    else
+    {
+      clear();
+      show();
+    }
+  }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -189,91 +228,14 @@ void LightBarManager::setupLightBarManager()
    pinMode(NEOPIXEL, OUTPUT);
    pixels = new LightBarPatterns(NUM_PIXELS, NEOPIXEL, NEO_GRB);
    pixels->begin(&sercom1, SERCOM1, SERCOM1_DMAC_ID_TX, NEOPIXEL, SPI_PAD_2_SCK_3, PIO_SERCOM_ALT);
-   mode=OFF; 
-    
 }
-void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on) 
+
+
+
+void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on,float v_bat) 
 {
   if (pixels)
   {
-    if(charging_required)//highest priority
-    {
-      if(mode!=CHARGING_REQUIRED)
-      {
-        pixels->ColoredBlink(pixels->Color(255,0,0),1000,-10);
-        mode=CHARGING_REQUIRED;
-      }
-    }
-    else 
-    {
-      if (!boot_detected) //second priority
-      {
-        if(mode!=BOOTING)
-        {
-          pixels->ColoredScan(pixels->Color(255,50,100),pixels->Color(0,0,0),2000);
-          mode=BOOTING;
-        }
-      }
-      else
-      {
-        if (charger_on) //third priority
-        {
-          if(runstop_on)
-          {
-            if(mode!=CHARGING_RUNSTOP_ON)
-            {
-              pixels->RunstopBlink(pixels->Color(255,191,0));
-              mode=CHARGING_RUNSTOP_ON;
-            }
-          }
-          else
-          {
-            if(mode!=CHARGING_RUNSTOP_OFF)
-            {
-              pixels->ColorSet(pixels->Color(255,191,0));
-              mode=CHARGING_RUNSTOP_OFF;
-            }
-          }
-        }
-        else //fourth priority: normal operation
-        {
-          if(runstop_on)
-          {
-            if(mode!=NORMAL_RUNSTOP_ON)
-            {
-              pixels->RunstopBlink(pixels->Color(128,128,128));
-              mode=NORMAL_RUNSTOP_ON;
-            }
-          }
-          else
-          {
-            if(mode!=NORMAL_RUNSTOP_OFF)
-            {
-              pixels->ColorSet(pixels->Color(128,128,128));
-              mode=NORMAL_RUNSTOP_OFF;
-            }
-          }
-        }//4
-      }
-    }
-    
-    switch(mode){
-      case OFF:
-        pixels->Off();
-        break;
-      case BOOTING:
-        pixels->ColoredScanUpdate();
-        break;
-      case CHARGING_RUNSTOP_ON:
-      case NORMAL_RUNSTOP_ON:
-        pixels->RunstopBlinkUpdate(runstop_led_on);
-        break;
-      case CHARGING_RUNSTOP_OFF:
-      case NORMAL_RUNSTOP_OFF:
-        break;
-      case CHARGING_REQUIRED:
-        pixels->ColoredBlinkUpdate();
-        break;
-    };
+      pixels->ColoredBatteryLevel(v_bat, V_BAT_MIN, V_BAT_MAX, runstop_on, runstop_led_on, charger_on );
   }
 }
