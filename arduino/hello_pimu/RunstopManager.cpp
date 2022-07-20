@@ -101,10 +101,10 @@ void RunstopManager::toggle_led(int rate_ms)
     {
         digitalWrite(RUNSTOP_LED, HIGH);
     }
-      else
-      {
-        digitalWrite(RUNSTOP_LED, LOW);
-      }
-     runstop_led_on=!runstop_led_on;
+    else
+    {
+      digitalWrite(RUNSTOP_LED, LOW);
+    }
+   runstop_led_on=!runstop_led_on;
   }
 }
