@@ -188,7 +188,8 @@ void setupBoardVariants()
     // An iMax of 3.2A results in a uMax of 247. By default set at 8-bit pwm. 
     iMAX =3.2;        // Be careful adjusting this.  
     rSense = 0.1;   //Ohms per Franco board
-    uMAX = (255/3.3)*(iMAX*10*rSense);   
+    uMAX = (255/3.3)*(iMAX*10*rSense);
+    k_c2e =(255/3.3)*10*rSense;
   }
   
   if (BOARD_VARIANT==1)
@@ -198,7 +199,7 @@ void setupBoardVariants()
     iMAX =4.35;        // Be careful adjusting this.  
     rSense = 0.15;   //Ohms per Franco board
     uMAX = (255/3.3)*(iMAX*5*rSense);   
-    
+    k_c2e =(255/3.3)*5*rSense;
     
     BOARD_VARIANT_DRV8842=1;
     BOARD_VARIANT_PIN_RUNSTOP=PIN_RS1;
@@ -213,10 +214,11 @@ void setupBoardVariants()
     pinMode(DRV8842_FAULT_A, INPUT);
     pinMode(DRV8842_FAULT_B, INPUT);
 
+
     //attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), sync_manager.on_runstop_change, CHANGE);
     //attachInterrupt(digitalPinToInterrupt(PIN_SYNC), sync_manager.on_sync_change, CHANGE);
   }
-  k_c2e =(255/3.3)*5*rSense;
+
   k_e2c = 1/k_c2e;
   pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT);
   pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT_PULLUP); //Default to high if no cable (disables motor)
@@ -420,7 +422,7 @@ void update_status()
 
 float mpos_d;
 float x_des_incr=0;
-#define STIFFNESS_SLEW 1.0
+#define STIFFNESS_SLEW 0.1
 float stiffness_target=0;
 
 float eff_max=0;
