@@ -420,7 +420,7 @@ void update_status()
 
 float mpos_d;
 float x_des_incr=0;
-#define STIFFNESS_SLEW .001
+#define STIFFNESS_SLEW 1.0
 float stiffness_target=0;
 
 float eff_max=0;
