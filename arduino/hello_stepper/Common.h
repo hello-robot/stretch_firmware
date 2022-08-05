@@ -21,7 +21,8 @@
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for waypoint management
 // Version 0.2.0: Add RE1.5 support (BOARD_VARIANT_DRV8842, BOARD_VARIANT_PIN_RUNSTOP)
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.1p1"
+
+#define FIRMWARE_VERSION_HR "Stepper.v0.2.2p1"
 
 /////////////////////////////////////////////////////////////////
 

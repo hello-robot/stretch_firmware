@@ -28,7 +28,7 @@
 
 #define PX_PINK 8,1,3
 #define PX_OFF 0,0,0
-#define PX_WHITE 128,128,128
+#define PX_WHITE 32,32,32
 
 #define V_BAT_MIN 10.0
 #define V_BAT_MAX 12.0
@@ -48,11 +48,14 @@ class SlewPixel
   float d_pct;
   float pct;
   bool configured;
+  float pct_max;
+  int dir;
   SlewPixel()
   {
     configured=false;
+    dir=1;
   }
-  void Configure(uint32_t color_bg, uint32_t color_fg, float duration_ms, float init_pct)
+  void Configure(uint32_t color_bg, uint32_t color_fg, float duration_ms, float init_pct, float pm)
   {
     rf=Red(color_fg);
     rb=Red(color_bg);
@@ -62,34 +65,38 @@ class SlewPixel
     bb=Blue(color_bg);
     pct=init_pct;
     d_pct = 10/duration_ms;
+    pct_max=pm;
     SetPct(init_pct);
     configured=true;
+    dir=1;
   }
-  void SetPct(float pct) //pass in 0-1.0. O.5 is FG color 0/1.0 is BG color
+  void SetPct(float p) //pass in 0-1.0. O.0 is BG color 1.0 is FG color. Over 1.0 turn off (to allow for a delay before starting new cycle)
   {
-    if(pct<0.5)
+    if(p>1.0) 
     {
-      r=rb*(1-pct*2)+rf*pct*2;
-      g=gb*(1-pct*2)+gf*pct*2;
-      b=bb*(1-pct*2)+bf*pct*2;
+      r=0;
+      g=0;
+      b=0;
     }
     else
     {
-      pct=pct-0.5;
-      r=rf*(1-pct*2)+rb*pct*2;
-      g=gf*(1-pct*2)+gb*pct*2;
-      b=bf*(1-pct*2)+bb*pct*2;
+      r=rb*(1-p)+rf*p;
+      g=gb*(1-p)+gf*p;
+      b=bb*(1-p)+bf*p;
     }
   }
   //Return true if at the end of a cycle so can update the color
   bool Step()
   {
-    pct=min(1.0,pct+d_pct);
+    
+    pct=max(0,min(pct_max,pct+d_pct*dir));
+    if ((pct==0 && dir==-1)||(pct==pct_max && dir==1))
+      dir=dir*-1;
     SetPct(pct);
-    if(pct==1.0 || !configured)
+    if(pct==pct_max || !configured)
     {
-      pct=0.0;
-      return true;
+        return true;
+        configured=true;
     }
     return false;
   }
@@ -127,10 +134,10 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
 //////////////////////////////////////////////////////////////////////  
   void ColoredScan(uint32_t color_bg,uint32_t color_fg,float duration_ms)
   {
-    p0.Configure(color_bg, color_fg, duration_ms, 0.0);
-    p1.Configure(color_bg, color_fg, duration_ms, 0.17);
-    p2.Configure(color_bg, color_fg, duration_ms, 0.33);
-    p3.Configure(color_bg, color_fg, duration_ms, 0.5);
+    p0.Configure(color_bg, color_fg, duration_ms, 0.25, 1.5);
+    p1.Configure(color_bg, color_fg, duration_ms, .5,1.5);
+    p2.Configure(color_bg, color_fg, duration_ms, .75,1.5);
+    p3.Configure(color_bg, color_fg, duration_ms, 1.0,1.5);
   }
   bool ColoredScanUpdate()
   {
@@ -195,10 +202,10 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
       uint8_t r = ((float)(Red(c2)-Red(c1)))*interp+Red(c1);
       uint8_t g = ((float)(Green(c2)-Green(c1)))*interp+Green(c1);
       uint8_t b = ((float)(Blue(c2)-Blue(c1)))*interp+Blue(c1);
-      if (charger_on)
+      if (charger_on && !runstop_on)
       {
         if (ColoredScanUpdate())
-          ColoredScan(Color(r,g,b),Color(PX_OFF),2000);
+          ColoredScan(Color(r,g,b),Color(PX_OFF),2000);//Color((int)((float)r*0.1),(int)((float)g*0.1),(int)((float)b*0.1)),2000);
       }
       else
       {

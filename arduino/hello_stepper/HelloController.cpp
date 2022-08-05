@@ -134,14 +134,19 @@ float rad_to_deg(float x)
   return x*57.29577951308232;
 }
 
+float k_c2e; 
+float k_e2c; 
+
 float current_to_effort(float x)
 {
-  if (BOARD_VARIANT==1)
-    return max(-255,min(255,(255/3.3)*(x*5*rSense))); //RE1.5
-  else
-    return max(-255,min(255,(255/3.3)*(x*10*rSense))); //RE1.0
+  return max(-255,min(255,x*k_c2e));
 }
 
+float effort_to_current(float e)
+{
+  return (e*k_e2c);
+
+}
 
 void toggle_led(int rate_ms)
 {
@@ -211,6 +216,8 @@ void setupBoardVariants()
     //attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), sync_manager.on_runstop_change, CHANGE);
     //attachInterrupt(digitalPinToInterrupt(PIN_SYNC), sync_manager.on_sync_change, CHANGE);
   }
+  k_c2e =(255/3.3)*5*rSense;
+  k_e2c = 1/k_c2e;
   pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT);
   pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT_PULLUP); //Default to high if no cable (disables motor)
 }
@@ -416,6 +423,7 @@ float x_des_incr=0;
 #define STIFFNESS_SLEW 1.0
 float stiffness_target=0;
 
+float eff_max=0;
 
 void stepHelloController()
 {
@@ -575,7 +583,7 @@ void stepHelloController()
      //stat.debug=diag_runstop_on;//sync_manager.runstop_active;
      if (diag_runstop_on)
      {
-        stat.debug++;
+        //stat.debug++;
         cmd_in.mode=MODE_SAFETY;
         cmd.mode=MODE_SAFETY;
         safety_override=true;
@@ -622,7 +630,9 @@ void stepHelloController()
         cmd.stiffness=cmd_in.stiffness;
         cmd.i_contact_pos =cmd_in.i_contact_pos;
         cmd.i_contact_neg =cmd_in.i_contact_neg;
-
+        g_eff_pos=current_to_effort(abs(cmd.i_contact_pos));
+        g_eff_neg=current_to_effort(-1*abs(cmd.i_contact_neg));
+      
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
         {
@@ -654,6 +664,7 @@ void stepHelloController()
               mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_POS_TRAJ_WAYPOINT:
+              eff_max=0;
               mg.safe_switch_on(yw,v);
               mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
               mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
@@ -773,7 +784,9 @@ void stepHelloController()
             else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;          
             DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
             u = (gains.pKp * e) + ITerm + DTerm;
+            stat.debug=current_to_effort(gains.i_safety_feedforward);
             u=u*gains.safety_stiffness+current_to_effort(gains.i_safety_feedforward);
+            
             //stat.debug=u;//current_to_effort(gains.i_safety_feedforward);//gains.i_safety_feedforward;//current_to_effort(gains.i_safety_feedforward);
             diag_near_pos_setpoint=abs(e)<gains.pos_near_setpoint_d;
             diag_near_vel_setpoint=0;
@@ -914,6 +927,7 @@ void stepHelloController()
                 else
                   xdes=mg.update(rad_to_deg(trajectory_manager.q)); //get target position
                 traj_hold_pos=yw;
+                //stat.debug++;
               }
               else
                   xdes=traj_hold_pos;
@@ -925,8 +939,8 @@ void stepHelloController()
             DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+            //u=0;
             
-            //stat.debug=xdes;
             diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
@@ -934,7 +948,7 @@ void stepHelloController()
             break;
                
       };
-
+  
   if(flip_effort_polarity)
   {
     u=u*-1;
@@ -947,7 +961,7 @@ void stepHelloController()
     uMAX_NF=-1*abs(uMAX_N);
   }
               
- 
+  
     diag_at_current_limit = 0;  
     if (u > 0)          //Depending on direction we want to apply torque, add or subtract a phase angle of PA for max effective torque.  PA should be equal to one full step angle: if the excitation angle is the same as the current position, we would not move!  
       {                 //You can experiment with "Phase Advance" by increasing PA when operating at high speeds
@@ -976,32 +990,27 @@ void stepHelloController()
     eff = efLPFa*eff +  efLPFb*(-1*u);
   else
    eff = efLPFa*eff +  efLPFb*(u);
-   
+
+   //eff_max=max(eff_max,abs(eff));
+   //stat.debug=g_eff_pos;//eff_max;//effort_to_current(eff_max);
     ///////////////////////////////
     //Guarded Mode
-
+      
      if (guarded_mode_enabled)
      {
-        
-        g_eff_pos=current_to_effort(abs(cmd.i_contact_pos));
-        g_eff_neg=current_to_effort(-1*abs(cmd.i_contact_neg));
-        
       if (eff>g_eff_pos || eff<g_eff_neg)
       {
         guarded_event_cnt++;
-
+        
         if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT)) //Hit a new contact event, hold position
         {
           guarded_override=1;
           hold_pos=yw;
-          
           if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
           {
             trajectory_manager.reset();
-            //stat.debug++;
           }
           cmd.mode=MODE_SAFETY;
-          
         }
       }
      }

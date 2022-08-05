@@ -26,16 +26,7 @@ TrajectoryManager trajectory_manager;
     
 TrajectoryManager::TrajectoryManager()
 {
-    dirty_seg_in=false;
-    state=TRAJ_STATE_IDLE;
-    t=0;
-    q=0;
-    start_new=false;
-    seg_active_valid=false;
-    seg_next_valid=false;
-    memset(&(seg_load_error_message), 0, 100);
-    id_curr_seg=0;
-    waiting_on_sync=false;
+    reset();
 }
 
 bool TrajectoryManager::is_trajectory_active()
@@ -54,9 +45,16 @@ bool TrajectoryManager::is_trajectory_idle()
     
 void TrajectoryManager::reset()
 {
+  dirty_seg_in=false;
   state=TRAJ_STATE_IDLE;
+  t=0;
+  q=0;
+  start_new=false;
   seg_active_valid=false;
+  seg_next_valid=false;
+  memset(&(seg_load_error_message), 0, 100);
   id_curr_seg=0;
+  waiting_on_sync=false;
 }
 
 void TrajectoryManager::step()
@@ -69,6 +67,7 @@ void TrajectoryManager::step()
       start_new=false;
       seg_active=seg_in;
       seg_active_valid=true;
+      
     }
     else
     {
@@ -84,7 +83,7 @@ void TrajectoryManager::step()
   }
  
  /* Behavior is to automatically execute sequential trajectories as long as there
-  * is unexecuted segments in the buffer.
+  * are unexecuted segments in the buffer.
   * Then revert to idle state until more data shows up.
   */
  
@@ -96,7 +95,9 @@ void TrajectoryManager::step()
       if (waiting_on_sync)
         state=TRAJ_STATE_WAITING_ON_SYNC;
       else
+      {
         state=TRAJ_STATE_ACTIVE;
+      }
       t=0;
     }
  }
@@ -202,6 +203,7 @@ bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on
     dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
     waiting_on_sync=wait_on_sync;
     memset(&(seg_load_error_message), 0, 100);
+    strcpy(seg_load_error_message, "successful start_new_trajectory");
     return 1;
   }
   if (state==TRAJ_STATE_WAITING_ON_SYNC)
