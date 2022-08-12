@@ -17,7 +17,10 @@
 
 #define SYNC_PULSE_MOTOR 40 //ms
 #define WAIT_PULSE_MOTOR 40 //ms
-
+//For variant_1 steppers the sync will trigger on any low-->high transition
+//so pulse width isn't defining. 
+//Making it short to allow for ~100hz max sync rate (higher than needed)
+#define SYNC_PULSE_MOTOR_DEDICATED_SYNC 10 //ms
 
 SyncManager::SyncManager(RunstopManager * r)
 {
@@ -99,7 +102,7 @@ void SyncManager::step() //Called at 1Khz from TC4 ISR
     //Handle sync
     if (!pulse_len_ms && dirty_motor_sync) //
     {
-        pulse_len_ms=SYNC_PULSE_MOTOR+1; //+1 so step loop comes out correct
+        pulse_len_ms=SYNC_PULSE_MOTOR_DEDICATED_SYNC+1; //+1 so step loop comes out correct
         dirty_motor_sync=0;
         time_manager.start_duration_measure();
     }   

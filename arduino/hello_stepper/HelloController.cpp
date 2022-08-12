@@ -67,6 +67,11 @@ int board_reset_cnt=0;
 int guarded_event_cnt=0;
 bool motion_limits_set=0;
 
+#define N_POS_HISTORY 250 //With TC4_LOOP_RATE 1000, log 0.25s of past motions
+float pos_history[N_POS_HISTORY];
+int pos_history_idx=0;
+
+
 //By default boot with hello_interface on
 //Turn on when get RPC request RPC_SET_MENU_ON
 //Turn back off when menu gets 'z' command
@@ -236,6 +241,7 @@ void setupHelloController()
   memset(&stat, 0, sizeof(Status));
   memset(&stat_out, 0, sizeof(Status));
   memset(&motion_limits, 0, sizeof(MotionLimits));
+  memset(&pos_history, 0, N_POS_HISTORY*sizeof(float));
 
   sprintf(board_info.board_variant, "Stepper.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
@@ -422,7 +428,7 @@ void update_status()
 
 float mpos_d;
 float x_des_incr=0;
-#define STIFFNESS_SLEW 0.1
+#define STIFFNESS_SLEW 0.01
 float stiffness_target=0;
 
 float eff_max=0;
@@ -514,7 +520,7 @@ void stepHelloController()
 
     
     
-     if (trg.data & TRIGGER_MARK_POS)
+     if (trg.data & TRIGGER_MARK_POS || (trg.data & TRIGGER_MARK_POS_ON_CONTACT && guarded_override))
      {
       //Reset position measurement
       //mark_pos = yy; //0-360
@@ -720,7 +726,7 @@ void stepHelloController()
     }
     if (cmd.stiffness<stiffness_target)
     {
-      stiffness_target=max(0,stiffness_target-STIFFNESS_SLEW);
+      stiffness_target=max(cmd.stiffness,stiffness_target-STIFFNESS_SLEW);
     }
   }
   else
@@ -731,7 +737,7 @@ void stepHelloController()
     }
     if (gains.safety_stiffness<stiffness_target)
     {
-      stiffness_target=max(0,stiffness_target-STIFFNESS_SLEW);
+      stiffness_target=max(gains.safety_stiffness,stiffness_target-STIFFNESS_SLEW);
     }
   }
   //////////////////////////////////////////
@@ -786,7 +792,7 @@ void stepHelloController()
             else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;          
             DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
             u = (gains.pKp * e) + ITerm + DTerm;
-            stat.debug=current_to_effort(gains.i_safety_feedforward);
+            //stat.debug=current_to_effort(gains.i_safety_feedforward);
             u=u*gains.safety_stiffness+current_to_effort(gains.i_safety_feedforward);
             
             //stat.debug=u;//current_to_effort(gains.i_safety_feedforward);//gains.i_safety_feedforward;//current_to_effort(gains.i_safety_feedforward);
@@ -1004,10 +1010,11 @@ void stepHelloController()
       {
         guarded_event_cnt++;
         
-        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT)) //Hit a new contact event, hold position
+        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT || cmd.mode==MODE_POS_PID || cmd.mode==MODE_VEL_PID)) //Hit a new contact event, hold position
         {
           guarded_override=1;
           hold_pos=yw;
+          stat.debug=deg_to_rad(hold_pos);
           if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
           {
             trajectory_manager.reset();
@@ -1037,12 +1044,22 @@ void stepHelloController()
     yw_1 = yw;
 
   
-    diag_is_moving=0;
-    diag_is_moving=abs(vs)>gains.vel_near_setpoint_d;
+
+  ////////// Handle is_moving
+  float vel_is_moving = (float)(abs(ywd- pos_history[pos_history_idx]))*4;//4 as 250ms of history, convert to deg/s
+  diag_is_moving = vel_is_moving>gains.vel_near_setpoint_d;
+  //stat.debug= vel_is_moving;
+  pos_history[pos_history_idx]=ywd;
+  pos_history_idx++;
+  if (pos_history_idx>=N_POS_HISTORY)
+    pos_history_idx=0;
+    
       
-    //Cleanup
-    trg.data=0; //Clear triggers
-    first_filter=false;
+  //Cleanup
+  trg.data=0; //Clear triggers
+  first_filter=false;
+
+    
 }
 
 ///////////////////////// Commutation Loop ///////////////////////////
