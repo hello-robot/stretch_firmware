@@ -149,15 +149,15 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
     p0.Step();
 
     if(!p1.configured)
-      p1.Configure(color_bg, color_fg, duration_ms, 0.1, 0, 1.0);
+      p1.Configure(color_bg, color_fg, duration_ms, 0.0, 0, 1.0);
      p1.Step();
      
     if(!p2.configured)
-      p2.Configure(color_bg, color_fg, duration_ms, 0.2, 0, 1.0);
+      p2.Configure(color_bg, color_fg, duration_ms, 0.0, 0, 1.0);
     p2.Step();
 
     if(!p3.configured)
-      p3.Configure(color_bg, color_fg, duration_ms, 0.3, 0, 1.0);
+      p3.Configure(color_bg, color_fg, duration_ms, 0.0, 0, 1.0);
     p3.Step();
 
     setPixelColor(0, Color(p0.r,p0.g,p0.b));

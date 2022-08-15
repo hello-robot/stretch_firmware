@@ -27,6 +27,7 @@ extern void stepHelloController();
 extern void stepHelloCommutation();
 extern void stepHelloControllerRPC();
 extern void toggle_led(int rate_ms);
+extern void enableMotorDrivers();
 extern float debug;
 extern void setupMGInterrupts();
 extern void enableMGInterrupts();
