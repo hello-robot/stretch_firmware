@@ -266,7 +266,17 @@ void enableMotorDrivers()
     digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
   }
 }
+void disableMotorDrivers()
+{
+  if (BOARD_VARIANT==1)
+  {
+    digitalWrite(DRV8842_NSLEEP_A, LOW); //Logic high enables driver
+    digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
+    delay(5);
+    digitalWrite(MOTOR_SHUNT, LOW); //Turn the shunt off (for lift dof)
 
+  }
+}
 ///////////////////////// RPC ///////////////////////////
 
 void handleNewRPC();
@@ -337,6 +347,8 @@ void handleNewRPC()
            flash_gains.write(gains);
           break;
     case RPC_SET_ENC_CALIB: 
+          //if (!receiving_calibration) //Shunt motor at start
+          //  disableMotorDrivers();
           receiving_calibration=true;
           memcpy(&enc_calib_in, rpc_in+1, sizeof(EncCalib)); //copy in the calibration table
           rpc_out[0]=RPC_REPLY_ENC_CALIB;
@@ -458,6 +470,8 @@ void stepHelloController()
     {
       if (lookup[0]!=0 && lookup[16383]!=0)
         diag_calibration_rcvd=1;
+      //else
+      //  disableMotorDrivers();
     }
   
 
@@ -474,7 +488,10 @@ void stepHelloController()
     {
       board_reset_cnt--; //Countdown to allow time for RPC to finish up
       if (board_reset_cnt==0)
+      { 
+        //disableMotorDrivers();
         NVIC_SystemReset();
+      }
     }
     
     if (dirty_gains)
@@ -1099,6 +1116,7 @@ void stepHelloCommutation()
     
     if (receiving_calibration)
     {
+      
       analogFastWrite(VREF_2, 0);     //set phase currents to zero
       analogFastWrite(VREF_1, 0); 
     }
