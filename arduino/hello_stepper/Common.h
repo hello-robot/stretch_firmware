@@ -19,10 +19,12 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Protocol 0: Initial production release for RE1
-// Protocol 1: Add support for waypoint management
-// Version 0.2.0: Add RE1.5 support (BOARD_VARIANT_DRV8842, BOARD_VARIANT_PIN_RUNSTOP)
+// Protocol 1: Add support for waypoint management (P1)
+// Version 0.2.0: Add RE1.5 support (BOARD_VARIANT_DRV8842, BOARD_VARIANT_PIN_RUNSTOP) (P1)
+// Protocol 2: Add support for cascaded position-velocity control gains (P2)
+// Version 0.3.0: Add support for cascaded position-velocity control 
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.2p1"
+#define FIRMWARE_VERSION_HR "Stepper.v0.3.0p2"
 
 /////////////////////////////////////////////////////////////////
 
@@ -97,6 +99,9 @@
 #define CONFIG_ENABLE_GUARDED_MODE 8
 #define CONFIG_FLIP_ENCODER_POLARITY 16
 #define CONFIG_FLIP_EFFORT_POLARITY 32
+#define CONFIG_USE_POS_VEL_CTRL 64
+
+
 
 /////////////////////////////////////////////////////////////////
 
@@ -130,6 +135,10 @@ struct __attribute__ ((packed)) Gains{
   float safety_stiffness; //0-1, for when safety mode is hold
   float i_safety_feedforward; //current (A), for when safety mode is hold
   uint8_t config;
+
+  float vpK1;
+  float vpK2;
+  float vpK3;
 };
 
 struct __attribute__ ((packed)) MotionLimits{

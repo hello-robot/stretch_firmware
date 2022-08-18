@@ -119,7 +119,7 @@ float FsCtrl = TC4_LOOP_RATE;
 bool receiving_calibration=false;
 bool flip_encoder_polarity = false;
 bool flip_effort_polarity = false;
-
+bool use_pos_vel_ctrl = false;
 
 bool runstop_enabled=false;
 bool guarded_mode_enabled = false;
@@ -452,7 +452,12 @@ float x_des_incr=0;
 float stiffness_target=0;
 
 float eff_max=0;
+float e2,i2;
 
+float vITerm;
+float vDTerm;
+float vdes;
+float pdes;
 void stepHelloController()
 {
   float xdes;
@@ -530,7 +535,8 @@ void stepHelloController()
       guarded_mode_enabled = gains.config & CONFIG_ENABLE_GUARDED_MODE;
       flip_encoder_polarity = gains.config & CONFIG_FLIP_ENCODER_POLARITY;
       flip_effort_polarity = gains.config & CONFIG_FLIP_EFFORT_POLARITY;
-
+      use_pos_vel_ctrl = gains.config & CONFIG_USE_POS_VEL_CTRL;
+      
       uMAX_P = current_to_effort(gains.iMax_pos);
       uMAX_N = current_to_effort(gains.iMax_neg);
       uMAX=uMAX_P; //This is only needed for mecahduino_menu mode...
@@ -870,13 +876,14 @@ void stepHelloController()
             diag_is_mg_accelerating=0;
             diag_is_mg_moving=0;
             break;    
-        
+
+
         case MODE_VEL_PID:
             e = (rad_to_deg(cmd.v_des) -v);   
-            ITerm += (gains.vKi * e);                 //Integral wind up limit
-            if (ITerm > gains.vKi_limit) ITerm = gains.vKi_limit;
-            else if (ITerm < -gains.vKi_limit) ITerm = -gains.vKi_limit;
-            u = ((gains.vKp * e) + ITerm - (gains.vKd * (e-e_1)));
+            vITerm += (gains.vKi * e);                 //Integral wind up limit
+            if (vITerm > gains.vKi_limit) vITerm = gains.vKi_limit;
+            else if (vITerm < -gains.vKi_limit) vITerm = -gains.vKi_limit;
+            u = ((gains.vKp * e) + vITerm - (gains.vKd * (e-e_1)));
             u=u*stiffness_target;
             diag_near_pos_setpoint=0;
             diag_near_vel_setpoint=abs(e)<gains.vel_near_setpoint_d;
@@ -916,14 +923,39 @@ void stepHelloController()
               xdes=mg.update(x_des_incr); //get target position
               
             }
-            e = (xdes - yw);
-            ITerm += (gains.pKi * e);                             //Integral wind up limit
-            if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
-            else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;    
-            
-            DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
-            u = (gains.pKp * e) + ITerm + DTerm;
-            u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+            if (!use_pos_vel_ctrl)
+            {
+              e = (xdes - yw);
+              ITerm += (gains.pKi * e);                             //Integral wind up limit
+              if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
+              else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;    
+              
+              DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
+              u = (gains.pKp * e) + ITerm + DTerm;
+              u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+            }
+            else
+            {
+              //Do cascaded Pos->Vel ctrl
+              //First do Pos PID
+              e = (xdes - yw);
+              ITerm += (gains.pKi * e);                             //Integral wind up limit
+              if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
+              else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;    
+              
+              DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
+              pdes = (gains.pKp * e) + ITerm + DTerm;
+
+              //Now do Vel PI
+              e2 = (mg.getVel() - v);   
+              vITerm += (gains.vKi * e2);                 //Integral wind up limit
+              if (vITerm > gains.vKi_limit) vITerm = gains.vKi_limit;
+              else if (vITerm < -gains.vKi_limit) vITerm = -gains.vKi_limit;
+              vdes = (gains.vKp * e) + vITerm;
+              
+              u = gains.vpK1*pdes+gains.vpK2*vdes+gains.vpK3*mg.getAccel(); 
+              u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+            }
             diag_near_pos_setpoint=abs((x_des_incr -yw))<gains.pos_near_setpoint_d;
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
@@ -945,18 +977,45 @@ void stepHelloController()
               }
               xdes=mg.update(rad_to_deg(cmd.x_des)); //get target position
             }
-            e = (xdes - yw);
-            ITerm += (gains.pKi * e);                             //Integral wind up limit
-            if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
-            else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;      
-            DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
-            u = (gains.pKp * e) + ITerm + DTerm;
-            u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
-            diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
+            
+            if (!use_pos_vel_ctrl)
+            {
+              e = (xdes - yw);
+              ITerm += (gains.pKi * e);                             //Integral wind up limit
+              if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
+              else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;      
+              DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
+              u = (gains.pKp * e) + ITerm + DTerm;
+              u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+              diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
+            }
+            else
+            {
+              //Do cascaded Pos->Vel ctrl
+              //First do Pos PID
+              e = (xdes - yw);
+              ITerm += (gains.pKi * e);                             //Integral wind up limit
+              if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
+              else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;    
+              
+              DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
+              pdes = (gains.pKp * e) + ITerm + DTerm;
+
+              //Now do Vel PI
+              e2 = (mg.getVel() - v);   
+              vITerm += (gains.vKi * e2);                 //Integral wind up limit
+              if (vITerm > gains.vKi_limit) vITerm = gains.vKi_limit;
+              else if (vITerm < -gains.vKi_limit) vITerm = -gains.vKi_limit;
+              vdes = (gains.vKp * e) + vITerm;
+              
+              u = gains.vpK1*pdes+gains.vpK2*vdes+gains.vpK3*mg.getAccel(); 
+              u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
+            }
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
             break;
+
         case MODE_POS_TRAJ_WAYPOINT:
             if (stiffness_target==0.0)
             {
@@ -977,6 +1036,7 @@ void stepHelloController()
               else
                   xdes=traj_hold_pos;
             }
+      
             e = (xdes - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit
             if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
