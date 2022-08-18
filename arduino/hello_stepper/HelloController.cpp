@@ -947,13 +947,14 @@ void stepHelloController()
               pdes = (gains.pKp * e) + ITerm + DTerm;
 
               //Now do Vel PI
-              e2 = (mg.getVel() - v);   
+              /*e2 = (mg.getVel() - v);   
               vITerm += (gains.vKi * e2);                 //Integral wind up limit
               if (vITerm > gains.vKi_limit) vITerm = gains.vKi_limit;
               else if (vITerm < -gains.vKi_limit) vITerm = -gains.vKi_limit;
               vdes = (gains.vKp * e) + vITerm;
-              
-              u = gains.vpK1*pdes+gains.vpK2*vdes+gains.vpK3*mg.getAccel(); 
+              stat.debug=123;//gains.vpK2*vdes;*/
+              stat.debug=mg.getVel();
+              u = gains.vpK1*pdes+gains.vpK2*mg.getVel();//vdes+gains.vpK3*mg.getAccel(); 
               u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             }
             diag_near_pos_setpoint=abs((x_des_incr -yw))<gains.pos_near_setpoint_d;
@@ -1111,7 +1112,7 @@ void stepHelloController()
         {
           guarded_override=1;
           hold_pos=yw;
-          stat.debug=deg_to_rad(hold_pos);
+          //stat.debug=deg_to_rad(hold_pos);
           if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
           {
             trajectory_manager.reset();
