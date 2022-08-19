@@ -19,10 +19,11 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Protocol 0: Initial production release for RE1
-// Protocol 1: Add support for waypoint management
-// Version 0.2.0: Add RE1.5 support (BOARD_VARIANT_DRV8842, BOARD_VARIANT_PIN_RUNSTOP)
+// Protocol 1: Add support for waypoint management (P1)
+// Version 0.2.0: Add RE1.5 support (BOARD_VARIANT_DRV8842, BOARD_VARIANT_PIN_RUNSTOP) (P1)
+// Version 0.2.3: Add support for motor shunt
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.2p1"
+#define FIRMWARE_VERSION_HR "Stepper.v0.2.3p1"
 
 /////////////////////////////////////////////////////////////////
 
@@ -88,7 +89,8 @@
 #define TRIGGER_WRITE_GAINS_TO_FLASH 8
 #define TRIGGER_RESET_POS_CALIBRATED 16
 #define TRIGGER_POS_CALIBRATED 32
-#define TRIGGER_START_NEW_VIA_TRAJ 64
+#define TRIGGER_MARK_POS_ON_CONTACT 64
+
 
 #define CONFIG_SAFE_MODE_HOLD 1
 #define CONFIG_ENABLE_RUNSTOP 2
@@ -96,7 +98,9 @@
 #define CONFIG_ENABLE_GUARDED_MODE 8
 #define CONFIG_FLIP_ENCODER_POLARITY 16
 #define CONFIG_FLIP_EFFORT_POLARITY 32
-#define CONFIG_USE_CUBIC_TRAJ 64
+#define CONFIG_USE_POS_VEL_CTRL 64
+
+
 
 /////////////////////////////////////////////////////////////////
 
@@ -130,6 +134,10 @@ struct __attribute__ ((packed)) Gains{
   float safety_stiffness; //0-1, for when safety mode is hold
   float i_safety_feedforward; //current (A), for when safety mode is hold
   uint8_t config;
+
+  float vpK1;
+  float vpK2;
+  float vpK3;
 };
 
 struct __attribute__ ((packed)) MotionLimits{

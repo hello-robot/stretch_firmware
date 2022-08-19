@@ -49,6 +49,7 @@ bool dirty_cmd=false;
 bool dirty_gains=false;
 bool dirty_trigger=false;
 bool dirty_traj_seg=false;
+bool dirty_trigger_mark_on_contact=false;
 
 bool diag_pos_calibrated = 0;
 bool diag_runstop_on=0;
@@ -67,12 +68,18 @@ int board_reset_cnt=0;
 int guarded_event_cnt=0;
 bool motion_limits_set=0;
 
+#define N_POS_HISTORY 250 //With TC4_LOOP_RATE 1000, log 0.25s of past motions
+float pos_history[N_POS_HISTORY];
+int pos_history_idx=0;
+
+
 //By default boot with hello_interface on
 //Turn on when get RPC request RPC_SET_MENU_ON
 //Turn back off when menu gets 'z' command
 volatile bool hello_interface = 1;
 float mark_pos=0.0;
 float mark_rem=0.0;
+float mark_on_contact_pos=0.0;
 float ywc=0;
 float uMAX_P=0;
 float uMAX_N=0;
@@ -204,13 +211,9 @@ void setupBoardVariants()
     BOARD_VARIANT_DRV8842=1;
     BOARD_VARIANT_PIN_RUNSTOP=PIN_RS1;
     pinMode(PIN_SYNC, INPUT);
-
+    pinMode(MOTOR_SHUNT, OUTPUT);
     pinMode(DRV8842_NSLEEP_A, OUTPUT);
     pinMode(DRV8842_NSLEEP_B, OUTPUT);
-  
-    digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
-    digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
-  
     pinMode(DRV8842_FAULT_A, INPUT);
     pinMode(DRV8842_FAULT_B, INPUT);
 
@@ -236,6 +239,7 @@ void setupHelloController()
   memset(&stat, 0, sizeof(Status));
   memset(&stat_out, 0, sizeof(Status));
   memset(&motion_limits, 0, sizeof(MotionLimits));
+  memset(&pos_history, 0, N_POS_HISTORY*sizeof(float));
 
   sprintf(board_info.board_variant, "Stepper.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
@@ -250,9 +254,29 @@ void setupHelloController()
   dirty_gains=1; //force load of gains
   analogFastWrite(VREF_2, 0);     //set phase currents to zero
   analogFastWrite(VREF_1, 0);
+  
 }
 
+void enableMotorDrivers()
+{
+  if (BOARD_VARIANT==1)
+  {
+    digitalWrite(MOTOR_SHUNT, HIGH); //Turn the shunt off (for lift dof)
+    digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
+    digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
+  }
+}
+void disableMotorDrivers()
+{
+  if (BOARD_VARIANT==1)
+  {
+    digitalWrite(DRV8842_NSLEEP_A, LOW); //Logic high enables driver
+    digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
+    delay(5);
+    digitalWrite(MOTOR_SHUNT, LOW); //Turn the shunt off (for lift dof)
 
+  }
+}
 ///////////////////////// RPC ///////////////////////////
 
 void handleNewRPC();
@@ -323,6 +347,8 @@ void handleNewRPC()
            flash_gains.write(gains);
           break;
     case RPC_SET_ENC_CALIB: 
+          //if (!receiving_calibration) //Shunt motor at start
+          //  disableMotorDrivers();
           receiving_calibration=true;
           memcpy(&enc_calib_in, rpc_in+1, sizeof(EncCalib)); //copy in the calibration table
           rpc_out[0]=RPC_REPLY_ENC_CALIB;
@@ -422,7 +448,7 @@ void update_status()
 
 float mpos_d;
 float x_des_incr=0;
-#define STIFFNESS_SLEW 0.1
+#define STIFFNESS_SLEW .1
 float stiffness_target=0;
 
 float eff_max=0;
@@ -444,6 +470,8 @@ void stepHelloController()
     {
       if (lookup[0]!=0 && lookup[16383]!=0)
         diag_calibration_rcvd=1;
+      //else
+      //  disableMotorDrivers();
     }
   
 
@@ -460,7 +488,10 @@ void stepHelloController()
     {
       board_reset_cnt--; //Countdown to allow time for RPC to finish up
       if (board_reset_cnt==0)
+      { 
+        //disableMotorDrivers();
         NVIC_SystemReset();
+      }
     }
     
     if (dirty_gains)
@@ -513,12 +544,24 @@ void stepHelloController()
       ////// Compute sensor data
 
     
-    
-     if (trg.data & TRIGGER_MARK_POS)
+     if (trg.data & TRIGGER_MARK_POS_ON_CONTACT)
      {
+        dirty_trigger_mark_on_contact=true;
+        mark_on_contact_pos=trg.tdata;
+     }
+   
+     if (trg.data & TRIGGER_MARK_POS || ( dirty_trigger_mark_on_contact && guarded_override))
+     {
+      if (dirty_trigger_mark_on_contact && guarded_override)
+      {
+        dirty_trigger_mark_on_contact=0;
+        mpos_d=rad_to_deg(mark_on_contact_pos);
+      }
+      else
+        mpos_d=rad_to_deg(trg.tdata);
+        
       //Reset position measurement
       //mark_pos = yy; //0-360
-      mpos_d=rad_to_deg(trg.tdata);
       hold_pos = mpos_d;
       if (flip_encoder_polarity)
         mpos_d=mpos_d*-1;
@@ -720,7 +763,7 @@ void stepHelloController()
     }
     if (cmd.stiffness<stiffness_target)
     {
-      stiffness_target=max(0,stiffness_target-STIFFNESS_SLEW);
+      stiffness_target=max(cmd.stiffness,stiffness_target-STIFFNESS_SLEW);
     }
   }
   else
@@ -731,7 +774,7 @@ void stepHelloController()
     }
     if (gains.safety_stiffness<stiffness_target)
     {
-      stiffness_target=max(0,stiffness_target-STIFFNESS_SLEW);
+      stiffness_target=max(gains.safety_stiffness,stiffness_target-STIFFNESS_SLEW);
     }
   }
   //////////////////////////////////////////
@@ -786,7 +829,7 @@ void stepHelloController()
             else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;          
             DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
             u = (gains.pKp * e) + ITerm + DTerm;
-            stat.debug=current_to_effort(gains.i_safety_feedforward);
+            //stat.debug=current_to_effort(gains.i_safety_feedforward);
             u=u*gains.safety_stiffness+current_to_effort(gains.i_safety_feedforward);
             
             //stat.debug=u;//current_to_effort(gains.i_safety_feedforward);//gains.i_safety_feedforward;//current_to_effort(gains.i_safety_feedforward);
@@ -1004,10 +1047,11 @@ void stepHelloController()
       {
         guarded_event_cnt++;
         
-        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT)) //Hit a new contact event, hold position
+        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT || cmd.mode==MODE_POS_PID || cmd.mode==MODE_VEL_PID)) //Hit a new contact event, hold position
         {
           guarded_override=1;
           hold_pos=yw;
+          stat.debug=deg_to_rad(hold_pos);
           if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
           {
             trajectory_manager.reset();
@@ -1037,12 +1081,22 @@ void stepHelloController()
     yw_1 = yw;
 
   
-    diag_is_moving=0;
-    diag_is_moving=abs(vs)>gains.vel_near_setpoint_d;
+
+  ////////// Handle is_moving
+  float vel_is_moving = (float)(abs(ywd- pos_history[pos_history_idx]))*4;//4 as 250ms of history, convert to deg/s
+  diag_is_moving = vel_is_moving>gains.vel_near_setpoint_d;
+  //stat.debug= vel_is_moving;
+  pos_history[pos_history_idx]=ywd;
+  pos_history_idx++;
+  if (pos_history_idx>=N_POS_HISTORY)
+    pos_history_idx=0;
+    
       
-    //Cleanup
-    trg.data=0; //Clear triggers
-    first_filter=false;
+  //Cleanup
+  trg.data=0; //Clear triggers
+  first_filter=false;
+
+    
 }
 
 ///////////////////////// Commutation Loop ///////////////////////////
@@ -1062,6 +1116,7 @@ void stepHelloCommutation()
     
     if (receiving_calibration)
     {
+      
       analogFastWrite(VREF_2, 0);     //set phase currents to zero
       analogFastWrite(VREF_1, 0); 
     }
