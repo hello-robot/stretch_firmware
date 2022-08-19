@@ -21,7 +21,8 @@
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for long timestamps
 // Version 0.2.0: Add support for Variant 1 (BOARD_VARIANT_DEDICATED_SYNC, charge connect, Neopixel, etc)
-#define FIRMWARE_VERSION "Pimu.v0.2.0p1"
+// Version 0.2.1: Update lightbar UI
+#define FIRMWARE_VERSION "Pimu.v0.2.1p1"
 
 #define FS 100 //Loop rate in Hz for TC5
 
