@@ -250,12 +250,29 @@ void LightBarManager::setupLightBarManager()
    pixels->begin(&sercom1, SERCOM1, SERCOM1_DMAC_ID_TX, NEOPIXEL, SPI_PAD_2_SCK_3, PIO_SERCOM_ALT);
 }
 
+float test_voltage=0.0;
+bool running_test=false;
 
+void LightBarManager::start_test()
+{
+  test_voltage=12.4;
+  running_test=true;
+}
 
 void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on,float v_bat) 
 {
   if (pixels)
   {
-      pixels->ColoredBatteryLevel(v_bat, V_BAT_MIN, V_BAT_MAX, runstop_on, runstop_led_on, charger_on );
+      if (running_test)
+      {
+        pixels->ColoredBatteryLevel(test_voltage, V_BAT_MIN, V_BAT_MAX, runstop_on, runstop_led_on, charger_on );
+        test_voltage=max(9.0,test_voltage-0.005);
+        if (test_voltage==9.0)
+          running_test=false;
+      }
+      else
+      {
+        pixels->ColoredBatteryLevel(v_bat, V_BAT_MIN, V_BAT_MAX, runstop_on, runstop_led_on, charger_on );
+      }
   }
 }

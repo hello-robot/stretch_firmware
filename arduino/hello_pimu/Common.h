@@ -98,7 +98,7 @@
 #define TRIGGER_IMU_RESET 128
 #define TRIGGER_RUNSTOP_ON 256
 #define TRIGGER_BEEP 512
-
+#define TRIGGER_LIGHTBAR_TEST 1024
 
 /////////////////////////////////////////////////////////////////
 

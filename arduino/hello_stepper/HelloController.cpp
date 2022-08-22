@@ -925,6 +925,7 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((x_des_incr -yw))<gains.pos_near_setpoint_d;
+            stat.debug=abs((x_des_incr -yw));
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
@@ -953,6 +954,7 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
+            stat.debug=abs((rad_to_deg(cmd.x_des) -yw));
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
@@ -1051,7 +1053,7 @@ void stepHelloController()
         {
           guarded_override=1;
           hold_pos=yw;
-          stat.debug=deg_to_rad(hold_pos);
+          //stat.debug=deg_to_rad(hold_pos);
           if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
           {
             trajectory_manager.reset();

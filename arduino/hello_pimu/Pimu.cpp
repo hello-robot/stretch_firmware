@@ -259,6 +259,10 @@ bool pulse_on=0;
 ////////////////////////////
 void handle_trigger()
 {
+    if (trg.data & TRIGGER_LIGHTBAR_TEST)
+    {
+      light_bar_manager.start_test();
+    }
     if (trg.data & TRIGGER_BEEP)
     {
       beep_manager.do_beep(BEEP_ID_SINGLE_SHORT);
