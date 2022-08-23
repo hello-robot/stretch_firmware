@@ -23,7 +23,7 @@
 // Version 0.2.0: Add R2 support (BOARD_VARIANT_DRV8842, BOARD_VARIANT_PIN_RUNSTOP) (P1)
 // Version 0.2.3: Add support for motor shunt
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.3p1"
+#define FIRMWARE_VERSION_HR "Stepper.v0.2.4p1"
 
 /////////////////////////////////////////////////////////////////
 
