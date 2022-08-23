@@ -31,7 +31,7 @@ bool first_acc_filter=true;
 //Gyro
 //https://www.nxp.com/docs/en/data-sheet/FXAS21002.pdf
 
-//In Stretch RE1, board is oriented such that
+//In Stretch RE1/RE2, board is oriented such that
 //Az+/Mz+: Point down to ground
 //Ax+/Mx+: Points in direction of arm reach
 //Ay+/My+: Points to back of robot

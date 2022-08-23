@@ -1,6 +1,6 @@
-# Stretch RE1 - Wacc Firmware
+# Stretch RE1/RE2 - Wacc Firmware
 
-The Stretch RE1 Wacc Firmware runs on the Wacc PCBA found inside the robot arm. Wacc stands for the 'Wrist + Accelerometer' board. The Wacc firmware provides
+The Stretch Wacc Firmware runs on the Wacc PCBA found inside the robot arm. Wacc stands for the 'Wrist + Accelerometer' board. The Wacc firmware provides
 
 * Monitoring of the wrist accelerometer
 * Monitoring the Arduino expansion header in the wrist

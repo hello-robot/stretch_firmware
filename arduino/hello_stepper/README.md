@@ -1,6 +1,6 @@
-# Stretch RE1 - Stepper Firmware
+# Stretch RE1/RE2 - Stepper Firmware
 
-The Stretch RE1 Stepper Firmware runs on the Stepper PCBA found on the back of the Stretch stepper motors. It is a modified version of the open source [Mechaduino project](https://github.com/jcchurch13/Mechaduino-Firmware), which provides closed loop current control of a stepper motor.
+The Stretch Stepper Firmware runs on the Stepper PCBA found on the back of the Stretch stepper motors. It is a modified version of the open source [Mechaduino project](https://github.com/jcchurch13/Mechaduino-Firmware), which provides closed loop current control of a stepper motor.
 
 The firmware is organized so as to allow switching, via serial command, between 'stock Mechaduino mode' with its menu interface and the Hello Robot firmware with its RPC interface.
 

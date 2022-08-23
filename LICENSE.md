@@ -1,4 +1,4 @@
-The following license (GPLv3) applies to the entire contents of this directory (the "Contents") except where other third-party licenses must apply. The Contents include firmware and hardware for use with the Stretch RE1 mobile manipulator, which is a robot produced and sold by Hello Robot Inc.
+The following license (GPLv3) applies to the entire contents of this directory (the "Contents") except where other third-party licenses must apply. The Contents include firmware and hardware for use with the Stretch RE1 and RE2 mobile manipulator, which is a robot produced and sold by Hello Robot Inc.
 
 We thank people who have contributed to this work via open-source code and open hardware. We especially thank the [Mechaduino](https://tropical-labs.com/mechaduino/) project and [Tropical Labs](https://tropical-labs.com/). The motor controller firmware and hardware are derived from the excellent [firmware](https://github.com/jcchurch13/Mechaduino-Firmware) and [hardware](https://github.com/jcchurch13/Mechaduino-Hardware) created for the Mechaduino project by Tropical Labs.
 
