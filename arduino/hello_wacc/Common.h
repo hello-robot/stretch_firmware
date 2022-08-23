@@ -19,7 +19,7 @@
 //Version History
 // Protocol 0: Initial production release for RE1
 // Protocol 1: Add support for long timestamps
-// Version 0.2.0: Add support for RE1.5 (board variants)
+// Version 0.2.0: Add support for RE2 (board variants)
 #define FIRMWARE_VERSION "Wacc.v0.2.0p1"
 
 
