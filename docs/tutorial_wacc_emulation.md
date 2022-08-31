@@ -1,4 +1,4 @@
-![](../images/banner.png)
+![](./images/banner.png)
 
 # Emulating the Wacc
 
@@ -17,11 +17,11 @@ We will emulate the Wacc on the Metro board as both boards use the Atmel SAMD21G
 
 The primary difference between the Wacc and the Metro is that the Wacc integrates an ADXL343 3 axis accelerometer on its I2C bus. As this chip isn't interfaced to our emulation hardware, this data will be missing. The Wacc also lacks the On/Off switch and RGB LED of the Metro.
 
-![](../../images/wacc_metro.png)
+![](./images/wacc_metro.png)
 
 Only a subset of its pins of the Wacc (shown below) are used compared to the Metro. You can attach your custom hardware to the Metro as if it were the Stretch Expansion Header.
 
-![](../../images/wrist_expansion_schematic_rs.png)
+![](./images/wrist_expansion_schematic_rs.png)
 
 # Firmware
 
@@ -34,11 +34,11 @@ First, download the firmware repo onto the development machine if it isn't alrea
 >>$ git clone https://github.com/hello-robot/stretch_firmware
 ```
 
-Next, install and setup the Arduino IDE has described [here](../../README.md).
+Next, install and setup the Arduino IDE has described [here](https://github.com/hello-robot/stretch_install/blob/master/factory/stretch_install_arduino.sh).
 
 Now, with the Metro M0 plugged in to a USB port on Stretch:
 
-* Open the [hello_wacc](../../arduino/hello_wacc/hello_wacc.ino) sketch
+* Open the [hello_wacc](https://github.com/hello-robot/stretch_firmware/tree/master/arduino/hello_wacc/hello_wacc.ino) sketch
 * Select Tools/Board/Hello Wacc
 * Select the Metro board under Tools/Port 
 * Upload the firmware. The red LED on the Metro should flash at 1Hz.
@@ -135,4 +135,7 @@ Firmware version: Wacc.v0.0.1p0
 
 
 
+
+------
+<div align="center"> All materials are Copyright 2022 by Hello Robot Inc. Hello Robot and Stretch are registered trademarks. The Stretch RE1 and RE2 robots are covered by U.S. Patent 11,230,000 and other patents pending.</div>
 

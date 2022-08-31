@@ -1,32 +1,35 @@
-![](../images/banner.png)
+![](./images/banner.png)
+**NOTE** It is possible to brick the Wacc board by incorrectly configuring the hardware peripherals of the SAMD uC. Therefore, when integrating your custom hardware into the Wacc we strongly recommend emulating the Wacc board until the functionality is complete. The tutorial [Wacc Emulation](./tutorial_wacc_emulation.md) describes how to configure an Adafruit Metro M0 Express to behave as a stand-in for a Wacc board.
+
+**NOTE**: These tutorials may require the latest version of Stretch Body. If necessary, please update your install.
 
 # Integrating an SPI Device
 
-This tutorial illustrates the integration of a SPI device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). It extends the [Data Transfer](./data_transfer.md) tutorial. We recommend doing this tutorial prior to doing this one.
+This tutorial illustrates the integration of a SPI device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). It extends the [Data Transfer](./tutorial_data_transfer.md) tutorial. We recommend doing this tutorial prior to doing this one.
 
 # Calculator via SPI
 
-In this tutorial we will run the calculator from the [Data Transfer](./data_transfer.md) tutorial on an Adafruit Metro M0 Express (Arduino Zero) that is running as an SPI slave. It will take a calculator `Command` from the Wacc and return the result in `Status` message. 
+In this tutorial we will run the calculator from the [Data Transfer](./tutorial_data_transfer.md) tutorial on an Adafruit Metro M0 Express (Arduino Zero) that is running as an SPI slave. It will take a calculator `Command` from the Wacc and return the result in `Status` message. 
 
-![](../../images/wacc_spi.png)
+![](./images/wacc_spi.png)
 
 ### Flash Firmware
 
-First, program the Metro with the provided sketch, [zero_wacc_spi](../arduino/zero_wacc_spi). Be sure to:
+First, program the Metro with the provided sketch, [zero_wacc_spi](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/arduino/zero_wacc_spi). Be sure to:
 
 * Select the board's port from the IDE under Tools/Port
 * Select the board 'Adafruit M0 Express' from the IDE under Tools/Board
 
 
 
-Next, program the Wacc with the provided sketch, [hello_wacc_spi](../arduino/hello_wacc_spi). Be sure to:
+Next, program the Wacc with the provided sketch, [hello_wacc_spi](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/arduino/hello_wacc_spi). Be sure to:
 
 * Select the board's port from the IDE under Tools/Port
 * Select the board 'Hello Wacc' from the IDE under Tools/Board
 
 ### Code Walk-through
 
-The code is straightforward and is a natural extension of the code described in the  [Data Transfer](./data_transfer.md) tutorial. A few sections to highlight in the  [hello_wacc_spi](../arduino/hello_wacc_spi) sketch are:
+The code is straightforward and is a natural extension of the code described in the  [Data Transfer](./tutorial_data_transfer.md) tutorial. A few sections to highlight in the  [hello_wacc_spi](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/arduino/hello_wacc_spi) sketch are:
 
 First, in the sketch `setup()` we configure the slave select pin to be an output
 
@@ -94,7 +97,7 @@ Next, wire the Metro to the Expansion Header as:
 
 ### Test the Calculator
 
-Now, test the setup using the provided tool, [stretch_wacc_calc_jog.py](../python/stretch_wacc_calc_jog.py). As shown below, The Arduino Uno performs the calculation of 12*13 and the result is report back to Stretch Body.
+Now, test the setup using the provided tool, [stretch_wacc_calc_jog.py](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/python/stretch_wacc_calc_jog.py). As shown below, The Arduino Uno performs the calculation of 12*13 and the result is report back to Stretch Body.
 
 ```bash
 hello-robot@stretch-re1-100x:~$ cd repos/stretch_firmware/tutorial/python/
@@ -156,4 +159,7 @@ X: do calculation
 -------------------
 
 ```
+
+------
+<div align="center"> All materials are Copyright 2022 by Hello Robot Inc. Hello Robot and Stretch are registered trademarks. The Stretch RE1 and RE2 robots are covered by U.S. Patent 11,230,000 and other patents pending.</div>
 

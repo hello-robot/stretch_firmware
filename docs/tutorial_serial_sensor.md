@@ -1,8 +1,11 @@
-![](../images/banner.png)
+![](./images/banner.png)
+**NOTE** It is possible to brick the Wacc board by incorrectly configuring the hardware peripherals of the SAMD uC. Therefore, when integrating your custom hardware into the Wacc we strongly recommend emulating the Wacc board until the functionality is complete. The tutorial [Wacc Emulation](./tutorial_wacc_emulation.md) describes how to configure an Adafruit Metro M0 Express to behave as a stand-in for a Wacc board.
+
+**NOTE**: These tutorials may require the latest version of Stretch Body. If necessary, please update your install.
 
 # Integrating a Serial Device
 
-This tutorial illustrates the integration of a UART device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). We recommend first reading [Data Transfer](./data_transfer.md) tutorial to understand how data is transfered back and forth from Stretch Body to the SAMD uC. 
+This tutorial illustrates the integration of a UART device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). We recommend first reading [Data Transfer](./tutorial_data_transfer.md) tutorial to understand how data is transfered back and forth from Stretch Body to the SAMD uC. 
 
 In this tutorial we will extend the [Stretch Body Wacc](https://github.com/hello-robot/stretch_body/blob/master/body/stretch_body/wacc.py) class to send 10 floats down to the custom serial device. The serial device will echo the 10 floats back up to Stretch Body.
 
@@ -14,7 +17,7 @@ Connect the UART TX pin to the UART RX pin of the Stretch Expansion Header (or t
 
 
 
-![](../../images/wacc_serial_loopback.png)
+![](./images/wacc_serial_loopback.png)
 
 ### Flash Firmware
 
@@ -25,7 +28,7 @@ Pull down the latest version of Stretch Firmware
 >>$ git clone https://github.com/hello-robot/stretch_firmware
 ```
 
-Next, program the (emulated) Wacc with the provided sketch, [hello_wacc_serial](../arduino/hello_wacc_serial). Be sure to:
+Next, program the (emulated) Wacc with the provided sketch, [hello_wacc_serial](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/arduino/hello_wacc_serial). Be sure to:
 
 * Select the board's port from the IDE under Tools/Port
 * Select the board 'Hello Wacc' from the IDE under Tools/Board
@@ -38,7 +41,7 @@ First, in the sketch `setup()` we configure enable the SerialExt device
   SerialExt.begin(115200);
 ```
 
-Next, in [Common.h](../arduino/hello_wacc_serial/Common.h) we define Command data to send down from Stretch Body to the serial device. We also define Status data to report back to Stretch Body. For our example we'll send 10 floats down and 10 floats back up.
+Next, in [Common.h](hhttps://github.com/hello-robot/stretch_firmware/tree/master/tutorials/arduino/hello_wacc_serial/Common.h) we define Command data to send down from Stretch Body to the serial device. We also define Status data to report back to Stretch Body. For our example we'll send 10 floats down and 10 floats back up.
 
 ```c
 struct __attribute__ ((packed)) SerialExtCommand{
@@ -74,7 +77,7 @@ void serial_comms()
 
 ## Stretch Body Code Walk-through
 
-We provide an example class [WaccSerialExt](../python/wacc_serial_ext.py) that extends the Wacc class of Stretch Body. This class provides two call backs that will get called on `pull_status` and `push_command` respectively. Here we see the packing and unpacking of the 10 floats found in [Common.h](../arduino/hello_wacc_serial/Common.h) 
+We provide an example class [WaccSerialExt](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/python/wacc_serial_ext.py) that extends the Wacc class of Stretch Body. This class provides two call backs that will get called on `pull_status` and `push_command` respectively. Here we see the packing and unpacking of the 10 floats found in [Common.h](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/arduino/hello_wacc_serial/Common.h) 
 
 ```python
     def ext_unpack_status(self,s):
@@ -111,7 +114,7 @@ We also define a function that generates a new 'command' down to the serial devi
 
 
 
-Finally, we do a simple test of the class with the tool [stretch_wacc_serial_jog.py](../python/stretch_wacc_serial_jog.py)
+Finally, we do a simple test of the class with the tool [stretch_wacc_serial_jog.py](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/python/stretch_wacc_serial_jog.py)
 
 ```python
 from wacc_serial_ext import WaccSerialExt
@@ -149,3 +152,7 @@ Hit enter to do TX/RX cycle
 ```
 
 NOTE: It takes one control cycle for the command values to be reported back to the status
+
+------
+<div align="center"> All materials are Copyright 2022 by Hello Robot Inc. Hello Robot and Stretch are registered trademarks. The Stretch RE1 and RE2 robots are covered by U.S. Patent 11,230,000 and other patents pending.</div>
+

@@ -1,4 +1,4 @@
-![](../images/banner.png)
+![](./images/banner.png)
 
 # Updating Stretch Firmware
 
@@ -14,7 +14,7 @@ Stretch has 6 Arduino based microcontroller boards that may require a firmware u
 | Pimu                | /dev/hello-pimu              | hello_pimu.ino    |
 | Wacc                | /dev/hello-wacc              | hello_wacc.ino    |
 
-Firmware updates are managed through the [RE1_firmware_updater.py](https://github.com/hello-robot/stretch_factory/blob/master/python/bin/RE1_firmware_updater.py) tool, which uses the [Arduino Cli](https://github.com/arduino/arduino-cli) tool to flash the firmware.
+Firmware updates are managed through the [REx_firmware_updater.py](https://github.com/hello-robot/stretch_factory/blob/master/python/bin/REx_firmware_updater.py) tool, which uses the [Arduino Cli](https://github.com/arduino/arduino-cli) tool to flash the firmware.
 
 Before doing an upgrade first ensure the latest Stretch Body is installed as well as Stretch Factory
 
@@ -24,11 +24,11 @@ Before doing an upgrade first ensure the latest Stretch Body is installed as wel
 ```
 ## Firmware Update Tool
 
-The firmware update tool will automatically recommend and install latest version of firmware found on GitHub. It will only recommend versions that are compatible with the currently installed Stretch Body. **Note: The firmware updater only works on Ubuntu 18.04 currently. Attempting to use the latest version of the firmware updater in Ubuntu 20.04 will error out.**
+The firmware update tool will automatically recommend and install the latest version of firmware found on GitHub. It will only recommend versions that are compatible with the currently installed Stretch Body.
 
 ```bash
->>$ RE1_firmware_updater.py --help
-usage: RE1_firmware_updater.py [-h]
+>>$ REx_firmware_updater.py --help
+usage: REx_firmware_updater.py [-h]
                                [--current | --available | --recommended | --install | --install_version | --install_branch | --install_path INSTALL_PATH | --mgmt]
                                [--pimu] [--wacc] [--arm] [--lift]
                                [--left_wheel] [--right_wheel]
@@ -54,10 +54,10 @@ optional arguments:
 ```
 ## Updating to the Latest Firmware
 To update to the latest version of firmware:
- ```bash
->>$ RE1_firmware_updater.py --install
-Collecting information...
 
+```bash
+>>$ REx_firmware_updater.py --install
+Collecting information...
 ######################################## Recommended Firmware Updates ########################################
 
 
@@ -68,10 +68,8 @@ HELLO-MOTOR-LIFT          | Stepper.v0.1.0p1          | Stepper.v0.0.4p0        
 HELLO-PIMU                | Pimu.v0.0.2p1             | Pimu.v0.0.1p0             | Downgrade recommended     
 HELLO-MOTOR-ARM           | Stepper.v0.1.0p1          | Stepper.v0.0.4p0          | Downgrade recommended     
 HELLO-MOTOR-LEFT-WHEEL    | Stepper.v0.1.0p1          | Stepper.v0.0.4p0          | Downgrade recommended     
-HELLO-MOTOR-RIGHT-WHEEL   | Stepper.v0.1.0p1          | Stepper.v0.0.4p0          | Downgrade recommended     
-
-
-########################################## UPDATING FIRMWARE TO... ###########################################
+HELLO-MOTOR-RIGHT-WHEEL   | Stepper.v0.1.0p1          | Stepper.v0.0.4p0          | Downgrade recommended   
+######################################### UPDATING FIRMWARE TO... ###########################################
 HELLO-WACC                | Downgrading to Wacc.v0.0.1p0             
 HELLO-MOTOR-LEFT-WHEEL    | Downgrading to Stepper.v0.0.4p0          
 HELLO-MOTOR-RIGHT-WHEEL   | Downgrading to Stepper.v0.0.4p0          
@@ -84,17 +82,17 @@ WARNING: (2) Do not have other robot processes running during update
 WARNING: (3) Leave robot powered on during update
 WARNING: (4) Ensure Lift has support clamp in place
 WARNING: (5) Lift may make a loud noise during programming. This is normal.
-Proceed with update?? [y/N]:
+Proceed with update?? [y/N]: 
 ```
 Review the recommendations and warnings before proceeding ('y'). If you prefer to only update one or more boards you can specify it on the command line. For example:
 ```bash
-RE1_firmware_updater.py --install --arm --wacc
+REx_firmware_updater.py --install --arm --wacc
 ```
 ## Other Useful Commands
 
-Running  `RE1_firmware_updater.py --current` will report the currently install firmware: 
+Running  `REx_firmware_updater.py --current` will report the currently install firmware: 
 ```bash
->>$RE1_firmware_updater.py --current
+>>$REx_firmware_updater.py --current
 ######################################## Currently Installed Firmware ########################################
 ------------ HELLO-WACC ------------
 Installed Firmware: Wacc.v0.0.2p1
@@ -123,10 +121,10 @@ Installed protocol p1 : VALID
 
 ```
 
-Running  `RE1_firmware_updater.py --available` will list the available versions on GitHub:
+Running  `REx_firmware_updater.py --available` will list the available versions on GitHub:
 
 ```bash
->>$ RE1_firmware_updater.py --available
+>>$ REx_firmware_updater.py --available
 Collecting information...
 ####################### Currently Tagged Versions of Stretch Firmware on Master Branch #######################
 ---- HELLO-WACC ----
@@ -155,24 +153,8 @@ Stepper.v0.0.3p0
 Stepper.v0.0.4p0
 ```
 
-## Appendix: Install Arduino CLI
-In some cases it may be necessary to manually install the Arduino command line tool
 
-Check if the [Arduino Cli](https://github.com/arduino/arduino-cli) tool is already installed with version 1.6.21 of the SAMD package:
 
-```bash
->>$ arduino-cli core list
-ID               Installed Latest Name                                        
-arduino:samd     1.6.21    1.6.21 Arduino SAMD Boards (32-bits ARM Cortex-M0+)
-```
-
-If not:
-
-```bash
->>$ cd ~/repos
->>$ git clone https://github.com/hello-robot/stretch_install
->>$ cd stretch_install/factory
->>$ ./stretch_install_arduino.sh
-```
-
+------
+<div align="center"> All materials are Copyright 2022 by Hello Robot Inc. Hello Robot and Stretch are registered trademarks. The Stretch RE1 and RE2 robots are covered by U.S. Patent 11,230,000 and other patents pending.</div>
 
