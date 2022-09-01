@@ -22,8 +22,9 @@
 // Protocol 1: Add support for waypoint management (P1)
 // Version 0.2.0: Add R2 support (BOARD_VARIANT_DRV8842, BOARD_VARIANT_PIN_RUNSTOP) (P1)
 // Version 0.2.3: Add support for motor shunt
+// Version 0.2.5: Further support for motor shunt
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.4p1"
+#define FIRMWARE_VERSION_HR "Stepper.v0.2.5p1"
 
 /////////////////////////////////////////////////////////////////
 
@@ -90,7 +91,8 @@
 #define TRIGGER_RESET_POS_CALIBRATED 16
 #define TRIGGER_POS_CALIBRATED 32
 #define TRIGGER_MARK_POS_ON_CONTACT 64
-
+#define TRIGGER_DISABLE_MOTOR_DRIVER 128
+#define TRIGGER_ENABLE_MOTOR_DRIVER 256
 
 #define CONFIG_SAFE_MODE_HOLD 1
 #define CONFIG_ENABLE_RUNSTOP 2

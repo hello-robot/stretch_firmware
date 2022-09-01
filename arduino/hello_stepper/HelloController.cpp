@@ -62,6 +62,7 @@ bool diag_is_mg_moving=0;
 bool diag_calibration_rcvd=0;
 bool diag_waiting_on_sync=0;
 
+bool motor_drivers_enabled=false;
 
 int switch_to_menu_cnt=0;
 int board_reset_cnt=0;
@@ -264,6 +265,7 @@ void enableMotorDrivers()
     digitalWrite(MOTOR_SHUNT, HIGH); //Turn the shunt off (for lift dof)
     digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
     digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
+    motor_drivers_enabled=true;
   }
 }
 void disableMotorDrivers()
@@ -274,7 +276,7 @@ void disableMotorDrivers()
     digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
     delay(5);
     digitalWrite(MOTOR_SHUNT, LOW); //Turn the shunt off (for lift dof)
-
+    motor_drivers_enabled=false;
   }
 }
 ///////////////////////// RPC ///////////////////////////
@@ -345,6 +347,10 @@ void handleNewRPC()
           num_byte_rpc_out=1;
           if (trg_in.data & TRIGGER_WRITE_GAINS_TO_FLASH)
            flash_gains.write(gains);
+          if (trg_in.data & TRIGGER_DISABLE_MOTOR_DRIVER)
+            disableMotorDrivers();
+          if (trg_in.data & TRIGGER_ENABLE_MOTOR_DRIVER)
+            enableMotorDrivers();
           break;
     case RPC_SET_ENC_CALIB: 
           //if (!receiving_calibration) //Shunt motor at start
