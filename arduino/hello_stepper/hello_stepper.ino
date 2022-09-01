@@ -69,7 +69,7 @@ void setup()        // This code runs once at startup
     setupHelloController();
     enableTCInterrupts();  //Always be running the loop
     enableMGInterrupts();
-    enableMotorDrivers(); //Turn on now that gains are loaded
+    //enableMotorDrivers(); //Turn on now that gains are loaded
 #endif
 
 }
