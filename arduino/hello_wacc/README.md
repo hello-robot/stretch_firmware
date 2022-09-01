@@ -14,7 +14,7 @@ The Wacc expansion header is electrically routed to potentially provide
 * Serial I2C 
 * Serial UART
 
-See the [Stretch RE1 Hardware User Guide](https://hello-robot.github.io/hardware_user_guide/) for pin-out, electrical, and connector information.
+See the [Stretch RE1 Hardware User Guide](https://docs.hello-robot.com) for pin-out, electrical, and connector information.
 
 ## Using the Expansion DIO Header
 
@@ -43,4 +43,4 @@ The user can interact with these pins through the [Stretch Body python interface
 
 ### Custom Interface
 
-Advanced users may want to create a custom interface to the Expansion DIO header that utilizes SPI, I2C, or UART. For this, see the provided [tutorials](./tutorial/README.md)
+Advanced users may want to create a custom interface to the Expansion DIO header that utilizes SPI, I2C, or UART. For this, see the provided Stretch Firmware tutorials.

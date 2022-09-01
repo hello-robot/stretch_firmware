@@ -1,4 +1,4 @@
-![](./images/banner.png)
+![](./docs/images/banner.png)
 
 # Overview
 The [Stretch Firmware](https://github.com/hello-robot/stretch_firmware) repository provides the Arduino based firmware for the Stretch robot. 
