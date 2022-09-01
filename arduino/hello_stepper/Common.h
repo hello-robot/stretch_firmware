@@ -162,6 +162,8 @@ struct __attribute__ ((packed)) Status{
   uint32_t guarded_event;       //counter of guarded events since power-up
   float traj_setpoint;          //Target of waypoint trajectory
   uint16_t traj_id;             //Id of active trajectory segment
+  float accel_mg;
+  float vel_mg;
 };
 
 /////////////////////////////////////////////////////////////////

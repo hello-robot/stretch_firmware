@@ -53,7 +53,10 @@ class MotionGenerator {
 		void setMaxAcceleration(float aMaxAcc);
 		bool isAccelerating();
     bool isMoving();
-	
+
+    float vel;
+    float acc;
+    
 	private:					
 		void calculateTrapezoidalProfile(float);	
 		short int sign(float aVal);		
@@ -62,8 +65,7 @@ class MotionGenerator {
 		float maxAcc;		
 
   	float pos;
-  	float vel;
-  	float acc;
+
   	float oldPos;
   	float oldPosRef;
   	float oldVel;

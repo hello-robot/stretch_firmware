@@ -188,7 +188,8 @@ void setupBoardVariants()
   BOARD_VARIANT_DRV8842=0;
   BOARD_VARIANT_PIN_RUNSTOP=PIN_RS0;
   BOARD_VARIANT=(digitalRead(BOARD_ID_2)<<2)|(digitalRead(BOARD_ID_1)<<1)|digitalRead(BOARD_ID_0);
-
+  BOARD_VARIANT=1;
+  
   if (BOARD_VARIANT==0)
   {
     //The board uses two  A4950ELJTR motor drivers. These are capable of 3.5A peak currents.
@@ -414,6 +415,10 @@ void update_status()
   stat.pos=deg_to_rad(ywd);
   stat.vel=deg_to_rad(vs);
   stat.err=deg_to_rad(e);               //controller error (inner loop)
+
+    stat.accel_mg=deg_to_rad(mg.acc);
+  stat.vel_mg=deg_to_rad(mg.vel);
+  
   stat.mode=cmd.mode; 
   stat.guarded_event = guarded_event_cnt;
   stat.diag=0;
