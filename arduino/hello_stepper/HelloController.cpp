@@ -262,7 +262,7 @@ void enableMotorDrivers()
 {
   if (BOARD_VARIANT==1)
   {
-    digitalWrite(MOTOR_SHUNT, HIGH); //Turn the shunt off (for lift dof)
+    //digitalWrite(MOTOR_SHUNT, HIGH); //Turn the shunt off if present (for lift dof)
     digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
     digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
     motor_drivers_enabled=true;
@@ -274,8 +274,8 @@ void disableMotorDrivers()
   {
     digitalWrite(DRV8842_NSLEEP_A, LOW); //Logic high enables driver
     digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
-    delay(5);
-    digitalWrite(MOTOR_SHUNT, LOW); //Turn the shunt off (for lift dof)
+    //delay(5);
+    //digitalWrite(MOTOR_SHUNT, LOW); //Turn the shunt off (for lift dof)
     motor_drivers_enabled=false;
   }
 }
