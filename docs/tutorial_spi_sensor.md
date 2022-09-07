@@ -5,7 +5,7 @@
 
 # Integrating an SPI Device
 
-This tutorial illustrates the integration of a SPI device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). It extends the [Data Transfer](./tutorial_data_transfer.md) tutorial. We recommend doing this tutorial prior to doing this one.
+This tutorial illustrates the integration of a SPI device on to the [Wrist Expansion header](https://docs.hello-robot.com/0.2/stretch-hardware-guides/docs/hardware_guide_re2/#wrist-expansion-header). It extends the [Data Transfer](./tutorial_data_transfer.md) tutorial. We recommend doing this tutorial prior to doing this one.
 
 # Calculator via SPI
 

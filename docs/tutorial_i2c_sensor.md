@@ -5,7 +5,7 @@
 
 # Integrating an I2C Device
 
-This tutorial illustrates the integration of a I2C device on to the [Wrist Expansion header](https://docs.hello-robot.com/hardware_user_guide/#wrist). It extends t. We recommend doing the [Data Transfer](./tutorial_data_transfer.md) tutorial first. 
+This tutorial illustrates the integration of a I2C device on to the [Wrist Expansion header](https://docs.hello-robot.com/0.2/stretch-hardware-guides/docs/hardware_guide_re2/#wrist-expansion-header). It extends t. We recommend doing the [Data Transfer](./tutorial_data_transfer.md) tutorial first. 
 
 # Calculator via I2C
 

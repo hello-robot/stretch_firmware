@@ -2,7 +2,7 @@
 
 # Integrating Custom Hardware
 
-These tutorials demonstrate how to use the Stretch wrist expansion header to integrate custom hardware into [Stretch Body](https://docs.hello-robot.com/stretch_body_guide/).
+These tutorials demonstrate how to use the Stretch wrist expansion header to integrate custom hardware into [Stretch Body](https://github.com/hello-robot/stretch_body).
 
 
 **NOTE** It is possible to brick the Wacc board by incorrectly configuring the hardware peripherals of the SAMD uC. 

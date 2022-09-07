@@ -41,7 +41,7 @@ First, in the sketch `setup()` we configure enable the SerialExt device
   SerialExt.begin(115200);
 ```
 
-Next, in [Common.h](hhttps://github.com/hello-robot/stretch_firmware/tree/master/tutorials/arduino/hello_wacc_serial/Common.h) we define Command data to send down from Stretch Body to the serial device. We also define Status data to report back to Stretch Body. For our example we'll send 10 floats down and 10 floats back up.
+Next, in [Common.h](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/arduino/hello_wacc_serial/Common.h) we define Command data to send down from Stretch Body to the serial device. We also define Status data to report back to Stretch Body. For our example we'll send 10 floats down and 10 floats back up.
 
 ```c
 struct __attribute__ ((packed)) SerialExtCommand{

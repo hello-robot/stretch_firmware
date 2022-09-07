@@ -5,7 +5,7 @@
 
 # Integrating Custom Data
 
-In this tutorial we explore how to plumb custom data to and from the Arduino based Stretch Wacc (Wrist + Accelerometer) board. This enables users to integrate custom sensors and actuators on to the [Wrist Expansion header](https://docs.hello-robot.com/docs/guides/hardware_user_guide/#wrist). 
+In this tutorial we explore how to plumb custom data to and from the Arduino based Stretch Wacc (Wrist + Accelerometer) board. This enables users to integrate custom sensors and actuators on to the [Wrist Expansion header](https://docs.hello-robot.com/0.2/stretch-hardware-guides/docs/hardware_guide_re2/#wrist-expansion-header). 
 
 ## How Data Transfer Happens in Stretch Body
 
@@ -255,7 +255,7 @@ Result is 0.5
 
 ## Test the Calculator - Script
 
-Alternatively you can use the provided tool, [stretch_wacc_calc_jog.py](hhttps://github.com/hello-robot/stretch_firmware/tree/master/tutorials/python/stretch_wacc_calc_jog.py). Here you can use the calculator through the menu.
+Alternatively you can use the provided tool, [stretch_wacc_calc_jog.py](https://github.com/hello-robot/stretch_firmware/tree/master/tutorials/python/stretch_wacc_calc_jog.py). Here you can use the calculator through the menu.
 
 ```bash
 hello-robot@stretch-re1-100x:~$ cd repos/stretch_firmware/tutorial/python/
