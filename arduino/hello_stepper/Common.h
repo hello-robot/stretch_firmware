@@ -23,7 +23,8 @@
 // Version 0.2.0: Add R2 support (BOARD_VARIANT_DRV8842, BOARD_VARIANT_PIN_RUNSTOP) (P1)
 // Version 0.2.3: Add support for motor shunt
 // Version 0.2.5: Initial production release RE2 Mitski
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.5p1"
+// Version 0.2.6: Initial production release RE2 Nina
+#define FIRMWARE_VERSION_HR "Stepper.v0.2.6p1"
 
 /////////////////////////////////////////////////////////////////
 

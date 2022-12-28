@@ -82,7 +82,7 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
       }
     rs_last=rs;
    }
-   if (BOARD_VARIANT==1)
+   if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
    {
     //Poll line at 1Khz
       uint8_t rs=digitalRead(BOARD_VARIANT_PIN_RUNSTOP);
@@ -113,6 +113,6 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
 
 void SyncManager::setupSyncManager() {  
   rs_last=digitalRead(BOARD_VARIANT_PIN_RUNSTOP);
-  if (BOARD_VARIANT==1)
+  if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
     sync_last=digitalRead(PIN_SYNC);
 }

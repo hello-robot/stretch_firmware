@@ -199,7 +199,7 @@ void setupBoardVariants()
     k_c2e =(255/3.3)*10*rSense;
   }
   
-  if (BOARD_VARIANT==1)
+  if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
   {
     //The board uses two DRV8842 motor drivers. These are capable of 5.0A peak currents / 3.5A RMS
     // An iMax of 4.35A results in a uMax of 252. By default set at 8-bit pwm. 
@@ -259,7 +259,7 @@ void setupHelloController()
 
 void enableMotorDrivers()
 {
-  if (BOARD_VARIANT==1)
+  if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
   {
     digitalWrite(MOTOR_SHUNT, HIGH); //Turn the shunt off (for lift dof)
     digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
@@ -268,7 +268,7 @@ void enableMotorDrivers()
 }
 void disableMotorDrivers()
 {
-  if (BOARD_VARIANT==1)
+  if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
   {
     digitalWrite(DRV8842_NSLEEP_A, LOW); //Logic high enables driver
     digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
