@@ -134,7 +134,7 @@ void setupBoardVariants()
     BOARD_VARIANT_DEDICATED_SYNC=0;
   }
   
-  if (BOARD_VARIANT==1)
+  if (BOARD_VARIANT>=1)
   {
     BOARD_VARIANT_DEDICATED_SYNC=1;
     light_bar_manager.setupLightBarManager();
@@ -366,7 +366,7 @@ void update_imu()
 ////////////////////////////
 void update_voltage_monitor()
 {
-  if (BOARD_VARIANT==1)
+  if (BOARD_VARIANT>=1)
   {
     //For Variant 1, indicate charging required on the Neopixel
     state_charger_connected=digitalRead(CHARGER_CONNECTED);
