@@ -452,10 +452,11 @@ float x_des_incr=0;
 float stiffness_target=0;
 
 float eff_max=0;
+float xdes=0;
 
 void stepHelloController()
 {
-  float xdes;
+
   
  
   //noInterrupts();
@@ -662,13 +663,7 @@ void stepHelloController()
           cmd.mode=cmd_in.mode; 
         }
 
-        if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
-        {
-          x_des_incr = yw + rad_to_deg(cmd_in.x_des);
-          
-        }
-        else
-          cmd.x_des=cmd_in.x_des;
+ 
         
         cmd.incr_trigger=cmd_in.incr_trigger;
         cmd.i_feedforward=cmd_in.i_feedforward;
@@ -723,6 +718,17 @@ void stepHelloController()
           };
         }
 
+      //Set the incremental position target if triggered
+       if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
+        {
+          //x_des_incr = yw + rad_to_deg(cmd_in.x_des);
+          x_des_incr = xdes+ rad_to_deg(cmd_in.x_des);//Use xdes instead of yw so we don't add in steady state error
+          stat.debug=yw;
+          
+        }
+        else
+          cmd.x_des=cmd_in.x_des;
+          
       //Handle on-the-fly updates of velocity and accel commands  
       if (cmd.mode==MODE_VEL_TRAJ)
         vg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
@@ -925,7 +931,7 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((x_des_incr -yw))<gains.pos_near_setpoint_d;
-            stat.debug=abs((x_des_incr -yw));
+            //stat.debug=abs((x_des_incr -yw));
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
