@@ -129,6 +129,8 @@ bool guarded_override=false;
 int first_step_safety=10; //count down
 uint8_t board_id=0;
 
+int vel_watchdog=TC4_LOOP_RATE; //Watchdog counts down from 1s
+
 ///////////////////////// UTIL ///////////////////////////
 
 
@@ -452,10 +454,11 @@ float x_des_incr=0;
 float stiffness_target=0;
 
 float eff_max=0;
+float xdes=0;
 
 void stepHelloController()
 {
-  float xdes;
+
   
  
   //noInterrupts();
@@ -626,7 +629,8 @@ void stepHelloController()
      
      diag_runstop_on=(sync_manager.runstop_active && runstop_enabled);
      //stat.debug=diag_runstop_on;//sync_manager.runstop_active;
-     if (diag_runstop_on)
+     //Force to safety mode on runstop or velocity watchdog
+     if (diag_runstop_on || (vel_watchdog==0 && (gains.config & CONFIG_ENABLE_VEL_WATCHDOG)))
      {
         //stat.debug++;
         cmd_in.mode=MODE_SAFETY;
@@ -650,6 +654,7 @@ void stepHelloController()
       
       if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
+
         
         
         diag_waiting_on_sync=false;
@@ -662,14 +667,19 @@ void stepHelloController()
           cmd.mode=cmd_in.mode; 
         }
 
-        if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
+ 
+        
+      //Set the incremental position target if triggered
+       if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
         {
           x_des_incr = yw + rad_to_deg(cmd_in.x_des);
+          //x_des_incr = xdes+ rad_to_deg(cmd_in.x_des);//Use xdes instead of yw so we don't add in steady state error
+          stat.debug=yw;
           
         }
         else
           cmd.x_des=cmd_in.x_des;
-        
+          
         cmd.incr_trigger=cmd_in.incr_trigger;
         cmd.i_feedforward=cmd_in.i_feedforward;
         cmd.stiffness=cmd_in.stiffness;
@@ -722,7 +732,9 @@ void stepHelloController()
               break; 
           };
         }
+   
 
+          
       //Handle on-the-fly updates of velocity and accel commands  
       if (cmd.mode==MODE_VEL_TRAJ)
         vg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
@@ -745,9 +757,17 @@ void stepHelloController()
       }
      if (cmd.mode==MODE_VEL_TRAJ)
         vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
+      
       dirty_cmd=0;
+      vel_watchdog=TC4_LOOP_RATE;//1s
+      
       }
     }
+
+    if (cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_VEL_PID)
+      vel_watchdog=max(0,vel_watchdog-1);
+    else
+      vel_watchdog=TC4_LOOP_RATE;
 
     
     if (sync_manager.motor_sync_triggered)
@@ -925,7 +945,7 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((x_des_incr -yw))<gains.pos_near_setpoint_d;
-            stat.debug=abs((x_des_incr -yw));
+            //stat.debug=abs((x_des_incr -yw));
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
