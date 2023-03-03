@@ -24,7 +24,9 @@
 // Version 0.2.3: Add support for motor shunt
 // Version 0.2.5: Initial production release RE2 Mitski
 // Version 0.2.6: Initial production release RE2 Nina
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.6p1"
+// Version 0.2.7: Add velocity watchdog
+
+#define FIRMWARE_VERSION_HR "Stepper.v0.2.7p1"
 
 /////////////////////////////////////////////////////////////////
 
@@ -99,7 +101,8 @@
 #define CONFIG_ENABLE_GUARDED_MODE 8
 #define CONFIG_FLIP_ENCODER_POLARITY 16
 #define CONFIG_FLIP_EFFORT_POLARITY 32
-#define CONFIG_USE_POS_VEL_CTRL 64
+#define CONFIG_ENABLE_VEL_WATCHDOG 64
+
 
 
 
