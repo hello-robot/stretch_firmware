@@ -25,8 +25,9 @@
 // Version 0.2.3: Initial production release RE2 Mitski
 // Version 0.2.4: Bugfix lightbar voltage display
 // Version 0.2.5: Initial production release for RE2 Nina
+// Version 0.2.6: Add trace function
 
-#define FIRMWARE_VERSION "Pimu.v0.2.5p1"
+#define FIRMWARE_VERSION "Pimu.v0.2.6p1"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -41,7 +42,8 @@
 #define RPC_REPLY_PIMU_BOARD_INFO 8
 #define RPC_SET_MOTOR_SYNC 9
 #define RPC_REPLY_MOTOR_SYNC 10
-
+#define RPC_READ_TRACE 11
+#define RPC_REPLY_READ_TRACE 12
 
 /////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
@@ -91,6 +93,7 @@
 #define STATE_HIGH_CURRENT_ALERT 1024
 #define STATE_CHARGER_CONNECTED 2048
 #define STATE_BOOT_DETECTED 4096
+#define STATE_IS_TRACE_ON 8192       //Is trace recording
 
 #define TRIGGER_BOARD_RESET  1
 #define TRIGGER_RUNSTOP_RESET  2
@@ -103,7 +106,8 @@
 #define TRIGGER_RUNSTOP_ON 256
 #define TRIGGER_BEEP 512
 #define TRIGGER_LIGHTBAR_TEST 1024
-
+#define TRIGGER_ENABLE_TRACE 2048
+#define TRIGGER_DISABLE_TRACE 4096
 /////////////////////////////////////////////////////////////////
 
 //Note, to serialize to Linux must pack structs given use of sizeof()
@@ -168,6 +172,13 @@ struct __attribute__ ((packed)) Pimu_Status{
   uint64_t timestamp; //us
   uint16_t bump_event_cnt;
   float debug;
+};
+
+
+#define N_TRACE_BUF 200 //Less than 255
+
+struct __attribute__ ((packed)) Trace{
+  Pimu_Status  data[N_TRACE_BUF];
 };
 
 struct __attribute__ ((packed)) Pimu_Trigger{

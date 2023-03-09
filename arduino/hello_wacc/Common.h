@@ -21,7 +21,8 @@
 // Protocol 1: Add support for long timestamps
 // Version 0.2.0: Add support for RE2 (board variants)
 // Version 0.2.2: Initial production release RE2 Mitski
-#define FIRMWARE_VERSION "Wacc.v0.2.2p1"
+// Version 0.2.3: Add trace function
+#define FIRMWARE_VERSION "Wacc.v0.2.3p1"
 
 
 /////////////////////////////////////////////////////////////////
@@ -33,8 +34,14 @@
 #define RPC_REPLY_WACC_COMMAND 6
 #define RPC_GET_WACC_BOARD_INFO 7
 #define RPC_REPLY_WACC_BOARD_INFO 8
+#define RPC_READ_TRACE 9
+#define RPC_REPLY_READ_TRACE 10
 
 #define TRIGGER_BOARD_RESET  1
+#define TRIGGER_ENABLE_TRACE 2
+#define TRIGGER_DISABLE_TRACE 4
+
+#define STATE_IS_TRACE_ON 1        //Is trace recording
 
 /////////////////////////////////////////////////////////////////
 //From hello_wacc/variants.h
@@ -91,6 +98,13 @@ struct __attribute__ ((packed)) Wacc_Status{
   uint64_t timestamp; //us
   uint32_t debug;
 };
+
+#define N_TRACE_BUF 250 //Less than 255
+
+struct __attribute__ ((packed)) Trace{
+  Wacc_Status  data[N_TRACE_BUF];
+};
+
 
 struct __attribute__ ((packed)) Wacc_Board_Info{
   char board_variant[20];

@@ -33,6 +33,15 @@ float accel_gravity_scale=1.0;
 bool dirty_config=false;
 bool dirty_command=false;
 
+
+Trace trace_buf;
+int trace_buf_idx=0;
+bool trace_on=false;
+bool reading_trace=false;
+int trace_read_idx=0;
+uint8_t n_trace_read=0;
+
+
 /////////////////////////////////////////
 void setupTimer4_and_5();
 float FS_CTRL = 700; //Run Wacc Controller at 700hz, IMU update at 70hz
@@ -109,6 +118,28 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&board_info), sizeof(Wacc_Board_Info)); //Collect the status data
           num_byte_rpc_out=sizeof(Wacc_Board_Info)+1;
           break; 
+    case RPC_READ_TRACE: 
+          if(!reading_trace)
+          {
+            //Initialize new read
+            reading_trace=true;
+            trace_on=false; //force off
+            trace_read_idx=trace_buf_idx; //Pointing at the oldest in buffer
+            n_trace_read=N_TRACE_BUF;
+          }
+          rpc_out[0]=RPC_REPLY_READ_TRACE;
+          rpc_out[1]=(uint8_t)(n_trace_read-1);
+          n_trace_read--;
+          
+          memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx]), sizeof(Wacc_Status)); //Collect the status data
+          trace_read_idx++;
+          if(trace_read_idx==N_TRACE_BUF)
+              trace_read_idx=0;
+          num_byte_rpc_out=sizeof(Wacc_Status)+2;
+          
+          if(n_trace_read==0)
+            reading_trace=false;
+          break; 
    default:
         break;
   };
@@ -158,6 +189,17 @@ if (dirty_command)
     {
           board_reset_cnt=100;
     }
+
+     if (cmd.trigger & TRIGGER_ENABLE_TRACE)
+    {
+      trace_on=true;
+      memset((uint8_t*)(&trace_buf), 0,sizeof(Trace));
+      trace_buf_idx=0;
+    }
+    if (cmd.trigger & TRIGGER_DISABLE_TRACE)
+    {
+      trace_on=false;
+    }
   }
   
   if (board_reset_cnt)
@@ -194,11 +236,20 @@ if (dirty_command)
   stat.d2=cmd.d2;
   stat.d3=cmd.d3;
   stat.single_tap_count=single_tap_count;
-  stat.state = 0;
+  stat.state=0;
+  stat.state = trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   //stat.debug=accel_debug;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Wacc_Status));
   interrupts();
+
+  if(trace_on)
+  {
+    memcpy((uint8_t *)(&(trace_buf.data[trace_buf_idx])) ,(uint8_t *)(&stat) ,sizeof(Wacc_Status));
+    trace_buf_idx=trace_buf_idx+1;
+    if(trace_buf_idx==N_TRACE_BUF)
+      trace_buf_idx=0;
+  }
 }
 //////////////////////////////////////////////////////
 bool led_on=false;

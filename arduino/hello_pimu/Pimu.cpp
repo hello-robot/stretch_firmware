@@ -51,6 +51,14 @@ SyncManager sync_manager(&runstop_manager);
 LightBarManager light_bar_manager;
 
 
+Trace trace_buf;
+int trace_buf_idx=0;
+bool trace_on=false;
+bool reading_trace=false;
+int trace_read_idx=0;
+uint8_t n_trace_read=0;
+
+
 //////////////////////////////////////
 Pimu_Config cfg_in, cfg;
 Pimu_Trigger trg_in, trg;
@@ -239,6 +247,28 @@ void handleNewRPC()
           sync_manager.step();
           interrupts();
           break; 
+   case RPC_READ_TRACE: 
+          if(!reading_trace)
+          {
+            //Initialize new read
+            reading_trace=true;
+            trace_on=false; //force off
+            trace_read_idx=trace_buf_idx; //Pointing at the oldest in buffer
+            n_trace_read=N_TRACE_BUF;
+          }
+          rpc_out[0]=RPC_REPLY_READ_TRACE;
+          rpc_out[1]=(uint8_t)(n_trace_read-1);
+          n_trace_read--;
+          
+          memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx]), sizeof(Pimu_Status)); //Collect the status data
+          trace_read_idx++;
+          if(trace_read_idx==N_TRACE_BUF)
+              trace_read_idx=0;
+          num_byte_rpc_out=sizeof(Pimu_Status)+2;
+          
+          if(n_trace_read==0)
+            reading_trace=false;
+          break; 
    default:
         break;
   };
@@ -259,6 +289,16 @@ bool pulse_on=0;
 ////////////////////////////
 void handle_trigger()
 {
+    if (trg.data & TRIGGER_ENABLE_TRACE)
+    {
+      trace_on=true;
+      memset((uint8_t*)(&trace_buf), 0,sizeof(Trace));
+      trace_buf_idx=0;
+    }
+    if (trg.data & TRIGGER_DISABLE_TRACE)
+    {
+      trace_on=false;
+    }
     if (trg.data & TRIGGER_LIGHTBAR_TEST)
     {
       light_bar_manager.start_test();
@@ -478,8 +518,16 @@ void update_status()
   stat.state= state_charger_connected ? stat.state|STATE_CHARGER_CONNECTED : stat.state;
   stat.state= state_boot_detected ? stat.state|STATE_BOOT_DETECTED : stat.state;
   stat.state= state_over_tilt_alert ? stat.state|STATE_OVER_TILT_ALERT : stat.state;
-  
+  stat.state = trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
+
+  if(trace_on)
+  {
+    memcpy((uint8_t *)(&(trace_buf.data[trace_buf_idx])) ,(uint8_t *)(&stat) ,sizeof(Pimu_Status));
+    trace_buf_idx=trace_buf_idx+1;
+    if(trace_buf_idx==N_TRACE_BUF)
+      trace_buf_idx=0;
+  }
 }
 
 ////////////////////// Timer5 /////////////////////////////////////////

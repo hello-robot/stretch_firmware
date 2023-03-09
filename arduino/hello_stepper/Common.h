@@ -25,8 +25,9 @@
 // Version 0.2.5: Initial production release RE2 Mitski
 // Version 0.2.6: Initial production release RE2 Nina
 // Version 0.2.7: Add velocity watchdog
+// Version 0.2.8: Add trace function
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.7p1"
+#define FIRMWARE_VERSION_HR "Stepper.v0.2.8p1"
 
 /////////////////////////////////////////////////////////////////
 
@@ -56,6 +57,9 @@
 #define RPC_REPLY_START_NEW_TRAJECTORY 24
 #define RPC_RESET_TRAJECTORY 25
 #define RPC_REPLY_RESET_TRAJECTORY 26
+#define RPC_READ_TRACE 27
+#define RPC_REPLY_READ_TRACE 28
+
 
 #define MODE_SAFETY 0
 #define MODE_FREEWHEEL 1
@@ -83,7 +87,7 @@
 #define DIAG_TRAJ_ACTIVE 4096             //Currently executing a splined trajectory
 #define DIAG_TRAJ_WAITING_ON_SYNC 8192    //Currently waiting on a sync signal before starting trajectory
 #define DIAG_IN_SYNC_MODE 16384           //Currently running in sync mode
-
+#define DIAG_IS_TRACE_ON 32768        //Is trace recording
 
 
 #define TRIGGER_MARK_POS  1
@@ -93,7 +97,8 @@
 #define TRIGGER_RESET_POS_CALIBRATED 16
 #define TRIGGER_POS_CALIBRATED 32
 #define TRIGGER_MARK_POS_ON_CONTACT 64
-
+#define TRIGGER_ENABLE_TRACE 128
+#define TRIGGER_DISABLE_TRACE 256
 
 #define CONFIG_SAFE_MODE_HOLD 1
 #define CONFIG_ENABLE_RUNSTOP 2
@@ -166,6 +171,15 @@ struct __attribute__ ((packed)) Status{
   uint32_t guarded_event;       //counter of guarded events since power-up
   float traj_setpoint;          //Target of waypoint trajectory
   uint16_t traj_id;             //Id of active trajectory segment
+};
+
+
+/////////////////////////////////////////////////////////////////
+
+#define N_TRACE_BUF 250 //Less than 255
+
+struct __attribute__ ((packed)) Trace{
+  Status  data[N_TRACE_BUF];
 };
 
 /////////////////////////////////////////////////////////////////
