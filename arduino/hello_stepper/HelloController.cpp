@@ -131,6 +131,16 @@ uint8_t board_id=0;
 
 int vel_watchdog=TC4_LOOP_RATE; //Watchdog counts down from 1s
 
+
+
+Trace trace_buf;
+int trace_buf_idx=0;
+bool trace_on=false;
+bool reading_trace=false;
+int trace_read_idx=0;
+uint8_t n_trace_read=0;
+
+
 ///////////////////////// UTIL ///////////////////////////
 
 
@@ -335,6 +345,29 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&fg), sizeof(Gains)); //Collect the status data
           num_byte_rpc_out=sizeof(Gains)+1;
           break; 
+    case RPC_READ_TRACE: 
+          if(!reading_trace)
+          {
+            //Initialize new read
+            reading_trace=true;
+            trace_on=false; //force off
+            trace_read_idx=trace_buf_idx; //Pointing at the oldest in buffer
+            n_trace_read=N_TRACE_BUF;
+          }
+          rpc_out[0]=RPC_REPLY_READ_TRACE;
+          rpc_out[1]=(uint8_t)(n_trace_read-1);
+          n_trace_read--;
+          
+          memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx]), sizeof(Status)); //Collect the status data
+          trace_read_idx++;
+          if(trace_read_idx==N_TRACE_BUF)
+              trace_read_idx=0;
+          num_byte_rpc_out=sizeof(Status)+2;
+          
+          if(n_trace_read==0)
+            reading_trace=false;
+          break; 
+
     case RPC_SET_MENU_ON: 
           rpc_out[0]=RPC_REPLY_MENU_ON;
           num_byte_rpc_out=1;
@@ -434,6 +467,8 @@ void update_status()
   stat.diag = sync_manager.sync_mode_enabled?     stat.diag| DIAG_IN_SYNC_MODE: stat.diag;
   stat.diag = trajectory_manager.is_trajectory_active()? stat.diag| DIAG_TRAJ_ACTIVE: stat.diag;
   stat.diag = trajectory_manager.is_trajectory_waiting_on_sync()? stat.diag| DIAG_TRAJ_WAITING_ON_SYNC: stat.diag;
+  stat.diag = trace_on ?     stat.diag| DIAG_IS_TRACE_ON: stat.diag;
+ 
   stat.traj_setpoint=trajectory_manager.q;
   stat.traj_id=trajectory_manager.get_id_current_segment();
 
@@ -442,6 +477,16 @@ void update_status()
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
+
+  if(trace_on)
+  {
+    memcpy((uint8_t *)(&(trace_buf.data[trace_buf_idx])) ,(uint8_t *)(&stat) ,sizeof(Status));
+    trace_buf_idx=trace_buf_idx+1;
+    if(trace_buf_idx==N_TRACE_BUF)
+      trace_buf_idx=0;
+  }
+  
+
 }
 
 
@@ -485,6 +530,22 @@ void stepHelloController()
 
         if (trg.data & TRIGGER_BOARD_RESET)
           board_reset_cnt=100;
+
+        //stat.debug=trg.data;
+        if (trg.data & TRIGGER_ENABLE_TRACE)
+        {
+          trace_on=true;
+          memset((uint8_t*)(&trace_buf), 0,sizeof(Trace));
+          trace_buf_idx=0;
+          stat.debug++;
+        }
+
+        if (trg.data & TRIGGER_DISABLE_TRACE)
+        {
+          trace_on=false;
+          //stat.debug--;
+        }
+        
     }
 
     if (board_reset_cnt)
@@ -533,6 +594,7 @@ void stepHelloController()
       guarded_mode_enabled = gains.config & CONFIG_ENABLE_GUARDED_MODE;
       flip_encoder_polarity = gains.config & CONFIG_FLIP_ENCODER_POLARITY;
       flip_effort_polarity = gains.config & CONFIG_FLIP_EFFORT_POLARITY;
+
 
       uMAX_P = current_to_effort(gains.iMax_pos);
       uMAX_N = current_to_effort(gains.iMax_neg);
@@ -674,7 +736,7 @@ void stepHelloController()
         {
           x_des_incr = yw + rad_to_deg(cmd_in.x_des);
           //x_des_incr = xdes+ rad_to_deg(cmd_in.x_des);//Use xdes instead of yw so we don't add in steady state error
-          stat.debug=yw;
+          //stat.debug=yw;
           
         }
         else
