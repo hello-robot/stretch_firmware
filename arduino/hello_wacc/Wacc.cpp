@@ -44,8 +44,7 @@ uint8_t n_trace_read=0;
 
 /////////////////////////////////////////
 void setupTimer4_and_5();
-float FS_CTRL = 700; //Run Wacc Controller at 700hz, IMU update at 70hz
-float FS_ACC = 70;
+float FS_CTRL = 70; //Run Acceleromter read Controller at 70hz
 void toggle_led(int rate_ms);
 
 void setupWacc() {  
@@ -155,10 +154,9 @@ void stepWaccRPC()
 uint8_t board_reset_cnt=0;
 uint8_t ds_cnt=0;
 
-//Called at 700hz
-void stepWaccController()
+void stepWaccController_1000Hz()
 {
-  if (dirty_config)
+    if (dirty_config)
   {
     if (cfg_in.ana_LPF!=cfg.ana_LPF) //Effort filter
     {
@@ -167,7 +165,7 @@ void stepWaccController()
     }
     if (cfg_in.accel_LPF!=cfg.accel_LPF) //Effort filter
     {
-      accel_LPFa = exp(cfg_in.accel_LPF*-2*3.14159/FS_ACC); // z = e^st pole mapping
+      accel_LPFa = exp(cfg_in.accel_LPF*-2*3.14159/FS_CTRL); // z = e^st pole mapping
       accel_LPFb = (1.0-accel_LPFa);
     }
     if (cfg_in.accel_range_g!=cfg.accel_range_g) 
@@ -219,17 +217,9 @@ if (dirty_command)
   else
     digitalWrite(D3, LOW);
 
-  stat.timestamp= time_manager.current_time_us();
-  ds_cnt++; //Downsample to 70Hz
-  if (ds_cnt>=(FS_CTRL/FS_ACC))
-  {
-    stepAccel();
-    stat.ax=accel_gravity_scale*(stat.ax * accel_LPFa + accel_LPFb*ax);
-    stat.ay=accel_gravity_scale*(stat.ay * accel_LPFa + accel_LPFb*ay);
-    stat.az=accel_gravity_scale*(stat.az * accel_LPFa + accel_LPFb*az);
-    ds_cnt=0;
-  }
-  
+  stat.ax=accel_gravity_scale*(stat.ax * accel_LPFa + accel_LPFb*ax);
+  stat.ay=accel_gravity_scale*(stat.ay * accel_LPFa + accel_LPFb*ay);
+  stat.az=accel_gravity_scale*(stat.az * accel_LPFa + accel_LPFb*az);
   stat.a0 = stat.a0 * ana_LPFa +  ana_LPFb* analogRead(A0);
   stat.d0=digitalRead(D0);
   stat.d1=digitalRead(D1);
@@ -238,6 +228,8 @@ if (dirty_command)
   stat.single_tap_count=single_tap_count;
   stat.state=0;
   stat.state = trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
+  stat.timestamp= time_manager.current_time_us();
+  stat.debug=time_manager.ts_base;//(uint32_t)TC4->COUNT16.COUNT.reg;
   //stat.debug=accel_debug;
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Wacc_Status));
@@ -250,6 +242,11 @@ if (dirty_command)
     if(trace_buf_idx==N_TRACE_BUF)
       trace_buf_idx=0;
   }
+}
+
+void stepWaccController_70Hz()
+{
+    stepAccel();
 }
 //////////////////////////////////////////////////////
 bool led_on=false;
@@ -280,12 +277,23 @@ void TC5_Handler() {
 
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
-    stepWaccController();
+    stepWaccController_70Hz();
     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
 
+void TC4_Handler() {                // gets called with FsMg frequency
+
+  if (TC4->COUNT16.INTFLAG.bit.OVF == 1) 
+  {    // A counter overflow caused the interrupt
+    time_manager.ts_base++;
+    TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
+    stepWaccController_1000Hz();
+  }
+}
+
 #define WAIT_TC16_REGS_SYNC(x) while(x->COUNT16.STATUS.bit.SYNCBUSY);
+
 void enableTCInterrupts() {   //enables the controller interrupt ("closed loop mode")
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC5
   WAIT_TC16_REGS_SYNC(TC5)                      //wait for sync
@@ -327,9 +335,9 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV2;   // Set perscaler
   WAIT_TC16_REGS_SYNC(TC4)
   
-  TC5->COUNT16.CC[0].reg = (int)( round(48000000 / 64 / FS_CTRL)); //Count up to 6400 / rate
+  TC5->COUNT16.CC[0].reg = (int)( round(48000000 / 64 / FS_CTRL)); //Count up to 64000 / rate
   WAIT_TC16_REGS_SYNC(TC5)
-  TC4->COUNT16.CC[0].reg =  TC4_TICKS_PER_CYCLE; 
+  TC4->COUNT16.CC[0].reg =  TC4_TICKS_PER_CYCLE;  //(int)( round(48000000 / 2 / FS_TC4))
   WAIT_TC16_REGS_SYNC(TC4)
   
   TC5->COUNT16.INTENSET.reg = 0;              // disable all interrupts
@@ -350,14 +358,6 @@ void setupTimer4_and_5() {  // configure the controller interrupt
     enableTCInterrupts();
 }
 
-////////////////////// Timer4 /////////////////////////////////////////
 
-void TC4_Handler() {                // gets called with FsMg frequency
-
-  if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
-    time_manager.ts_base++;
-  TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
-  }
-}
 
 //////////////////////////////////////

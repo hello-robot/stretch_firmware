@@ -22,7 +22,8 @@
 // Version 0.2.0: Add support for RE2 (board variants)
 // Version 0.2.2: Initial production release RE2 Mitski
 // Version 0.2.3: Add trace function
-#define FIRMWARE_VERSION "Wacc.v0.2.3p1"
+// Version 0.2.4: Reorg timing to fix IRQ overruns
+#define FIRMWARE_VERSION "Wacc.v0.2.4p1"
 
 
 /////////////////////////////////////////////////////////////////

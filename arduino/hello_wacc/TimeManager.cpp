@@ -38,12 +38,7 @@ uint64_t TimeManager::current_time_us()
 {
   uint64_t base;
   int cntr = TC4->COUNT16.COUNT.reg;
-  
-  if (TC4->COUNT16.INTFLAG.bit.OVF == 1) //Catch the case that there's an IRQ waiting to be handled
-    base = (ts_base+1)*US_PER_TC4_CYCLE;
-  else
-    base = ts_base*US_PER_TC4_CYCLE;
-
+   base = ts_base*US_PER_TC4_CYCLE;
   return base+(int)(round(cntr*US_PER_TC4_TICK));
 }
 
