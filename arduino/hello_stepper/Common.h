@@ -26,8 +26,9 @@
 // Version 0.2.6: Initial production release RE2 Nina
 // Version 0.2.7: Add velocity watchdog
 // Version 0.2.8: Add trace function
+// Version 0.2.9: Add debug option to trace function
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.8p1"
+#define FIRMWARE_VERSION_HR "Stepper.v0.2.9p1"
 
 /////////////////////////////////////////////////////////////////
 
@@ -107,7 +108,7 @@
 #define CONFIG_FLIP_ENCODER_POLARITY 16
 #define CONFIG_FLIP_EFFORT_POLARITY 32
 #define CONFIG_ENABLE_VEL_WATCHDOG 64
-
+#define CONFIG_USE_DEBUG_TRACE 128
 
 
 
@@ -176,10 +177,21 @@ struct __attribute__ ((packed)) Status{
 
 /////////////////////////////////////////////////////////////////
 
-#define N_TRACE_BUF 250 //Less than 255
+#define N_TRACE_RAW 14000  //Allocate enough for 250 Status messages / 1000 debug messages
+#define N_TRACE_STATUS 250 
+#define N_TRACE_DEBUG 1000 
+
 
 struct __attribute__ ((packed)) Trace{
-  Status  data[N_TRACE_BUF];
+  uint8_t data[N_TRACE_RAW]; 
+};
+
+struct __attribute__ ((packed)) DebugTrace{ //14 bytes
+  uint8_t u8_1;
+  uint8_t u8_2;                 
+  float f_1;
+  float f_2;
+  float f_3;    
 };
 
 /////////////////////////////////////////////////////////////////

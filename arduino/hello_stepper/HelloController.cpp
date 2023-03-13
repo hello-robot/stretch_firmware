@@ -134,12 +134,13 @@ int vel_watchdog=TC4_LOOP_RATE; //Watchdog counts down from 1s
 
 
 Trace trace_buf;
-int trace_buf_idx=0;
-bool trace_on=false;
-bool reading_trace=false;
+DebugTrace debug_trace;
+int trace_write_idx=0;
 int trace_read_idx=0;
-uint8_t n_trace_read=0;
-
+bool trace_on=false;
+bool trace_waiting_on_sync=true;
+bool reading_trace=false;
+int n_trace_read=0;
 
 ///////////////////////// UTIL ///////////////////////////
 
@@ -351,19 +352,37 @@ void handleNewRPC()
             //Initialize new read
             reading_trace=true;
             trace_on=false; //force off
-            trace_read_idx=trace_buf_idx; //Pointing at the oldest in buffer
-            n_trace_read=N_TRACE_BUF;
+            trace_read_idx=trace_write_idx; //Pointing at the oldest in buffer
+            if (gains.config & CONFIG_USE_DEBUG_TRACE)
+              n_trace_read=N_TRACE_DEBUG;
+            else
+              n_trace_read=N_TRACE_STATUS;
           }
+          
           rpc_out[0]=RPC_REPLY_READ_TRACE;
-          rpc_out[1]=(uint8_t)(n_trace_read-1);
+          rpc_out[1]=(uint8_t)(n_trace_read-1>0); //Flag if done with read
           n_trace_read--;
+
+          if (gains.config & CONFIG_USE_DEBUG_TRACE)
+          {
+            memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx*sizeof(DebugTrace)]), sizeof(DebugTrace)); //Collect the status data
+            //memcpy(rpc_out + 2, (uint8_t *)&(debug_trace), sizeof(DebugTrace)); //Collect the status data
+            num_byte_rpc_out=sizeof(DebugTrace)+2;    
+            trace_read_idx++;
+            if(trace_read_idx==N_TRACE_DEBUG)
+                trace_read_idx=0;      
+          }
+          else
+          {
+            memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx*sizeof(Status)]), sizeof(Status)); //Collect the status data
+            num_byte_rpc_out=sizeof(Status)+2;
+           trace_read_idx++;
+            if(trace_read_idx==N_TRACE_STATUS)
+                trace_read_idx=0;     
+          }
+
           
-          memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx]), sizeof(Status)); //Collect the status data
-          trace_read_idx++;
-          if(trace_read_idx==N_TRACE_BUF)
-              trace_read_idx=0;
-          num_byte_rpc_out=sizeof(Status)+2;
-          
+                
           if(n_trace_read==0)
             reading_trace=false;
           break; 
@@ -478,15 +497,26 @@ void update_status()
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 
-  if(trace_on)
-  {
-    memcpy((uint8_t *)(&(trace_buf.data[trace_buf_idx])) ,(uint8_t *)(&stat) ,sizeof(Status));
-    trace_buf_idx=trace_buf_idx+1;
-    if(trace_buf_idx==N_TRACE_BUF)
-      trace_buf_idx=0;
-  }
   
+  if(trace_on)// && !trace_waiting_on_sync)
+  {
 
+
+    if (gains.config & CONFIG_USE_DEBUG_TRACE)
+    {
+       memcpy((uint8_t *)&(trace_buf.data[trace_write_idx*sizeof(DebugTrace)]) ,(uint8_t *)(&debug_trace),  sizeof(DebugTrace));
+       trace_write_idx=trace_write_idx+1;
+        if(trace_write_idx==N_TRACE_DEBUG)
+          trace_write_idx=0;        
+    }
+    else
+    {
+       memcpy((uint8_t *)&(trace_buf.data[trace_write_idx*sizeof(Status)]),(uint8_t *)(&stat),  sizeof(Status));
+       trace_write_idx=trace_write_idx+1;
+        if(trace_write_idx==N_TRACE_STATUS)
+          trace_write_idx=0;
+    }
+  } 
 }
 
 
@@ -495,6 +525,7 @@ void update_status()
 
 float mpos_d;
 float x_des_incr=0;
+bool first_traj_incr=true;
 #define STIFFNESS_SLEW .1
 float stiffness_target=0;
 
@@ -531,15 +562,15 @@ void stepHelloController()
         if (trg.data & TRIGGER_BOARD_RESET)
           board_reset_cnt=100;
 
-        //stat.debug=trg.data;
+
         if (trg.data & TRIGGER_ENABLE_TRACE)
         {
           trace_on=true;
-          memset((uint8_t*)(&trace_buf), 0,sizeof(Trace));
-          trace_buf_idx=0;
-          stat.debug++;
+          memset((uint8_t*)(&trace_buf), 0,N_TRACE_RAW);
+          trace_write_idx=0;
+          trace_waiting_on_sync=true;
         }
-
+        
         if (trg.data & TRIGGER_DISABLE_TRACE)
         {
           trace_on=false;
@@ -617,39 +648,41 @@ void stepHelloController()
    
      if (trg.data & TRIGGER_MARK_POS || ( dirty_trigger_mark_on_contact && guarded_override))
      {
-      if (dirty_trigger_mark_on_contact && guarded_override)
-      {
-        dirty_trigger_mark_on_contact=0;
-        mpos_d=rad_to_deg(mark_on_contact_pos);
-      }
-      else
-        mpos_d=rad_to_deg(trg.tdata);
+        if (dirty_trigger_mark_on_contact && guarded_override)
+        {
+          dirty_trigger_mark_on_contact=0;
+          mpos_d=rad_to_deg(mark_on_contact_pos);
+        }
+        else
+          mpos_d=rad_to_deg(trg.tdata);
+          
+        //Reset position measurement
+        //mark_pos = yy; //0-360
+        hold_pos = mpos_d;
+        if (flip_encoder_polarity)
+          mpos_d=mpos_d*-1;
+        wrap_count=(int)(mpos_d) / 360;
+        mark_rem = mpos_d-360*wrap_count;
+        mark_pos=yy-mark_rem;
+  
+        y_1=yy;
+        yw_1=0;        
+        //Reset velocity measurements
+        v=0;
+        vs=0;
         
-      //Reset position measurement
-      //mark_pos = yy; //0-360
-      hold_pos = mpos_d;
-      if (flip_encoder_polarity)
-        mpos_d=mpos_d*-1;
-      wrap_count=(int)(mpos_d) / 360;
-      mark_rem = mpos_d-360*wrap_count;
-      mark_pos=yy-mark_rem;
-
-      y_1=yy;
-      yw_1=0;        
-      //Reset velocity measurements
-      v=0;
-      vs=0;
-      
-      //Reset control state
-      
-      r=mpos_d;
-      mg.safe_switch_on(mpos_d,0);
-   
+        //Reset control state
+        
+        r=mpos_d;
+        mg.safe_switch_on(mpos_d,0);
      }
+
+     
      if (trg.data & TRIGGER_RESET_POS_CALIBRATED)
      {
       diag_pos_calibrated=false;
      }
+     
      if (trg.data & TRIGGER_POS_CALIBRATED)
      {
       diag_pos_calibrated=true;
@@ -718,7 +751,7 @@ void stepHelloController()
       {
 
         
-        
+        trace_waiting_on_sync=false;
         diag_waiting_on_sync=false;
 
         if (guarded_override) //Reset on new command to track
@@ -734,9 +767,15 @@ void stepHelloController()
       //Set the incremental position target if triggered
        if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
         {
-          x_des_incr = yw + rad_to_deg(cmd_in.x_des);
-          //x_des_incr = xdes+ rad_to_deg(cmd_in.x_des);//Use xdes instead of yw so we don't add in steady state error
-          //stat.debug=yw;
+          //if (first_traj_incr)
+          //{
+            x_des_incr = yw + rad_to_deg(cmd_in.x_des);
+           // first_traj_incr = false;
+          //}
+          //else
+          //Once control loop is initialized, increment off of the trajeectory target rather than encoder so we don't integrate in steady state error
+           // x_des_incr = xdes+ rad_to_deg(cmd_in.x_des);
+          //stat.debug=x_des_incr;
           
         }
         else
@@ -753,7 +792,6 @@ void stepHelloController()
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
         {
-          
           switch(cmd.mode)
           {
             case MODE_SAFETY:
@@ -779,6 +817,7 @@ void stepHelloController()
               mg.safe_switch_on(yw,v);
               mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
               mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+              first_traj_incr=true;
               break; 
             case MODE_POS_TRAJ_WAYPOINT:
               eff_max=0;
@@ -998,6 +1037,8 @@ void stepHelloController()
               xdes=mg.update(x_des_incr); //get target position
               
             }
+            stat.debug=xdes;
+            
             e = (xdes - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit
             if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
@@ -1036,10 +1077,11 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
-            stat.debug=abs((rad_to_deg(cmd.x_des) -yw));
+            //stat.debug=abs((rad_to_deg(cmd.x_des) -yw));
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
+            stat.debug=0;
             break;
         case MODE_POS_TRAJ_WAYPOINT:
             if (stiffness_target==0.0)
