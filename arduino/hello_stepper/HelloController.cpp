@@ -141,6 +141,16 @@ bool trace_on=false;
 bool trace_waiting_on_sync=true;
 bool reading_trace=false;
 int n_trace_read=0;
+int idx_trace_print=0;
+char trace_print_buf[100];
+
+void push_print_trace()
+{
+  memcpy((char*)(trace_buf.data)+idx_trace_print,trace_print_buf,100);
+  idx_trace_print+=100;
+  if(idx_trace_print>=N_TRACE_RAW)
+    idx_trace_print=0;
+}
 
 ///////////////////////// UTIL ///////////////////////////
 
@@ -354,7 +364,13 @@ void handleNewRPC()
             trace_on=false; //force off
             trace_read_idx=trace_write_idx; //Pointing at the oldest in buffer
             if (gains.config & CONFIG_USE_DEBUG_TRACE)
+            {
               n_trace_read=N_TRACE_DEBUG;
+            }
+            else if (gains.config & CONFIG_USE_PRINT_TRACE)
+            {
+              n_trace_read=N_TRACE_PRINT;
+            }
             else
               n_trace_read=N_TRACE_STATUS;
           }
@@ -364,6 +380,15 @@ void handleNewRPC()
           n_trace_read--;
 
           if (gains.config & CONFIG_USE_DEBUG_TRACE)
+          {
+            memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx*sizeof(DebugTrace)]), sizeof(DebugTrace)); //Collect the status data
+            //memcpy(rpc_out + 2, (uint8_t *)&(debug_trace), sizeof(DebugTrace)); //Collect the status data
+            num_byte_rpc_out=sizeof(DebugTrace)+2;    
+            trace_read_idx++;
+            if(trace_read_idx==N_TRACE_DEBUG)
+                trace_read_idx=0;      
+          }
+          else if (gains.config & CONFIG_USE_PRINT_TRACE)
           {
             memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx*sizeof(DebugTrace)]), sizeof(DebugTrace)); //Collect the status data
             //memcpy(rpc_out + 2, (uint8_t *)&(debug_trace), sizeof(DebugTrace)); //Collect the status data
@@ -497,11 +522,10 @@ void update_status()
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 
-  
-  if(trace_on)// && !trace_waiting_on_sync)
+
+  debug_trace.u8_1=sync_manager.irq_cnt;
+  if(trace_on && !trace_waiting_on_sync)
   {
-
-
     if (gains.config & CONFIG_USE_DEBUG_TRACE)
     {
        memcpy((uint8_t *)&(trace_buf.data[trace_write_idx*sizeof(DebugTrace)]) ,(uint8_t *)(&debug_trace),  sizeof(DebugTrace));
@@ -509,7 +533,7 @@ void update_status()
         if(trace_write_idx==N_TRACE_DEBUG)
           trace_write_idx=0;        
     }
-    else
+    else if(!gains.config & CONFIG_USE_PRINT_TRACE) //Status trace
     {
        memcpy((uint8_t *)&(trace_buf.data[trace_write_idx*sizeof(Status)]),(uint8_t *)(&stat),  sizeof(Status));
        trace_write_idx=trace_write_idx+1;
@@ -591,6 +615,8 @@ void stepHelloController()
     
     if (dirty_gains)
     {
+
+        
       //RC = 1/(2*pi*Hz)
       //A = exp(-1/(RC*Fs)) = exp(-2*pi*Hz/Fs)
       //B = 1-A
@@ -815,8 +841,8 @@ void stepHelloController()
               break; 
             case MODE_POS_TRAJ_INCR:
               mg.safe_switch_on(yw,v);
-              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
-              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+              mg.setMaxVelocity(2.0);//abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(2.0);//abs(rad_to_deg(cmd_in.a_des)));
               first_traj_incr=true;
               break; 
             case MODE_POS_TRAJ_WAYPOINT:
@@ -1038,6 +1064,9 @@ void stepHelloController()
               
             }
             stat.debug=xdes;
+            debug_trace.f_1=mg.tBrk;
+            debug_trace.f_2=mg.tAcc;
+            debug_trace.f_3=mg.acc;
             
             e = (xdes - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit

@@ -27,8 +27,8 @@
 // Version 0.2.7: Add velocity watchdog
 // Version 0.2.8: Add trace function
 // Version 0.2.9: Add debug option to trace function
-
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.9p1"
+// Version 0.3.0: Introduce P2. Add print option to trace function
+#define FIRMWARE_VERSION_HR "Stepper.v0.3.0p2"
 
 /////////////////////////////////////////////////////////////////
 
@@ -109,7 +109,7 @@
 #define CONFIG_FLIP_EFFORT_POLARITY 32
 #define CONFIG_ENABLE_VEL_WATCHDOG 64
 #define CONFIG_USE_DEBUG_TRACE 128
-
+#define CONFIG_USE_PRINT_TRACE 128
 
 
 /////////////////////////////////////////////////////////////////
@@ -143,11 +143,11 @@ struct __attribute__ ((packed)) Gains{
   float effort_LPF;   ///Low pass filter roll-off for status effort (Hz)
   float safety_stiffness; //0-1, for when safety mode is hold
   float i_safety_feedforward; //current (A), for when safety mode is hold
-  uint8_t config;
+  uint16_t config;
 
-  float vpK1;
-  float vpK2;
-  float vpK3;
+  //float vpK1;
+  //float vpK2;
+  //float vpK3;
 };
 
 struct __attribute__ ((packed)) MotionLimits{
@@ -180,7 +180,7 @@ struct __attribute__ ((packed)) Status{
 #define N_TRACE_RAW 14000  //Allocate enough for 250 Status messages / 1000 debug messages
 #define N_TRACE_STATUS 250 
 #define N_TRACE_DEBUG 1000 
-
+#define N_TRACE_PRINT 60
 
 struct __attribute__ ((packed)) Trace{
   uint8_t data[N_TRACE_RAW]; 
