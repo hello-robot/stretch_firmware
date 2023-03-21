@@ -23,7 +23,8 @@
 // Version 0.2.2: Initial production release RE2 Mitski
 // Version 0.2.3: Add trace function
 // Version 0.2.4: Reorg timing to fix IRQ overruns
-#define FIRMWARE_VERSION "Wacc.v0.2.4p1"
+// Version 0.3.0: Move to updated trace and protocol P2
+#define FIRMWARE_VERSION "Wacc.v0.3.0p2"
 
 
 /////////////////////////////////////////////////////////////////
@@ -44,6 +45,7 @@
 
 #define STATE_IS_TRACE_ON 1        //Is trace recording
 
+    
 /////////////////////////////////////////////////////////////////
 //From hello_wacc/variants.h
 #define LED PIN_LED
@@ -100,12 +102,8 @@ struct __attribute__ ((packed)) Wacc_Status{
   uint32_t debug;
 };
 
-#define N_TRACE_BUF 250 //Less than 255
 
-struct __attribute__ ((packed)) Trace{
-  Wacc_Status  data[N_TRACE_BUF];
-};
-
+/////////////////////////////////////////////////////////////////
 
 struct __attribute__ ((packed)) Wacc_Board_Info{
   char board_variant[20];
