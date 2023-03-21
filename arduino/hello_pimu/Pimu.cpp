@@ -496,7 +496,7 @@ void update_status()
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
- /* if(TRACE_TYPE==TRACE_TYPE_DEBUG)
+  if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
     //Example of setting trace debug data
     trace_manager.debug_msg.f_3=stat.voltage;
@@ -506,7 +506,7 @@ void update_status()
   if(TRACE_TYPE==TRACE_TYPE_PRINT)
   {
   //Example of setting trace print data
-   sprintf(trace_manager.print_msg.msg, "Voltage: %d...\n",(int)stat.voltage);//AXx100 is %d",(int)stat.ax*100);//%f", stat.ax);
+   sprintf(trace_manager.print_msg.msg, "Voltage: %d\n",(int)stat.voltage);//AXx100 is %d",(int)stat.ax*100);//%f", stat.ax);
    trace_manager.print_msg.x=stat.voltage;
    trace_manager.print_msg.timestamp=stat.timestamp;
    trace_manager.update_trace_print();
@@ -515,7 +515,7 @@ void update_status()
   if(TRACE_TYPE==TRACE_TYPE_STATUS)
   {
     trace_manager.update_trace_status(&stat_out);
-  }*/
+  }
 }
 
 ////////////////////// Timer5 /////////////////////////////////////////

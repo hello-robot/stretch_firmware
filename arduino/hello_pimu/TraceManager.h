@@ -38,11 +38,11 @@
  */
  
 /////////////////////////// TRACE //////////////////////////////////////
-#define N_TRACE_RAW 14000  //Raw buffer. Allocate enough for min 250 Status messages / 1000 debug messages / 250 print messages
-#define N_TRACE_STATUS 365 //Status message is 38 bytes ea
+#define N_TRACE_RAW 22800  //Raw buffer. Allocate enough for min 250 Status messages / 1000 debug messages / 250 print messages
+#define N_TRACE_STATUS 200 //Status message is 114 bytes ea
 #define N_TRACE_DEBUG 1000 //Debug message is 14 bytes ea
 #define N_TRACE_PRINT_LN 32
-#define N_TRACE_PRINT 280   //Print message is 48 bytes ea
+#define N_TRACE_PRINT 400   //Print message is 44 bytes ea
 
 struct __attribute__ ((packed)) DebugTrace{ //14 bytes
   uint8_t u8_1;
@@ -52,7 +52,7 @@ struct __attribute__ ((packed)) DebugTrace{ //14 bytes
   float f_3;    
 };
 
-struct __attribute__ ((packed)) PrintTrace{ //48 bytes
+struct __attribute__ ((packed)) PrintTrace{ //44 bytes
   uint64_t timestamp; //us
   char msg[N_TRACE_PRINT_LN];
   float x;
