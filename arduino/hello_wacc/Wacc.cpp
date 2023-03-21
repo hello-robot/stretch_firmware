@@ -206,18 +206,29 @@ if (dirty_command)
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Wacc_Status));
   interrupts();
 
-  
-  trace_manager.update_trace_status(&stat);
 
-  //Example of setting trace debug data
-  //trace_manager.debug_msg.f_3=stat.ax;
-  
-  trace_manager.update_trace_debug();
+  if(TRACE_TYPE==TRACE_TYPE_DEBUG)
+  {
+    //Example of setting trace debug data
+    trace_manager.debug_msg.f_3=stat.ax;
+    trace_manager.update_trace_debug();
+  }
 
+  if(TRACE_TYPE==TRACE_TYPE_PRINT)
+  {
   //Example of setting trace print data
-  //  sprintf(trace_manager.print_msg.msg, "Hello my friend %d...\n",(int)stat.debug);//AXx100 is %d",(int)stat.ax*100);//%f", stat.ax);
-  //  trace_manager.print_msg.timestamp=stat.timestamp;
-  trace_manager.update_trace_print();
+   sprintf(trace_manager.print_msg.msg, "AX reading: %d...\n",(int)stat.debug);//AXx100 is %d",(int)stat.ax*100);//%f", stat.ax);
+   trace_manager.print_msg.x=stat.ax;
+   trace_manager.print_msg.timestamp=stat.timestamp;
+   trace_manager.update_trace_print();
+  }
+
+  if(TRACE_TYPE==TRACE_TYPE_STATUS)
+  {
+    trace_manager.update_trace_status(&stat);
+  }
+   
+   
  
 }
 

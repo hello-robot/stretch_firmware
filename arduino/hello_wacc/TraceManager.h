@@ -23,14 +23,26 @@
 #define TRACE_TYPE_PRINT 2
 
 
-#define TRACE_TYPE TRACE_TYPE_PRINT
+#define TRACE_TYPE TRACE_TYPE_STATUS
 
+/* This class supports generating traces of data at the full control rates. 
+ * There are three modes:
+ * STATUS: store the entire status struct on each control cycle
+ * DEBUG: store a more compact data struct on each control cycle
+ * PRINT: Store a print message, timestamp, and float aperiodically
+ * 
+ * The mode is set with TRACE_TYPE
+ * The duration of the trace, size of the buffers, etc must be tuned to match the available RAM
+ * 
+ * Stretch Body tools support enabling / disabling /reading of trace data
+ */
+ 
 /////////////////////////// TRACE //////////////////////////////////////
 #define N_TRACE_RAW 14000  //Raw buffer. Allocate enough for min 250 Status messages / 1000 debug messages / 250 print messages
 #define N_TRACE_STATUS 365 //Status message is 38 bytes ea
 #define N_TRACE_DEBUG 1000 //Debug message is 14 bytes ea
 #define N_TRACE_PRINT_LN 32
-#define N_TRACE_PRINT 350   //Print message is 40 bytes ea
+#define N_TRACE_PRINT 280   //Print message is 48 bytes ea
 
 struct __attribute__ ((packed)) DebugTrace{ //14 bytes
   uint8_t u8_1;
@@ -40,9 +52,10 @@ struct __attribute__ ((packed)) DebugTrace{ //14 bytes
   float f_3;    
 };
 
-struct __attribute__ ((packed)) PrintTrace{ //14 bytes
+struct __attribute__ ((packed)) PrintTrace{ //48 bytes
   uint64_t timestamp; //us
   char msg[N_TRACE_PRINT_LN];
+  float x;
 };
 
 
