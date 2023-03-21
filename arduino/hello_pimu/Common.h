@@ -26,8 +26,9 @@
 // Version 0.2.4: Bugfix lightbar voltage display
 // Version 0.2.5: Initial production release for RE2 Nina
 // Version 0.2.6: Add trace function
+// Version 0.3.0: Move to updated trace and protocol P2
 
-#define FIRMWARE_VERSION "Pimu.v0.2.6p1"
+#define FIRMWARE_VERSION "Pimu.v0.3.0p2"
 
 #define FS 100 //Loop rate in Hz for TC5
 

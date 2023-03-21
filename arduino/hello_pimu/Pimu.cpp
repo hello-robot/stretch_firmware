@@ -22,6 +22,7 @@
 #include "SyncManager.h"
 #include "RunstopManager.h"
 #include "LightBarManager.h"
+#include "TraceManager.h"
 
 #define V_TO_RAW(v) v*1024/20.0 //per circuit
 #define RAW_TO_V(r) (float)r*0.01953125 //20.0/1024.0
@@ -51,12 +52,7 @@ SyncManager sync_manager(&runstop_manager);
 LightBarManager light_bar_manager;
 
 
-Trace trace_buf;
-int trace_buf_idx=0;
-bool trace_on=false;
-bool reading_trace=false;
-int trace_read_idx=0;
-uint8_t n_trace_read=0;
+
 
 
 //////////////////////////////////////
@@ -248,26 +244,7 @@ void handleNewRPC()
           interrupts();
           break; 
    case RPC_READ_TRACE: 
-          if(!reading_trace)
-          {
-            //Initialize new read
-            reading_trace=true;
-            trace_on=false; //force off
-            trace_read_idx=trace_buf_idx; //Pointing at the oldest in buffer
-            n_trace_read=N_TRACE_BUF;
-          }
-          rpc_out[0]=RPC_REPLY_READ_TRACE;
-          rpc_out[1]=(uint8_t)(n_trace_read-1);
-          n_trace_read--;
-          
-          memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx]), sizeof(Pimu_Status)); //Collect the status data
-          trace_read_idx++;
-          if(trace_read_idx==N_TRACE_BUF)
-              trace_read_idx=0;
-          num_byte_rpc_out=sizeof(Pimu_Status)+2;
-          
-          if(n_trace_read==0)
-            reading_trace=false;
+          num_byte_rpc_out=trace_manager.rpc_read(rpc_out);
           break; 
    default:
         break;
@@ -291,13 +268,11 @@ void handle_trigger()
 {
     if (trg.data & TRIGGER_ENABLE_TRACE)
     {
-      trace_on=true;
-      memset((uint8_t*)(&trace_buf), 0,sizeof(Trace));
-      trace_buf_idx=0;
+      trace_manager.enable_trace();
     }
     if (trg.data & TRIGGER_DISABLE_TRACE)
     {
-      trace_on=false;
+      trace_manager.disable_trace();
     }
     if (trg.data & TRIGGER_LIGHTBAR_TEST)
     {
@@ -518,16 +493,29 @@ void update_status()
   stat.state= state_charger_connected ? stat.state|STATE_CHARGER_CONNECTED : stat.state;
   stat.state= state_boot_detected ? stat.state|STATE_BOOT_DETECTED : stat.state;
   stat.state= state_over_tilt_alert ? stat.state|STATE_OVER_TILT_ALERT : stat.state;
-  stat.state = trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
+  stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
-  if(trace_on)
+ /* if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
-    memcpy((uint8_t *)(&(trace_buf.data[trace_buf_idx])) ,(uint8_t *)(&stat) ,sizeof(Pimu_Status));
-    trace_buf_idx=trace_buf_idx+1;
-    if(trace_buf_idx==N_TRACE_BUF)
-      trace_buf_idx=0;
+    //Example of setting trace debug data
+    trace_manager.debug_msg.f_3=stat.voltage;
+    trace_manager.update_trace_debug();
   }
+
+  if(TRACE_TYPE==TRACE_TYPE_PRINT)
+  {
+  //Example of setting trace print data
+   sprintf(trace_manager.print_msg.msg, "Voltage: %d...\n",(int)stat.voltage);//AXx100 is %d",(int)stat.ax*100);//%f", stat.ax);
+   trace_manager.print_msg.x=stat.voltage;
+   trace_manager.print_msg.timestamp=stat.timestamp;
+   trace_manager.update_trace_print();
+  }
+
+  if(TRACE_TYPE==TRACE_TYPE_STATUS)
+  {
+    trace_manager.update_trace_status(&stat_out);
+  }*/
 }
 
 ////////////////////// Timer5 /////////////////////////////////////////

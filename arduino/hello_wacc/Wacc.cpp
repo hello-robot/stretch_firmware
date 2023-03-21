@@ -201,7 +201,7 @@ if (dirty_command)
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   stat.timestamp= time_manager.current_time_us();
   stat.debug=time_manager.ts_base;//(uint32_t)TC4->COUNT16.COUNT.reg;
-  //stat.debug=accel_debug;
+
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Wacc_Status));
   interrupts();
@@ -225,7 +225,7 @@ if (dirty_command)
 
   if(TRACE_TYPE==TRACE_TYPE_STATUS)
   {
-    trace_manager.update_trace_status(&stat);
+    trace_manager.update_trace_status(&stat_out);
   }
    
    
