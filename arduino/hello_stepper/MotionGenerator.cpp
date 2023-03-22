@@ -127,29 +127,11 @@ float MotionGenerator::update(float posRef) {
 		// Calculate braking time and distance (in case is neeeded)
 		tBrk = abs(oldVel) / maxAcc;
 		dBrk = tBrk * abs(oldVel) / 2;
-
-    sprintf(trace_print_buf, "oldPos %f\n",oldPos);
-    push_print_trace();
-
-    sprintf(trace_print_buf, "oldVel %f\n",oldVel);
-    push_print_trace();
-    
-    
-    sprintf(trace_print_buf, "tBrk %f\n",tBrk);
-    push_print_trace();
-
-    sprintf(trace_print_buf, "dBrk %f\n",dBrk);
-    push_print_trace();
-    
-    
+		
 		// Caculate Sign of motion
 		signM = sign(posRef - (oldPos + sign(oldVel)*dBrk));
     signMacc=signM;
-
-    sprintf(trace_print_buf, "signM %f\n",signM);
-    push_print_trace();
-    
-    
+		
 		if (signM != sign(oldVel))  // means brake is needed
 		{
 			tAcc = (maxVel / maxAcc);
@@ -164,30 +146,15 @@ float MotionGenerator::update(float posRef) {
      if (maxVel<abs(oldVel))//Need to decel in accel phase:
         signMacc=signMacc*-1;
 		}
-
-    sprintf(trace_print_buf, "tAcc %f\n",tAcc);
-    push_print_trace();
-
-         sprintf(trace_print_buf, "dAcc %f\n",dAcc);
-    push_print_trace();
-    
+		
 		// Calculate total distance to go after braking
 		dTot = abs(posRef - oldPos + signM*dBrk);
-
-    sprintf(trace_print_buf, "dTot %f\n",dTot);
-    push_print_trace();
-
-
 		
 		tDec = maxVel / maxAcc;
 		dDec = tDec * (maxVel) / 2;
 		dVel = dTot - (dAcc + dDec);
 		tVel = dVel / maxVel;
-
-    sprintf(trace_print_buf, "tVel %f\n",tVel);
-    push_print_trace();
-
-    
+		
 		if (tVel > 0)    // trapezoidal shape
 			shape = true;
 		else             // triangular shape

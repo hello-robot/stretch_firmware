@@ -40,9 +40,6 @@ extern uint8_t    BOARD_VARIANT_DRV8842;
 extern uint8_t    BOARD_VARIANT_PIN_RUNSTOP;
 extern void setupBoardVariants();
 
-extern char trace_print_buf[];
-extern void push_print_trace();
-
 #define TC4_LOOP_RATE 1000                                             //Update rate of control loop Hz
 #define TC4_COUNT_PER_CYCLE (int)( round(48000000 / 2/ TC4_LOOP_RATE))  //24,000 at 1Khz, 2:1 prescalar TC4 is 32bit timer 
 #define US_PER_TC4_CYCLE 1000000/TC4_LOOP_RATE                          //1000 at 1KHz

@@ -54,7 +54,7 @@ class MotionGenerator {
 		bool isAccelerating();
     bool isMoving();
 	
-						
+	private:					
 		void calculateTrapezoidalProfile(float);	
 		short int sign(float aVal);		
 		
@@ -64,10 +64,6 @@ class MotionGenerator {
   	float pos;
   	float vel;
   	float acc;
-
-    float dt; //time per cycle
-    
- 
   	float oldPos;
   	float oldPosRef;
   	float oldVel;
@@ -83,9 +79,9 @@ class MotionGenerator {
   	float tVel;
   	float tDec;
    
-    
+    float dt; //time per cycle
     float t;  //time since last set point
- private:
+
     float velSt;
   	short int signM;      	// 1 = positive change, -1 = negative change
     short int signMacc;

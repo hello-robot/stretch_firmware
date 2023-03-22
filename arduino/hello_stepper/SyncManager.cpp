@@ -33,6 +33,8 @@ SyncManager::SyncManager()
   motor_sync_triggered=false;
   last_pulse_duration=0;
   runstop_trigger_cnt=0;
+  attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), handleIRQ, RISING);
+  irq_cnt=0;
 }
 
 
@@ -50,6 +52,7 @@ SyncManager::SyncManager()
 #define RUNSTOP_TRIGGER_MS 80
 
 
+
 void  SyncManager::step() //Called at 1Khz from TC4 loop
 {
 
@@ -65,7 +68,7 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
           runstop_active=1;
           runstop_trigger_cnt++;
           last_pulse_duration=RUNSTOP_TRIGGER_MS;
-        }    
+        }
       }
       else
       {
@@ -79,7 +82,7 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
     rs_last=rs;
    }
 
-   
+
    if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
    {
     //Poll line at 1Khz
@@ -110,15 +113,24 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
 void handleIRQ()
 {
   sync_manager.irq_cnt++;
-  if(sync_manager.sync_mode_enabled)
-    sync_manager.motor_sync_triggered=true;
+  if (BOARD_VARIANT==0)
+  {
+      if(sync_manager.sync_mode_enabled)
+        sync_manager.motor_sync_triggered=true;
+}
+}
+
+void SyncManager::setupSyncManager() {
+  rs_last=digitalRead(BOARD_VARIANT_PIN_RUNSTOP);
+  if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
+    sync_last=digitalRead(PIN_SYNC);
+
+  attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), handleIRQ, RISING);
+  irq_cnt=0;
 }
 
 void SyncManager::setupSyncManager() {  
   rs_last=digitalRead(BOARD_VARIANT_PIN_RUNSTOP);
   if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
     sync_last=digitalRead(PIN_SYNC);
-    
-  attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), handleIRQ, RISING);
-  irq_cnt=0;
 }
