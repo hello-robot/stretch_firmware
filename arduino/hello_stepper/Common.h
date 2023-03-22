@@ -27,7 +27,9 @@
 // Version 0.2.7: Add velocity watchdog
 // Version 0.2.8: Add trace function
 // Version 0.2.9: Add debug option to trace function
-// Version 0.3.0: Introduce P2. Add print option to trace function
+// Version 0.3.0: Move to updated trace and protocol P2
+
+
 #define FIRMWARE_VERSION_HR "Stepper.v0.3.0p2"
 
 /////////////////////////////////////////////////////////////////
@@ -177,24 +179,6 @@ struct __attribute__ ((packed)) Status{
 
 /////////////////////////////////////////////////////////////////
 
-#define N_TRACE_RAW 14000  //Allocate enough for 250 Status messages / 1000 debug messages
-#define N_TRACE_STATUS 250 
-#define N_TRACE_DEBUG 1000 
-#define N_TRACE_PRINT 60
-
-struct __attribute__ ((packed)) Trace{
-  uint8_t data[N_TRACE_RAW]; 
-};
-
-struct __attribute__ ((packed)) DebugTrace{ //14 bytes
-  uint8_t u8_1;
-  uint8_t u8_2;                 
-  float f_1;
-  float f_2;
-  float f_3;    
-};
-
-/////////////////////////////////////////////////////////////////
 struct __attribute__ ((packed)) Command{
   uint8_t mode;
   float x_des;

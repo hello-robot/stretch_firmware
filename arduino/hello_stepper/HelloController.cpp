@@ -28,6 +28,7 @@
 #include "SyncManager.h"
 #include "TimeManager.h"
 #include "TrajectoryManager.h"
+#include "TraceManager.h"
 
 void write_to_lookup(uint8_t page_id, float * data);
 
@@ -133,24 +134,6 @@ int vel_watchdog=TC4_LOOP_RATE; //Watchdog counts down from 1s
 
 
 
-Trace trace_buf;
-DebugTrace debug_trace;
-int trace_write_idx=0;
-int trace_read_idx=0;
-bool trace_on=false;
-bool trace_waiting_on_sync=true;
-bool reading_trace=false;
-int n_trace_read=0;
-int idx_trace_print=0;
-char trace_print_buf[100];
-
-void push_print_trace()
-{
-  memcpy((char*)(trace_buf.data)+idx_trace_print,trace_print_buf,100);
-  idx_trace_print+=100;
-  if(idx_trace_print>=N_TRACE_RAW)
-    idx_trace_print=0;
-}
 
 ///////////////////////// UTIL ///////////////////////////
 
@@ -357,59 +340,7 @@ void handleNewRPC()
           num_byte_rpc_out=sizeof(Gains)+1;
           break; 
     case RPC_READ_TRACE: 
-          if(!reading_trace)
-          {
-            //Initialize new read
-            reading_trace=true;
-            trace_on=false; //force off
-            trace_read_idx=trace_write_idx; //Pointing at the oldest in buffer
-            if (gains.config & CONFIG_USE_DEBUG_TRACE)
-            {
-              n_trace_read=N_TRACE_DEBUG;
-            }
-            else if (gains.config & CONFIG_USE_PRINT_TRACE)
-            {
-              n_trace_read=N_TRACE_PRINT;
-            }
-            else
-              n_trace_read=N_TRACE_STATUS;
-          }
-          
-          rpc_out[0]=RPC_REPLY_READ_TRACE;
-          rpc_out[1]=(uint8_t)(n_trace_read-1>0); //Flag if done with read
-          n_trace_read--;
-
-          if (gains.config & CONFIG_USE_DEBUG_TRACE)
-          {
-            memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx*sizeof(DebugTrace)]), sizeof(DebugTrace)); //Collect the status data
-            //memcpy(rpc_out + 2, (uint8_t *)&(debug_trace), sizeof(DebugTrace)); //Collect the status data
-            num_byte_rpc_out=sizeof(DebugTrace)+2;    
-            trace_read_idx++;
-            if(trace_read_idx==N_TRACE_DEBUG)
-                trace_read_idx=0;      
-          }
-          else if (gains.config & CONFIG_USE_PRINT_TRACE)
-          {
-            memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx*sizeof(DebugTrace)]), sizeof(DebugTrace)); //Collect the status data
-            //memcpy(rpc_out + 2, (uint8_t *)&(debug_trace), sizeof(DebugTrace)); //Collect the status data
-            num_byte_rpc_out=sizeof(DebugTrace)+2;    
-            trace_read_idx++;
-            if(trace_read_idx==N_TRACE_DEBUG)
-                trace_read_idx=0;      
-          }
-          else
-          {
-            memcpy(rpc_out + 2, (uint8_t *)&(trace_buf.data[trace_read_idx*sizeof(Status)]), sizeof(Status)); //Collect the status data
-            num_byte_rpc_out=sizeof(Status)+2;
-           trace_read_idx++;
-            if(trace_read_idx==N_TRACE_STATUS)
-                trace_read_idx=0;     
-          }
-
-          
-                
-          if(n_trace_read==0)
-            reading_trace=false;
+          num_byte_rpc_out=trace_manager.rpc_read(rpc_out);
           break; 
 
     case RPC_SET_MENU_ON: 
@@ -511,7 +442,7 @@ void update_status()
   stat.diag = sync_manager.sync_mode_enabled?     stat.diag| DIAG_IN_SYNC_MODE: stat.diag;
   stat.diag = trajectory_manager.is_trajectory_active()? stat.diag| DIAG_TRAJ_ACTIVE: stat.diag;
   stat.diag = trajectory_manager.is_trajectory_waiting_on_sync()? stat.diag| DIAG_TRAJ_WAITING_ON_SYNC: stat.diag;
-  stat.diag = trace_on ?     stat.diag| DIAG_IS_TRACE_ON: stat.diag;
+  stat.diag = trace_manager.trace_on ?     stat.diag| DIAG_IS_TRACE_ON: stat.diag;
  
   stat.traj_setpoint=trajectory_manager.q;
   stat.traj_id=trajectory_manager.get_id_current_segment();
@@ -523,24 +454,27 @@ void update_status()
   interrupts();
 
 
-  debug_trace.u8_1=sync_manager.irq_cnt;
-  if(trace_on && !trace_waiting_on_sync)
+   if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
-    if (gains.config & CONFIG_USE_DEBUG_TRACE)
-    {
-       memcpy((uint8_t *)&(trace_buf.data[trace_write_idx*sizeof(DebugTrace)]) ,(uint8_t *)(&debug_trace),  sizeof(DebugTrace));
-       trace_write_idx=trace_write_idx+1;
-        if(trace_write_idx==N_TRACE_DEBUG)
-          trace_write_idx=0;        
-    }
-    else if(!gains.config & CONFIG_USE_PRINT_TRACE) //Status trace
-    {
-       memcpy((uint8_t *)&(trace_buf.data[trace_write_idx*sizeof(Status)]),(uint8_t *)(&stat),  sizeof(Status));
-       trace_write_idx=trace_write_idx+1;
-        if(trace_write_idx==N_TRACE_STATUS)
-          trace_write_idx=0;
-    }
-  } 
+    //Example of setting trace debug data
+    trace_manager.debug_msg.f_3=stat.pos;
+    trace_manager.update_trace_debug();
+  }
+
+  if(TRACE_TYPE==TRACE_TYPE_PRINT)
+  {
+  //Example of setting trace print data
+   sprintf(trace_manager.print_msg.msg, "Pos: %d\n",(int)stat.pos);
+   trace_manager.print_msg.x=stat.pos;
+   trace_manager.print_msg.timestamp=stat.timestamp;
+   trace_manager.update_trace_print();
+  }
+
+  if(TRACE_TYPE==TRACE_TYPE_STATUS)
+  {
+    trace_manager.update_trace_status(&stat_out);
+  }
+  
 }
 
 
@@ -589,16 +523,12 @@ void stepHelloController()
 
         if (trg.data & TRIGGER_ENABLE_TRACE)
         {
-          trace_on=true;
-          memset((uint8_t*)(&trace_buf), 0,N_TRACE_RAW);
-          trace_write_idx=0;
-          trace_waiting_on_sync=true;
+            trace_manager.enable_trace();
         }
         
         if (trg.data & TRIGGER_DISABLE_TRACE)
         {
-          trace_on=false;
-          //stat.debug--;
+          trace_manager.disable_trace();
         }
         
     }
