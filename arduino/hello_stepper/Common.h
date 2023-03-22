@@ -26,7 +26,9 @@
 // Version 0.2.6: Initial production release RE2 Nina
 // Version 0.2.7: Add velocity watchdog
 // Version 0.2.8: Add trace function
+// Version 0.2.9: Add debug option to trace function
 // Version 0.3.0: Move to updated trace and protocol P2
+
 
 #define FIRMWARE_VERSION_HR "Stepper.v0.3.0p2"
 
@@ -108,8 +110,8 @@
 #define CONFIG_FLIP_ENCODER_POLARITY 16
 #define CONFIG_FLIP_EFFORT_POLARITY 32
 #define CONFIG_ENABLE_VEL_WATCHDOG 64
-
-
+#define CONFIG_USE_DEBUG_TRACE 128
+#define CONFIG_USE_PRINT_TRACE 128
 
 
 /////////////////////////////////////////////////////////////////
@@ -143,11 +145,11 @@ struct __attribute__ ((packed)) Gains{
   float effort_LPF;   ///Low pass filter roll-off for status effort (Hz)
   float safety_stiffness; //0-1, for when safety mode is hold
   float i_safety_feedforward; //current (A), for when safety mode is hold
-  uint8_t config;
+  uint16_t config;
 
-  float vpK1;
-  float vpK2;
-  float vpK3;
+  //float vpK1;
+  //float vpK2;
+  //float vpK3;
 };
 
 struct __attribute__ ((packed)) MotionLimits{
@@ -176,6 +178,7 @@ struct __attribute__ ((packed)) Status{
 
 
 /////////////////////////////////////////////////////////////////
+
 struct __attribute__ ((packed)) Command{
   uint8_t mode;
   float x_des;

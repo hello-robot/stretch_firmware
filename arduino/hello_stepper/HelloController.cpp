@@ -453,6 +453,7 @@ void update_status()
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 
+
    if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
     //Example of setting trace debug data
@@ -474,7 +475,6 @@ void update_status()
     trace_manager.update_trace_status(&stat_out);
   }
   
-
 }
 
 
@@ -483,6 +483,7 @@ void update_status()
 
 float mpos_d;
 float x_des_incr=0;
+bool first_traj_incr=true;
 #define STIFFNESS_SLEW .1
 float stiffness_target=0;
 
@@ -519,11 +520,12 @@ void stepHelloController()
         if (trg.data & TRIGGER_BOARD_RESET)
           board_reset_cnt=100;
 
+
         if (trg.data & TRIGGER_ENABLE_TRACE)
         {
             trace_manager.enable_trace();
         }
-
+        
         if (trg.data & TRIGGER_DISABLE_TRACE)
         {
           trace_manager.disable_trace();
@@ -543,6 +545,8 @@ void stepHelloController()
     
     if (dirty_gains)
     {
+
+        
       //RC = 1/(2*pi*Hz)
       //A = exp(-1/(RC*Fs)) = exp(-2*pi*Hz/Fs)
       //B = 1-A
@@ -600,39 +604,41 @@ void stepHelloController()
    
      if (trg.data & TRIGGER_MARK_POS || ( dirty_trigger_mark_on_contact && guarded_override))
      {
-      if (dirty_trigger_mark_on_contact && guarded_override)
-      {
-        dirty_trigger_mark_on_contact=0;
-        mpos_d=rad_to_deg(mark_on_contact_pos);
-      }
-      else
-        mpos_d=rad_to_deg(trg.tdata);
+        if (dirty_trigger_mark_on_contact && guarded_override)
+        {
+          dirty_trigger_mark_on_contact=0;
+          mpos_d=rad_to_deg(mark_on_contact_pos);
+        }
+        else
+          mpos_d=rad_to_deg(trg.tdata);
+          
+        //Reset position measurement
+        //mark_pos = yy; //0-360
+        hold_pos = mpos_d;
+        if (flip_encoder_polarity)
+          mpos_d=mpos_d*-1;
+        wrap_count=(int)(mpos_d) / 360;
+        mark_rem = mpos_d-360*wrap_count;
+        mark_pos=yy-mark_rem;
+  
+        y_1=yy;
+        yw_1=0;        
+        //Reset velocity measurements
+        v=0;
+        vs=0;
         
-      //Reset position measurement
-      //mark_pos = yy; //0-360
-      hold_pos = mpos_d;
-      if (flip_encoder_polarity)
-        mpos_d=mpos_d*-1;
-      wrap_count=(int)(mpos_d) / 360;
-      mark_rem = mpos_d-360*wrap_count;
-      mark_pos=yy-mark_rem;
-
-      y_1=yy;
-      yw_1=0;        
-      //Reset velocity measurements
-      v=0;
-      vs=0;
-      
-      //Reset control state
-      
-      r=mpos_d;
-      mg.safe_switch_on(mpos_d,0);
-   
+        //Reset control state
+        
+        r=mpos_d;
+        mg.safe_switch_on(mpos_d,0);
      }
+
+     
      if (trg.data & TRIGGER_RESET_POS_CALIBRATED)
      {
       diag_pos_calibrated=false;
      }
+     
      if (trg.data & TRIGGER_POS_CALIBRATED)
      {
       diag_pos_calibrated=true;
@@ -701,7 +707,7 @@ void stepHelloController()
       {
 
         
-        
+        trace_waiting_on_sync=false;
         diag_waiting_on_sync=false;
 
         if (guarded_override) //Reset on new command to track
@@ -717,9 +723,15 @@ void stepHelloController()
       //Set the incremental position target if triggered
        if (cmd.mode==MODE_POS_TRAJ_INCR  &&  cmd_in.incr_trigger != cmd.incr_trigger)
         {
-          x_des_incr = yw + rad_to_deg(cmd_in.x_des);
-          //x_des_incr = xdes+ rad_to_deg(cmd_in.x_des);//Use xdes instead of yw so we don't add in steady state error
-          //stat.debug=yw;
+          //if (first_traj_incr)
+          //{
+            x_des_incr = yw + rad_to_deg(cmd_in.x_des);
+           // first_traj_incr = false;
+          //}
+          //else
+          //Once control loop is initialized, increment off of the trajeectory target rather than encoder so we don't integrate in steady state error
+           // x_des_incr = xdes+ rad_to_deg(cmd_in.x_des);
+          //stat.debug=x_des_incr;
           
         }
         else
@@ -736,7 +748,6 @@ void stepHelloController()
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
         {
-          
           switch(cmd.mode)
           {
             case MODE_SAFETY:
@@ -760,8 +771,9 @@ void stepHelloController()
               break; 
             case MODE_POS_TRAJ_INCR:
               mg.safe_switch_on(yw,v);
-              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
-              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+              mg.setMaxVelocity(2.0);//abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(2.0);//abs(rad_to_deg(cmd_in.a_des)));
+              first_traj_incr=true;
               break; 
             case MODE_POS_TRAJ_WAYPOINT:
               eff_max=0;
@@ -981,6 +993,11 @@ void stepHelloController()
               xdes=mg.update(x_des_incr); //get target position
               
             }
+            stat.debug=xdes;
+            debug_trace.f_1=mg.tBrk;
+            debug_trace.f_2=mg.tAcc;
+            debug_trace.f_3=mg.acc;
+            
             e = (xdes - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit
             if (ITerm > gains.pKi_limit) ITerm = gains.pKi_limit;
@@ -1019,10 +1036,11 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
-            stat.debug=abs((rad_to_deg(cmd.x_des) -yw));
+            //stat.debug=abs((rad_to_deg(cmd.x_des) -yw));
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
+            stat.debug=0;
             break;
         case MODE_POS_TRAJ_WAYPOINT:
             if (stiffness_target==0.0)
