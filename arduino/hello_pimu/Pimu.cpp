@@ -506,7 +506,7 @@ void update_status()
   if(TRACE_TYPE==TRACE_TYPE_PRINT)
   {
   //Example of setting trace print data
-   sprintf(trace_manager.print_msg.msg, "Voltage: %d\n",(int)stat.voltage);//AXx100 is %d",(int)stat.ax*100);//%f", stat.ax);
+   sprintf(trace_manager.print_msg.msg, "Voltage: %d\n",(int)stat.voltage);
    trace_manager.print_msg.x=stat.voltage;
    trace_manager.print_msg.timestamp=stat.timestamp;
    trace_manager.update_trace_print();

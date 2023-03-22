@@ -176,12 +176,6 @@ struct __attribute__ ((packed)) Pimu_Status{
 };
 
 
-#define N_TRACE_BUF 200 //Less than 255
-
-struct __attribute__ ((packed)) Trace{
-  Pimu_Status  data[N_TRACE_BUF];
-};
-
 struct __attribute__ ((packed)) Pimu_Trigger{
   uint32_t data;
 };

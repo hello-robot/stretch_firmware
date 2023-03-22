@@ -26,8 +26,9 @@
 // Version 0.2.6: Initial production release RE2 Nina
 // Version 0.2.7: Add velocity watchdog
 // Version 0.2.8: Add trace function
+// Version 0.3.0: Move to updated trace and protocol P2
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.2.8p1"
+#define FIRMWARE_VERSION_HR "Stepper.v0.3.0p2"
 
 /////////////////////////////////////////////////////////////////
 
@@ -173,14 +174,6 @@ struct __attribute__ ((packed)) Status{
   uint16_t traj_id;             //Id of active trajectory segment
 };
 
-
-/////////////////////////////////////////////////////////////////
-
-#define N_TRACE_BUF 250 //Less than 255
-
-struct __attribute__ ((packed)) Trace{
-  Status  data[N_TRACE_BUF];
-};
 
 /////////////////////////////////////////////////////////////////
 struct __attribute__ ((packed)) Command{
