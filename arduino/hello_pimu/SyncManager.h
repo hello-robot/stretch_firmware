@@ -24,7 +24,8 @@ class SyncManager {
     volatile uint16_t pulse_len_ms;
     int duration_last_pulse;
   private:
-     
+    void step_shared_sync();
+    void step_dedicated_sync();
     volatile bool motor_stop_enabled;
     volatile bool dirty_motor_sync;
     int pulse_wait_ms;
