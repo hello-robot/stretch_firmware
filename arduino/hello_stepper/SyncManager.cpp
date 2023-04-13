@@ -66,7 +66,7 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
         }    
       }
       else
-      {
+      { 
         if(rs_last) //falling ege
         {
           last_pulse_duration=pulse_count;

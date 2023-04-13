@@ -27,9 +27,9 @@
 // Version 0.2.5: Initial production release for RE2 Nina
 // Version 0.2.6: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
-// Version 0.3.1: Move to fast sync (w/testing support)
+// Version 0.3.1: Move to fast sync P3
 
-#define FIRMWARE_VERSION "Pimu.v0.3.1p2"
+#define FIRMWARE_VERSION "Pimu.v0.3.1p3"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -46,6 +46,8 @@
 #define RPC_REPLY_MOTOR_SYNC 10
 #define RPC_READ_TRACE 11
 #define RPC_REPLY_READ_TRACE 12
+#define RPC_GET_PIMU_STATUS_AUX 13
+#define RPC_REPLY_PIMU_STATUS_AUX 14
 
 /////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
@@ -176,6 +178,9 @@ struct __attribute__ ((packed)) Pimu_Status{
   float debug;
 };
 
+struct __attribute__ ((packed)) Pimu_Status_Aux{
+  uint16_t motor_sync_cnt; //Count the successful motor syncs
+};
 
 struct __attribute__ ((packed)) Pimu_Trigger{
   uint32_t data;

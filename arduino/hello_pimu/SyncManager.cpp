@@ -32,6 +32,7 @@ SyncManager::SyncManager(RunstopManager * r)
   motor_stop_enabled=0;
   dirty_motor_sync=0;
   pulse_wait_ms=0;
+  motor_sync_cnt=0;
   rm=r;
 }
 
@@ -106,7 +107,7 @@ void SyncManager::step_shared_sync()
     {
         pulse_len_ms=SYNC_PULSE_ON_SHARED+1; //+1 so step loop comes out correct
         dirty_motor_sync=0;
-        time_manager.start_duration_measure();
+        motor_sync_cnt++;
     }    
     
     if (rm->state_runstop_event || pulse_len_ms)

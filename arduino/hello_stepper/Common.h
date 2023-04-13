@@ -27,8 +27,8 @@
 // Version 0.2.7: Add velocity watchdog
 // Version 0.2.8: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
-// Version 0.3.1: Move to fast motor sync
-#define FIRMWARE_VERSION_HR "Stepper.v0.3.1p2"
+// Version 0.3.1: Move to fast motor sync and P3
+#define FIRMWARE_VERSION_HR "Stepper.v0.3.1p3"
 
 /////////////////////////////////////////////////////////////////
 
@@ -60,7 +60,8 @@
 #define RPC_REPLY_RESET_TRAJECTORY 26
 #define RPC_READ_TRACE 27
 #define RPC_REPLY_READ_TRACE 28
-
+#define RPC_GET_STATUS_AUX  29
+#define RPC_REPLY_STATUS_AUX 30
 
 #define MODE_SAFETY 0
 #define MODE_FREEWHEEL 1
@@ -172,6 +173,11 @@ struct __attribute__ ((packed)) Status{
   uint32_t guarded_event;       //counter of guarded events since power-up
   float traj_setpoint;          //Target of waypoint trajectory
   uint16_t traj_id;             //Id of active trajectory segment
+};
+
+
+struct __attribute__ ((packed)) StatusAux{
+  uint16_t cmd_cnt;
 };
 
 

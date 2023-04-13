@@ -59,6 +59,7 @@ LightBarManager light_bar_manager;
 Pimu_Config cfg_in, cfg;
 Pimu_Trigger trg_in, trg;
 Pimu_Status stat, stat_out;
+Pimu_Status_Aux stat_aux;
 Pimu_Board_Info board_info;
 
 
@@ -158,12 +159,12 @@ void setupPimu() {
   memset(&trg_in, 0, sizeof(Pimu_Trigger));
   memset(&trg, 0, sizeof(Pimu_Trigger));
   memset(&stat, 0, sizeof(Pimu_Status));
+  memset(&stat_aux, 0, sizeof(Pimu_Status_Aux));
   sprintf(board_info.board_variant, "Pimu.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
   setupTimer4_and_5();
   time_manager.clock_zero();
-  
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void stepPimuController()
@@ -228,6 +229,12 @@ void handleNewRPC()
           rpc_out[0]=RPC_REPLY_PIMU_STATUS;
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Pimu_Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Pimu_Status)+1;
+          break; 
+     case RPC_GET_PIMU_STATUS_AUX: 
+          stat_aux.motor_sync_cnt=sync_manager.motor_sync_cnt;
+          rpc_out[0]=RPC_REPLY_PIMU_STATUS_AUX;
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status_aux data
+          num_byte_rpc_out=sizeof(Pimu_Status_Aux)+1;
           break; 
      case RPC_GET_PIMU_BOARD_INFO:
           rpc_out[0]=RPC_REPLY_PIMU_BOARD_INFO;

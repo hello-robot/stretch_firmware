@@ -37,6 +37,7 @@ Command cmd,cmd_in;
 Gains gains, gains_in;
 Trigger trg, trg_in;
 Status stat,stat_out;
+StatusAux stat_aux;
 EncCalib enc_calib_in;
 MotionLimits motion_limits;
 TrajectorySegment traj_seg_in;
@@ -374,6 +375,11 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Status)+1;
           break;
+    case RPC_GET_STATUS_AUX: 
+          rpc_out[0]=RPC_REPLY_STATUS_AUX;
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(StatusAux)); //Collect the status_aux data
+          num_byte_rpc_out=sizeof(StatusAux)+1;
+          break;
     case RPC_LOAD_TEST:
           memcpy(&load_test, rpc_in+1, sizeof(LoadTest)); //copy in the command
           ll=load_test.data[0];
@@ -700,7 +706,7 @@ void stepHelloController()
       if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
 
-        
+        stat_aux.cmd_cnt++;
         
         diag_waiting_on_sync=false;
 
