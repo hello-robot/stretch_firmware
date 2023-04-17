@@ -178,6 +178,7 @@ struct __attribute__ ((packed)) Status{
 
 struct __attribute__ ((packed)) StatusAux{
   uint16_t cmd_cnt;
+  uint16_t sync_irq_cnt;
 };
 
 

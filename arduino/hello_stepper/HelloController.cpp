@@ -376,6 +376,7 @@ void handleNewRPC()
           num_byte_rpc_out=sizeof(Status)+1;
           break;
     case RPC_GET_STATUS_AUX: 
+          stat_aux.sync_irq_cnt=sync_manager.irq_cnt;
           rpc_out[0]=RPC_REPLY_STATUS_AUX;
           memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(StatusAux)); //Collect the status_aux data
           num_byte_rpc_out=sizeof(StatusAux)+1;
