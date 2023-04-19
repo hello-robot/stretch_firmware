@@ -28,6 +28,7 @@
 // Version 0.2.8: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
 // Version 0.3.1: Move to fast motor sync and P3
+
 #define FIRMWARE_VERSION_HR "Stepper.v0.3.1p3"
 
 /////////////////////////////////////////////////////////////////
@@ -179,6 +180,7 @@ struct __attribute__ ((packed)) Status{
 struct __attribute__ ((packed)) StatusAux{
   uint16_t cmd_cnt;
   uint16_t sync_irq_cnt;
+  uint16_t runstop_trigger_cnt;
 };
 
 

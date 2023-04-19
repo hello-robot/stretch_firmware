@@ -70,7 +70,47 @@ Crc16 crc;
 bool rx_buffer_overflow = false;
 int  rx_buffer_idx=0;
 
+
 //Return 1 if got a valid frame
+//Recieve the frame iteratively over a series of calls
+bool receive_frame_itr(uint8_t * buf, uint8_t & n)
+{
+    unsigned long t_start =micros();
+    uint8_t byte_in;
+
+    while(SerialUSB.available()>0)
+    {
+        byte_in = SerialUSB.read();
+        if (byte_in == COBBS_PACKET_MARKER)
+        {
+            n = cobs.decode(rx_buffer, rx_buffer_idx, buf);
+            crc.clearCrc();
+            uint16_t crc1 = crc.Modbus(buf,0,n-2);
+            uint16_t crc2 = (buf[n-2]<<8)|buf[n-1];
+            n=n-2;
+            rx_buffer_idx = 0;
+            rx_buffer_overflow = false;
+            return (crc1==crc2);
+        }
+        else
+        {
+            if ((rx_buffer_idx + 1) < COBBS_FRAME_SIZE)
+            {
+                rx_buffer[rx_buffer_idx++] = byte_in;
+            }
+            else
+            {
+                // The buffer will be in an overflowed state if we write
+                // so set a buffer overflowed flag.
+                rx_buffer_overflow = true;
+            }
+        }
+    }
+    return 0;
+}
+
+//Return 1 if got a valid frame
+//Block until a frame arrives (or timeout)
 bool receive_frame(uint8_t * buf, uint8_t & n)
 {
     unsigned long t_start =micros();
@@ -126,8 +166,8 @@ bool stepTransport(void (*rpc_callback)())
 {
   uint8_t np;
   uint16_t nbo;
-  
-  if (receive_frame(frame_in, np))
+
+  if (receive_frame_itr(frame_in, np))
   {
     switch (frame_in[0])
     {

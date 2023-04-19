@@ -23,7 +23,6 @@ class SyncManager {
     void step();
     volatile uint16_t pulse_len_ms;
     int duration_last_pulse;
-    uint16_t motor_sync_dt_min;
     uint16_t motor_sync_cnt;
   private:
     void step_shared_sync();

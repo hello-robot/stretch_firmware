@@ -76,6 +76,7 @@ void SyncManager::step_dedicated_sync()
     {
         pulse_len_ms=SYNC_PULSE_ON_DEDICATED+1; //+1 so step loop comes out correct
         dirty_motor_sync=0;
+        motor_sync_cnt++;
     }   
     
     if (pulse_len_ms)

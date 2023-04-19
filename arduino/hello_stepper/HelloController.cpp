@@ -377,6 +377,7 @@ void handleNewRPC()
           break;
     case RPC_GET_STATUS_AUX: 
           stat_aux.sync_irq_cnt=sync_manager.irq_cnt;
+          stat_aux.runstop_trigger_cnt=sync_manager.runstop_trigger_cnt;
           rpc_out[0]=RPC_REPLY_STATUS_AUX;
           memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(StatusAux)); //Collect the status_aux data
           num_byte_rpc_out=sizeof(StatusAux)+1;
@@ -499,7 +500,7 @@ float xdes=0;
 void stepHelloController()
 {
 
-  
+  stepHelloControllerRPC();
  
   //noInterrupts();
   stat.timestamp=time_manager.current_time_us();
