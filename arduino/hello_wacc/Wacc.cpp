@@ -23,7 +23,7 @@ Wacc_Config cfg, cfg_in;
 Wacc_Command cmd, cmd_in;
 Wacc_Status stat, stat_out;
 Wacc_Board_Info board_info;
-
+LoadTest load_test;
 
 float accel_LPFa = 0.0; 
 float accel_LPFb = 1.0;
@@ -83,6 +83,7 @@ void setupBoardVariants()
 
 void handleNewRPC()
 {
+    int ll;
   switch(rpc_in[0])
   {
     case RPC_SET_WACC_COMMAND: 
@@ -111,16 +112,36 @@ void handleNewRPC()
           break; 
     case RPC_READ_TRACE: 
           num_byte_rpc_out=trace_manager.rpc_read(rpc_out);
-          break; 
+          break;
+
+    case RPC_LOAD_TEST_PUSH: 
+          memcpy(&load_test, rpc_in+1, sizeof(LoadTest)); //copy in the command
+          rpc_out[0]=RPC_REPLY_LOAD_TEST_PUSH;
+          num_byte_rpc_out=1;
+          break;
+    case RPC_LOAD_TEST_PULL:
+          ll=load_test.data[0];
+          for(int i=0;i<1023;i++)
+            load_test.data[i]=load_test.data[i+1];
+          load_test.data[1023]=ll;
+          rpc_out[0]=RPC_REPLY_LOAD_TEST_PULL;
+          memcpy(rpc_out + 1, (uint8_t *) (&load_test), sizeof(LoadTest));
+          num_byte_rpc_out=sizeof(LoadTest)+1;
+          break;
    default:
         break;
   };
 }
 
+void ledOn()
+{
+  digitalWrite(LED, HIGH);
+}
+
 void stepWaccRPC()
 {
-  toggle_led(500);
-  stepTransport(handleNewRPC);
+  //toggle_led(500);
+  stepTransport(handleNewRPC, ledOn);
 }
 
 ////////////////////////Controller///////////////////////////////////////

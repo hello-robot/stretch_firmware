@@ -39,6 +39,11 @@
 #define RPC_READ_TRACE 9
 #define RPC_REPLY_READ_TRACE 10
 
+#define RPC_LOAD_TEST_PUSH 11
+#define RPC_REPLY_LOAD_TEST_PUSH 12
+#define RPC_LOAD_TEST_PULL 13
+#define RPC_REPLY_LOAD_TEST_PULL 14
+
 #define TRIGGER_BOARD_RESET  1
 #define TRIGGER_ENABLE_TRACE 2
 #define TRIGGER_DISABLE_TRACE 4
@@ -108,6 +113,10 @@ struct __attribute__ ((packed)) Wacc_Status{
 struct __attribute__ ((packed)) Wacc_Board_Info{
   char board_variant[20];
   char firmware_version[20];
+};
+
+struct __attribute__ ((packed)) LoadTest{
+  uint8_t data[1024];
 };
 
 /////////////////////////////////////////////////////////////////
