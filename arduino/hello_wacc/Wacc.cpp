@@ -133,15 +133,11 @@ void handleNewRPC()
   };
 }
 
-void ledOn()
-{
-  digitalWrite(LED, HIGH);
-}
 
 void stepWaccRPC()
 {
-  //toggle_led(500);
-  stepTransport(handleNewRPC, ledOn);
+  toggle_led(500);
+  stepTransport(handleNewRPC, 1);
 }
 
 ////////////////////////Controller///////////////////////////////////////

@@ -24,7 +24,8 @@
 // Version 0.2.3: Add trace function
 // Version 0.2.4: Reorg timing to fix IRQ overruns
 // Version 0.3.0: Move to updated trace and protocol P2
-#define FIRMWARE_VERSION "Wacc.v0.3.0p2"
+// Version 0.4.0: Move to fast transport and P3
+#define FIRMWARE_VERSION "Wacc.v0.4.0p2"
 
 
 /////////////////////////////////////////////////////////////////
