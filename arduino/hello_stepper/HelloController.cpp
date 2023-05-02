@@ -400,8 +400,6 @@ void handleNewRPC()
     case RPC_SET_NEXT_TRAJECTORY_SEG: 
           memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
           traj_seg_reply.success=trajectory_manager.set_next_trajectory_segment(&traj_seg_in, motion_limits_set, diag_pos_calibrated, &motion_limits, &cmd_in);
-          memcpy(traj_seg_reply.error_message, trajectory_manager.seg_load_error_message,SIZE_TRAJ_ERROR_MSG);
-          traj_seg_reply.error_message[SIZE_TRAJ_ERROR_MSG-1]=0;//terminate string
           rpc_out[0]=RPC_REPLY_SET_NEXT_TRAJECTORY_SEG;
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
@@ -409,8 +407,6 @@ void handleNewRPC()
     case RPC_START_NEW_TRAJECTORY: 
           memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
           traj_seg_reply.success=trajectory_manager.start_new_trajectory(&traj_seg_in, sync_manager.sync_mode_enabled, motion_limits_set, diag_pos_calibrated, &motion_limits, &cmd_in);
-          memcpy(traj_seg_reply.error_message, trajectory_manager.seg_load_error_message,SIZE_TRAJ_ERROR_MSG);
-          traj_seg_reply.error_message[SIZE_TRAJ_ERROR_MSG-1]=0;//terminate string
           rpc_out[0]=RPC_REPLY_START_NEW_TRAJECTORY;
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;

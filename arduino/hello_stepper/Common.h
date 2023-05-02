@@ -226,10 +226,9 @@ struct __attribute__ ((packed)) TrajectorySegment{
 };
 
 
-#define SIZE_TRAJ_ERROR_MSG 16
 struct __attribute__ ((packed)) TrajectorySegmentReply{
   uint8_t success;
-  char error_message[SIZE_TRAJ_ERROR_MSG];
+
 };
 
 /////////////////////////////////////////////////////////////////

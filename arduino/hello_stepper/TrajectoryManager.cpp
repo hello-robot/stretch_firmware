@@ -52,7 +52,6 @@ void TrajectoryManager::reset()
   start_new=false;
   seg_active_valid=false;
   seg_next_valid=false;
-  memset(&(seg_load_error_message), 0, SIZE_TRAJ_ERROR_MSG);
   id_curr_seg=0;
   waiting_on_sync=false;
 }
@@ -142,39 +141,28 @@ void TrajectoryManager::step()
 //Return 1 for success
 bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool motion_limits_set, bool diag_pos_calibrated, MotionLimits * m, Command * c)
 {
-  memset(&(seg_load_error_message), 0, SIZE_TRAJ_ERROR_MSG);
-
   // if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
   // {
-  //   // 'seg_load_error_message' set within call to 'is_segment_valid'
   //   return 0;
   // }
 
   if (state==TRAJ_STATE_IDLE)
   {
-    strncpy(seg_load_error_message, "no prev traj active",SIZE_TRAJ_ERROR_MSG);
     return 1;
   }
   if (state==TRAJ_STATE_WAITING_ON_SYNC)
   {
-    strncpy(seg_load_error_message, "traj waiting sync",SIZE_TRAJ_ERROR_MSG);
     return 1;
   }
   if (state==TRAJ_STATE_ACTIVE) //Don't allow setting of next segment until current one is started
   {
     if (s->id != seg_active.id + 1)
-    {
-      strncpy(seg_load_error_message, "seg id not +1 prev",SIZE_TRAJ_ERROR_MSG);
       return 1;
-    }
 
     seg_in=*s;
     dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
-    memset(&(seg_load_error_message), 0, SIZE_TRAJ_ERROR_MSG);
     return 1;
   }
-
-  strncpy(seg_load_error_message, "unknown error",SIZE_TRAJ_ERROR_MSG);
   return 0;
 }
 
@@ -182,11 +170,9 @@ bool TrajectoryManager::set_next_trajectory_segment(TrajectorySegment * s, bool 
 //Return 1 for success
 bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on_sync, bool motion_limits_set, bool diag_pos_calibrated, MotionLimits * m, Command * c)
 {
-  //memset(&(seg_load_error_message), 0, 32);
 
   // if (!is_segment_valid(s, motion_limits_set, diag_pos_calibrated, m, c))
   // {
-  //   // 'seg_load_error_message' set within call to 'is_segment_valid'
   //   return 0;
   // }
 
@@ -194,7 +180,6 @@ bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on
   {
     if (s->id != 2)
     {
-      strncpy(seg_load_error_message, "start seg id not 2",SIZE_TRAJ_ERROR_MSG);
       return 0;
     }
 
@@ -202,21 +187,17 @@ bool TrajectoryManager::start_new_trajectory(TrajectorySegment * s, bool wait_on
     seg_in=*s;
     dirty_seg_in=true; //Flag to add on next step cycle (hanlde in irq, not RPC loop
     waiting_on_sync=wait_on_sync;
-    strncpy(seg_load_error_message, "succ start_new_traj",SIZE_TRAJ_ERROR_MSG);
     return 1;
   }
   if (state==TRAJ_STATE_WAITING_ON_SYNC)
   {
-    strncpy(seg_load_error_message, "waiting on sync",SIZE_TRAJ_ERROR_MSG);
     return 0;
   }
   if (state==TRAJ_STATE_ACTIVE)
   {
-    strncpy(seg_load_error_message, "prev traj active",SIZE_TRAJ_ERROR_MSG);
     return 0;
   }
 
-  strncpy(seg_load_error_message, "unknown error",SIZE_TRAJ_ERROR_MSG);
   return 0;
 }
 
@@ -240,19 +221,16 @@ bool TrajectoryManager::is_segment_valid(TrajectorySegment * s, bool motion_limi
 
     // check position within soft motion limits
     if (motion_limits_set && diag_pos_calibrated && (pos_t < m->pos_min || pos_t > m->pos_max)) {
-      //strcpy(seg_load_error_message, "invalid segment exceeds position limits");
       return 0;
     }
 
     // check velocity within commanded velocity
     if (abs(vel_t) > c->v_des) {
-      strncpy(seg_load_error_message, "over vel limits",SIZE_TRAJ_ERROR_MSG);
       return 0;
     }
 
     // check acceleration within commanded acceleration
     if (abs(acc_t) > c->a_des) {
-      strncpy(seg_load_error_message, "over acc limits",SIZE_TRAJ_ERROR_MSG);
       return 0;
     }
 
