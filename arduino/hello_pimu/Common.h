@@ -27,9 +27,9 @@
 // Version 0.2.5: Initial production release for RE2 Nina
 // Version 0.2.6: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
-// Version 0.3.1: Move to fast sync P3
+// Version 0.4.0: Move to fast transport V1 and P3
 
-#define FIRMWARE_VERSION "Pimu.v0.3.1p3"
+#define FIRMWARE_VERSION "Pimu.v0.4.0p3"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -48,6 +48,10 @@
 #define RPC_REPLY_READ_TRACE 12
 #define RPC_GET_PIMU_STATUS_AUX 13
 #define RPC_REPLY_PIMU_STATUS_AUX 14
+#define RPC_LOAD_TEST_PULL 15
+#define RPC_REPLY_LOAD_TEST_PULL 16
+#define RPC_LOAD_TEST_PUSH 17
+#define RPC_REPLY_LOAD_TEST_PUSH 18
 
 /////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
@@ -194,7 +198,9 @@ struct __attribute__ ((packed)) Pimu_Board_Info{
 /////////////////////////////////////////////////////////////////
 
 
-
+struct __attribute__ ((packed)) LoadTest{
+  uint8_t data[1024];
+};
 
 
 

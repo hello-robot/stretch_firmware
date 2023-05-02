@@ -33,7 +33,7 @@ class  TrajectoryManager{
     uint16_t get_id_current_segment(){return id_curr_seg;}
     float q; //current position target
     bool waiting_on_sync;
-    char seg_load_error_message[100];
+    char seg_load_error_message[32];
   private:
     
     uint16_t id_curr_seg;
