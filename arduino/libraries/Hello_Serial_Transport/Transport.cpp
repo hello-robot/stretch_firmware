@@ -162,13 +162,11 @@ void send_frame(uint8_t * buf, uint8_t n)
 
 /////////////////////////////////////////////////////////////////////////////////
 
-bool stepTransport_V1(void (*rpc_callback)())
-{
-  uint8_t nbytes_rx;
-  uint16_t nbo;
 
-  if (receive_frame(frame_in, nbytes_rx, COBBS_FRAME_SIZE_V1))
-  {
+void stepTransport_V1(void (*rpc_callback)(),uint8_t nbytes_rx)
+{
+
+  uint16_t nbo;
 
     switch (frame_in[0])
     {
@@ -247,22 +245,15 @@ bool stepTransport_V1(void (*rpc_callback)())
                 ready_rpc_state();
           break;
     };
-    return true;
-  }
-  return false;
 }
 
 
 ///////////////////////////// V0 ////////////////////////////////////////////////////
 
 
-bool stepTransport_V0(void (*rpc_callback)())
+void stepTransport_V0(void (*rpc_callback)(),uint8_t nbytes_rx)
 {
-  uint8_t np;
   uint16_t nbo;
-
-  if (receive_frame(frame_in, np, COBBS_FRAME_SIZE_V0))
-  {
     switch (frame_in[0])
     {
       case RPC_V0_START_NEW_RPC:
@@ -274,14 +265,14 @@ bool stepTransport_V0(void (*rpc_callback)())
           byte_out_cnt=0;
         break;
       case RPC_V0_SEND_BLOCK_MORE:
-          memcpy(rpc_in+byte_in_cnt,frame_in+1,np-1);
-          byte_in_cnt=byte_in_cnt+np-1;
+          memcpy(rpc_in+byte_in_cnt,frame_in+1,nbytes_rx-1);
+          byte_in_cnt=byte_in_cnt+nbytes_rx-1;
           frame_out[0]=RPC_V0_ACK_SEND_BLOCK_MORE;
           send_frame(frame_out,1);
           break;
       case RPC_V0_SEND_BLOCK_LAST:
-          memcpy(rpc_in+byte_in_cnt,frame_in+1,np-1);
-          byte_in_cnt=byte_in_cnt+np-1;
+          memcpy(rpc_in+byte_in_cnt,frame_in+1,nbytes_rx-1);
+          byte_in_cnt=byte_in_cnt+nbytes_rx-1;
           frame_out[0]=RPC_V0_ACK_SEND_BLOCK_LAST;
           send_frame(frame_out,1);
           num_byte_rpc_in=byte_in_cnt;
@@ -298,15 +289,21 @@ bool stepTransport_V0(void (*rpc_callback)())
           byte_out_cnt=byte_out_cnt+nbo;
           break;
     };
+}
+
+bool stepTransport(void (*rpc_callback)())
+{
+  uint8_t nbytes_rx;
+
+  if (receive_frame(frame_in, nbytes_rx, COBBS_FRAME_SIZE_V1))
+  {
+    if(frame_in[0]>=RPC_V1_PUSH_FRAME_FIRST_MORE && frame_in[0]<=RPC_V1_PULL_FRAME_ACK_LAST)
+        stepTransport_V1(rpc_callback,nbytes_rx);
+    else if(frame_in[0]>=RPC_V0_START_NEW_RPC && frame_in[0]<=RPC_V0_ACK_GET_BLOCK_LAST)
+        stepTransport_V0(rpc_callback,nbytes_rx);
+    else
+        return false;
     return true;
   }
   return false;
-}
-
-bool stepTransport(void (*rpc_callback)(), int version)
-{
-    if (version==0)
-        stepTransport_V0(rpc_callback);
-    if (version==1)
-        stepTransport_V1(rpc_callback);
 }

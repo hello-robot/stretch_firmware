@@ -137,7 +137,7 @@ void handleNewRPC()
 void stepWaccRPC()
 {
   toggle_led(500);
-  stepTransport(handleNewRPC, 1);
+  stepTransport(handleNewRPC);
 }
 
 ////////////////////////Controller///////////////////////////////////////

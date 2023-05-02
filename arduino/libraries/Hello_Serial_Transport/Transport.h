@@ -1,7 +1,7 @@
 #ifndef __TRANSPORT_H__
 #define __TRANSPORT_H__
 #include "Arduino.h"
-bool stepTransport(void (*rpc_callback)(), int version);
+bool stepTransport(void (*rpc_callback)());
 void setupTransport();               
 
 extern uint8_t  rpc_in[];
