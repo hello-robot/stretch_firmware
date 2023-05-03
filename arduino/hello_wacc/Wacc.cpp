@@ -36,7 +36,7 @@ bool dirty_command=false;
 
 /////////////////////////////////////////
 void setupTimer4_and_5();
-float FS_CTRL = 70; //Run Acceleromter read Controller at 70hz
+float FS_ACCEL = 50; //Run Acceleromter read Controller at 50hz
 void toggle_led(int rate_ms);
 
 void setupWacc() {  
@@ -100,9 +100,9 @@ void handleNewRPC()
           break;
     case RPC_GET_WACC_STATUS: 
           rpc_out[0]=RPC_REPLY_WACC_STATUS;
-          noInterrupts();
+          //noInterrupts();
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Wacc_Status)); //Collect the status data
-          interrupts();
+          //interrupts();
           num_byte_rpc_out=sizeof(Wacc_Status)+1;
           break; 
     case RPC_GET_WACC_BOARD_INFO:
@@ -217,7 +217,7 @@ if (dirty_command)
   stat.state=0;
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   stat.timestamp= time_manager.current_time_us();
-  stat.debug=time_manager.ts_base;//(uint32_t)TC4->COUNT16.COUNT.reg;
+  stat.debug=sizeof(Wacc_Status);//time_manager.ts_base;//(uint32_t)TC4->COUNT16.COUNT.reg;
 
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Wacc_Status));
@@ -249,7 +249,7 @@ if (dirty_command)
  
 }
 
-void stepWaccController_70Hz()
+void stepWaccController_50Hz()
 {
     stepAccel();
 }
@@ -282,7 +282,7 @@ void TC5_Handler() {
 
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
-    stepWaccController_70Hz();
+    stepWaccController_50Hz();
     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
@@ -299,14 +299,14 @@ void TC4_Handler() {                // gets called with FsMg frequency
 
 #define WAIT_TC16_REGS_SYNC(x) while(x->COUNT16.STATUS.bit.SYNCBUSY);
 
-void enableTCInterrupts() {   //enables the controller interrupt ("closed loop mode")
+void enableTCInterrupts() {   //enables the controller interrupt 
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC5
   WAIT_TC16_REGS_SYNC(TC5)                      //wait for sync
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC4
   WAIT_TC16_REGS_SYNC(TC4)                      //wait for sync
 }
 
-void disableTCInterrupts() {  //disables the controller interrupt ("closed loop mode")
+void disableTCInterrupts() {  //disables the controller interrupt 
   TC5->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC5
   WAIT_TC16_REGS_SYNC(TC5)                      // wait for sync
   TC4->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC5
@@ -340,9 +340,9 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV2;   // Set perscaler
   WAIT_TC16_REGS_SYNC(TC4)
   
-  TC5->COUNT16.CC[0].reg = (int)( round(48000000 / 64 / FS_CTRL)); //Count up to 64000 / rate
+  TC5->COUNT16.CC[0].reg = (int)( round(48000000 / 64 / FS_ACCEL)); //Rate of Accel read
   WAIT_TC16_REGS_SYNC(TC5)
-  TC4->COUNT16.CC[0].reg =  TC4_TICKS_PER_CYCLE;  //(int)( round(48000000 / 2 / FS_TC4))
+  TC4->COUNT16.CC[0].reg =  TC4_TICKS_PER_CYCLE;  //Rate of control loop
   WAIT_TC16_REGS_SYNC(TC4)
   
   TC5->COUNT16.INTENSET.reg = 0;              // disable all interrupts
@@ -352,8 +352,9 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   TC4->COUNT16.INTENSET.bit.OVF = 1;          // enable overfollow
   TC4->COUNT16.INTENSET.bit.MC0 = 1;         // enable compare match to CC0
 
-  NVIC_SetPriority(TC4_IRQn, 1);              //TC4 pulse generator highest priority so timing is correct
-  NVIC_SetPriority(TC5_IRQn, 2);              //Set interrupt priority
+  //Make TC5 low priority as it takes a while and can prevent RPC from running fast
+  NVIC_SetPriority(TC4_IRQn, 4);              //TC4 loop priority
+  NVIC_SetPriority(TC5_IRQn, 5);              //TC5 accel read priority
 
   // Enable InterruptVector
   NVIC_EnableIRQ(TC5_IRQn);

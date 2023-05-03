@@ -497,6 +497,8 @@ void update_status()
   if(stat.imu.bump>cfg.bump_thresh)
     stat.bump_event_cnt++;
 
+  stat.debug=sizeof(Pimu_Status);
+
   stat.voltage=analog_manager.voltage;
   stat.current=analog_manager.current;
   stat.temp=analog_manager.temp;
