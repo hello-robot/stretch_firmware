@@ -21,10 +21,10 @@
 //For steppers the sync will trigger on any low-->high transition
 
 // Pulse profile: Max rate is 100hz for a pulse train
-#define SYNC_PULSE_ON_SHARED 5 //ms
-#define SYNC_PULSE_OFF_SHARED 5 //ms
-#define SYNC_PULSE_ON_DEDICATED 5 //ms
-#define SYNC_PULSE_OFF_DEDICATED 5 //ms
+#define SYNC_PULSE_ON_SHARED 2 //ms
+#define SYNC_PULSE_OFF_SHARED 2 //ms
+#define SYNC_PULSE_ON_DEDICATED 2 //ms
+#define SYNC_PULSE_OFF_DEDICATED 2 //ms
 
 SyncManager::SyncManager(RunstopManager * r)
 {
@@ -33,24 +33,33 @@ SyncManager::SyncManager(RunstopManager * r)
   dirty_motor_sync=0;
   pulse_wait_ms=0;
   motor_sync_cnt=0;
+  sync_overruns=0;
   rm=r;
 }
 
 //Raise the sync trigger line as soon as get an RPC
 void SyncManager::trigger_motor_sync() //Called aperiodically from RPC
 {
-  dirty_motor_sync=1;
-  if(BOARD_VARIANT_DEDICATED_SYNC==0)
+  
+  if(!pulse_len_ms && !pulse_wait_ms)
   {
-    digitalWrite(RUNSTOP_M0, HIGH);
-    digitalWrite(RUNSTOP_M1, HIGH);
-    digitalWrite(RUNSTOP_M2, HIGH);
-    digitalWrite(RUNSTOP_M3, HIGH);
+    motor_sync_cnt++;
+    dirty_motor_sync=1;
+    if(BOARD_VARIANT_DEDICATED_SYNC==0)
+    {
+      digitalWrite(RUNSTOP_M0, HIGH);
+      digitalWrite(RUNSTOP_M1, HIGH);
+      digitalWrite(RUNSTOP_M2, HIGH);
+      digitalWrite(RUNSTOP_M3, HIGH);
+    }
+    if(BOARD_VARIANT_DEDICATED_SYNC>=1)
+    {
+      digitalWrite(SYNC_OUT, HIGH);
+    }
   }
-  if(BOARD_VARIANT_DEDICATED_SYNC>=1)
-  {
-    digitalWrite(SYNC_OUT, HIGH);
-  }
+  else
+    sync_overruns++;
+
 }
 
 
@@ -72,7 +81,7 @@ void SyncManager::step_dedicated_sync()
 
 
     //Start a new sync pulse?
-    if (!pulse_len_ms && !pulse_wait_ms && dirty_motor_sync ) //allow current pulse to finish before handling new event
+    if (!pulse_len_ms && dirty_motor_sync ) //allow current pulse to finish before handling new event
     {
         pulse_len_ms=SYNC_PULSE_ON_DEDICATED+1; //+1 so step loop comes out correct
         dirty_motor_sync=0;
@@ -107,7 +116,6 @@ void SyncManager::step_shared_sync()
     {
         pulse_len_ms=SYNC_PULSE_ON_SHARED+1; //+1 so step loop comes out correct
         dirty_motor_sync=0;
-        motor_sync_cnt++;
     }    
     
     if (rm->state_runstop_event || pulse_len_ms)

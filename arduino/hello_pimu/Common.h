@@ -190,6 +190,12 @@ struct __attribute__ ((packed)) Pimu_Trigger{
   uint32_t data;
 };
 
+
+struct __attribute__ ((packed)) Pimu_Motor_Sync_Reply{
+  uint16_t motor_sync_cnt;
+};
+
+
 struct __attribute__ ((packed)) Pimu_Board_Info{
   char board_variant[20];
   char firmware_version[20];

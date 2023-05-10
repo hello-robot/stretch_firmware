@@ -60,6 +60,7 @@ Pimu_Config cfg_in, cfg;
 Pimu_Trigger trg_in, trg;
 Pimu_Status stat, stat_out;
 Pimu_Status_Aux stat_aux;
+Pimu_Motor_Sync_Reply sync_reply;
 Pimu_Board_Info board_info;
 LoadTest load_test;
 
@@ -244,12 +245,15 @@ void handleNewRPC()
           state_boot_detected=true;
           break; 
      case RPC_SET_MOTOR_SYNC:
-          rpc_out[0]=RPC_REPLY_MOTOR_SYNC;
-          num_byte_rpc_out=1;
-          noInterrupts();
+          //noInterrupts();
           sync_manager.trigger_motor_sync();
-          sync_manager.step();
-          interrupts();
+          //interrupts();
+          
+          rpc_out[0]=RPC_REPLY_MOTOR_SYNC;
+          sync_reply.motor_sync_cnt=sync_manager.motor_sync_cnt;
+           memcpy(rpc_out + 1, (uint8_t *) (&sync_reply), sizeof(Pimu_Motor_Sync_Reply));
+          num_byte_rpc_out=sizeof(Pimu_Motor_Sync_Reply)+1;
+          
           break; 
     case RPC_READ_TRACE: 
           num_byte_rpc_out=trace_manager.rpc_read(rpc_out);
@@ -312,13 +316,11 @@ void handle_trigger()
     {
           runstop_manager.deactivate_runstop();
           runstop_manager.step(&cfg);
-          sync_manager.step();
     }
     if (trg.data & TRIGGER_RUNSTOP_ON)
     {
           runstop_manager.activate_runstop();
           runstop_manager.step(&cfg);
-          sync_manager.step();
     }
     if (trg.data & TRIGGER_CLIFF_EVENT_RESET)
     {
@@ -629,7 +631,6 @@ void TC4_Handler() {                // gets called with FsMg frequency
     time_manager.ts_base++;
     sync_manager.step();
   TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
-
   }
 }
 
