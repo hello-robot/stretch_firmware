@@ -59,6 +59,8 @@ LightBarManager light_bar_manager;
 Pimu_Config cfg_in, cfg;
 Pimu_Trigger trg_in, trg;
 Pimu_Status stat, stat_out;
+Pimu_Status_Aux stat_aux;
+Pimu_Motor_Sync_Reply sync_reply;
 Pimu_Board_Info board_info;
 
 
@@ -158,6 +160,7 @@ void setupPimu() {
   memset(&trg_in, 0, sizeof(Pimu_Trigger));
   memset(&trg, 0, sizeof(Pimu_Trigger));
   memset(&stat, 0, sizeof(Pimu_Status));
+  memset(&stat_aux, 0, sizeof(Pimu_Status_Aux));
   sprintf(board_info.board_variant, "Pimu.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
@@ -204,6 +207,7 @@ void stepPimuController()
 
 void handleNewRPC()
 {
+  int ll;
   switch(rpc_in[0])
   {
     case RPC_SET_PIMU_CONFIG: 
@@ -229,6 +233,12 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Pimu_Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Pimu_Status)+1;
           break; 
+     case RPC_GET_PIMU_STATUS_AUX:
+          stat_aux.motor_sync_cnt=sync_manager.motor_sync_cnt;
+          rpc_out[0]=RPC_REPLY_PIMU_STATUS_AUX;
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status_aux data
+          num_byte_rpc_out=sizeof(Pimu_Status_Aux)+1;
+          break;
      case RPC_GET_PIMU_BOARD_INFO:
           rpc_out[0]=RPC_REPLY_PIMU_BOARD_INFO;
           memcpy(rpc_out + 1, (uint8_t *) (&board_info), sizeof(Pimu_Board_Info)); //Collect the status data
@@ -236,13 +246,16 @@ void handleNewRPC()
           state_boot_detected=true;
           break; 
      case RPC_SET_MOTOR_SYNC:
-          rpc_out[0]=RPC_REPLY_MOTOR_SYNC;
-          num_byte_rpc_out=1;
-          noInterrupts();
+          //noInterrupts();
           sync_manager.trigger_motor_sync();
-          sync_manager.step();
-          interrupts();
-          break; 
+          //interrupts();
+
+          rpc_out[0]=RPC_REPLY_MOTOR_SYNC;
+          sync_reply.motor_sync_cnt=sync_manager.motor_sync_cnt;
+           memcpy(rpc_out + 1, (uint8_t *) (&sync_reply), sizeof(Pimu_Motor_Sync_Reply));
+          num_byte_rpc_out=sizeof(Pimu_Motor_Sync_Reply)+1;
+
+          break;
    case RPC_READ_TRACE: 
           num_byte_rpc_out=trace_manager.rpc_read(rpc_out);
           break; 
@@ -290,13 +303,11 @@ void handle_trigger()
     {
           runstop_manager.deactivate_runstop();
           runstop_manager.step(&cfg);
-          sync_manager.step();
     }
     if (trg.data & TRIGGER_RUNSTOP_ON)
     {
           runstop_manager.activate_runstop();
           runstop_manager.step(&cfg);
-          sync_manager.step();
     }
     if (trg.data & TRIGGER_CLIFF_EVENT_RESET)
     {

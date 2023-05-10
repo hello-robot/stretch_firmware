@@ -37,6 +37,7 @@ Command cmd,cmd_in;
 Gains gains, gains_in;
 Trigger trg, trg_in;
 Status stat,stat_out;
+StatusAux stat_aux;
 EncCalib enc_calib_in;
 MotionLimits motion_limits;
 TrajectorySegment traj_seg_in;
@@ -205,7 +206,7 @@ void setupBoardVariants()
     k_c2e =(255/3.3)*10*rSense;
   }
   
-  if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
+  if (BOARD_VARIANT>=1)
   {
     //The board uses two DRV8842 motor drivers. These are capable of 5.0A peak currents / 3.5A RMS
     // An iMax of 4.35A results in a uMax of 252. By default set at 8-bit pwm. 
@@ -265,7 +266,7 @@ void setupHelloController()
 
 void enableMotorDrivers()
 {
-  if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
+  if (BOARD_VARIANT>=1)
   {
     digitalWrite(MOTOR_SHUNT, HIGH); //Turn the shunt off (for lift dof)
     digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
@@ -274,7 +275,7 @@ void enableMotorDrivers()
 }
 void disableMotorDrivers()
 {
-  if (BOARD_VARIANT==1 || BOARD_VARIANT==2)
+  if (BOARD_VARIANT>=1)
   {
     digitalWrite(DRV8842_NSLEEP_A, LOW); //Logic high enables driver
     digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
@@ -374,6 +375,12 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Status)+1;
           break;
+    case RPC_GET_STATUS_AUX:
+          stat_aux.sync_irq_cnt=sync_manager.irq_cnt;
+          rpc_out[0]=RPC_REPLY_STATUS_AUX;
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(StatusAux)); //Collect the status_aux data
+          num_byte_rpc_out=sizeof(StatusAux)+1;
+          break;
     case RPC_LOAD_TEST:
           memcpy(&load_test, rpc_in+1, sizeof(LoadTest)); //copy in the command
           ll=load_test.data[0];
@@ -387,17 +394,13 @@ void handleNewRPC()
     case RPC_SET_NEXT_TRAJECTORY_SEG: 
           memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
           traj_seg_reply.success=trajectory_manager.set_next_trajectory_segment(&traj_seg_in, motion_limits_set, diag_pos_calibrated, &motion_limits, &cmd_in);
-          memset(&(traj_seg_reply.error_message), 0, 100);
-          strcpy(traj_seg_reply.error_message, trajectory_manager.seg_load_error_message);
           rpc_out[0]=RPC_REPLY_SET_NEXT_TRAJECTORY_SEG;
-          memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
+          memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply));
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
           break;
-    case RPC_START_NEW_TRAJECTORY: 
+    case RPC_START_NEW_TRAJECTORY:
           memcpy(&traj_seg_in, rpc_in+1, sizeof(TrajectorySegment)); //copy in the new segment
           traj_seg_reply.success=trajectory_manager.start_new_trajectory(&traj_seg_in, sync_manager.sync_mode_enabled, motion_limits_set, diag_pos_calibrated, &motion_limits, &cmd_in);
-          memset(&(traj_seg_reply.error_message), 0, 100);
-          strcpy(traj_seg_reply.error_message, trajectory_manager.seg_load_error_message);
           rpc_out[0]=RPC_REPLY_START_NEW_TRAJECTORY;
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
@@ -700,7 +703,7 @@ void stepHelloController()
       if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
 
-        
+        stat_aux.cmd_cnt++;
         
         diag_waiting_on_sync=false;
 
