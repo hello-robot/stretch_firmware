@@ -34,6 +34,7 @@ extern void enableMGInterrupts();
 extern void disableMGInterrupts(); 
 extern float FsCtrl;
 extern Status stat, stat_out;
+extern volatile int dirty_cmd;
 
 extern uint8_t    BOARD_VARIANT;
 extern uint8_t    BOARD_VARIANT_DRV8842;

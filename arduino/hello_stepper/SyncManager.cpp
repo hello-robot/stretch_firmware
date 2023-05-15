@@ -16,7 +16,7 @@
 #include "HelloController.h"
 #include "Controller.h"
 #include "TimeManager.h"
-
+#include "TraceManager.h"
 
 ///////////////////////// SYNCMANAGER ///////////////////////////
 
@@ -30,9 +30,10 @@ SyncManager::SyncManager()
   rs_last=0;
   sync_last=0;
   sync_mode_enabled = false;
-  motor_sync_triggered=false;
   last_pulse_duration=0;
   runstop_trigger_cnt=0;
+  sync_irq_overflow=0;
+  sync_irq_cnt=0;
 }
 
 
@@ -81,19 +82,21 @@ void  SyncManager::step() //Called at 1Khz from TC4 loop
 
 void handleIRQ()
 {
-  sync_manager.irq_cnt++;
   if (BOARD_VARIANT==0 || BOARD_VARIANT>=1)
   {
-      if(sync_manager.sync_mode_enabled)
-        sync_manager.motor_sync_triggered=true;
+      //if(sync_manager.sync_mode_enabled && dirty_cmd)
+      sync_manager.sync_irq_cnt++;
+      ///If we get an errorneous sync IRQ this will increment.
+      //Should only get an IRQ when the Pimu triggers sync after the stepper gets a command RPC
+      //Will also trigger if a different stepper requires a sync. Use is just for unit testing tools.
+      if (!dirty_cmd)
+        sync_manager.sync_irq_overflow++;
   }
 }
 
 
 void SyncManager::setupSyncManager() {
   rs_last=digitalRead(BOARD_VARIANT_PIN_RUNSTOP);
-  if (BOARD_VARIANT>=1)
-    sync_last=digitalRead(PIN_SYNC);
   if (BOARD_VARIANT==0)
   {
     attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), handleIRQ, RISING);
@@ -102,5 +105,4 @@ void SyncManager::setupSyncManager() {
   {
     attachInterrupt(digitalPinToInterrupt(PIN_SYNC), handleIRQ, RISING);
   }
-  irq_cnt=0;
 }

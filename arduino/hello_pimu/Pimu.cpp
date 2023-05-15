@@ -59,10 +59,9 @@ LightBarManager light_bar_manager;
 Pimu_Config cfg_in, cfg;
 Pimu_Trigger trg_in, trg;
 Pimu_Status stat, stat_out;
-Pimu_Status_Aux stat_aux;
 Pimu_Motor_Sync_Reply sync_reply;
 Pimu_Board_Info board_info;
-
+Pimu_Status_Aux stat_aux;
 
 void setupTimer4_and_5();
 void toggle_led(int rate_ms);
@@ -232,13 +231,15 @@ void handleNewRPC()
           rpc_out[0]=RPC_REPLY_PIMU_STATUS;
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Pimu_Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Pimu_Status)+1;
-          break; 
-     case RPC_GET_PIMU_STATUS_AUX:
+          break;
+
+    case RPC_GET_PIMU_STATUS:
           stat_aux.motor_sync_cnt=sync_manager.motor_sync_cnt;
           rpc_out[0]=RPC_REPLY_PIMU_STATUS_AUX;
-          memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status_aux data
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status data
           num_byte_rpc_out=sizeof(Pimu_Status_Aux)+1;
           break;
+
      case RPC_GET_PIMU_BOARD_INFO:
           rpc_out[0]=RPC_REPLY_PIMU_BOARD_INFO;
           memcpy(rpc_out + 1, (uint8_t *) (&board_info), sizeof(Pimu_Board_Info)); //Collect the status data
@@ -246,14 +247,13 @@ void handleNewRPC()
           state_boot_detected=true;
           break; 
      case RPC_SET_MOTOR_SYNC:
-          //noInterrupts();
+          noInterrupts();
           sync_manager.trigger_motor_sync();
-          //interrupts();
-
           rpc_out[0]=RPC_REPLY_MOTOR_SYNC;
           sync_reply.motor_sync_cnt=sync_manager.motor_sync_cnt;
            memcpy(rpc_out + 1, (uint8_t *) (&sync_reply), sizeof(Pimu_Motor_Sync_Reply));
           num_byte_rpc_out=sizeof(Pimu_Motor_Sync_Reply)+1;
+          interrupts();
 
           break;
    case RPC_READ_TRACE: 

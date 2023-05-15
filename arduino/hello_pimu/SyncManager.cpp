@@ -33,11 +33,12 @@ SyncManager::SyncManager(RunstopManager * r)
   dirty_motor_sync=0;
   pulse_wait_ms=0;
   motor_sync_cnt=0;
-  sync_overruns=0;
+  syncs_queued=0;
   rm=r;
 }
 
 //Raise the sync trigger line as soon as get an RPC
+//If previous pulse hasn't finished then queue it to go out as soon as can
 void SyncManager::trigger_motor_sync() //Called aperiodically from RPC
 {
 
@@ -56,9 +57,13 @@ void SyncManager::trigger_motor_sync() //Called aperiodically from RPC
     {
       digitalWrite(SYNC_OUT, HIGH);
     }
+    if(syncs_queued)
+        syncs_queued=max(0,syncs_queued-1);
   }
   else
-    sync_overruns++;
+  {
+    syncs_queued++;
+  }
 
 }
 
@@ -71,8 +76,6 @@ void SyncManager::trigger_motor_sync() //Called aperiodically from RPC
 
 void SyncManager::step_dedicated_sync()
 {
-    noInterrupts();
-
     //Handle runstop
     if (rm->state_runstop_event)
       digitalWrite(RUNSTOP_OUT, HIGH);//Disable motors
@@ -98,7 +101,7 @@ void SyncManager::step_dedicated_sync()
       digitalWrite(SYNC_OUT, LOW);
 
     pulse_wait_ms=max(0,pulse_wait_ms-1);
-    interrupts();
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -108,11 +111,8 @@ void SyncManager::step_dedicated_sync()
 //Otherwise lower line
 void SyncManager::step_shared_sync()
 {
-    noInterrupts();
-
-
     //Start a new sync pulse?
-    if (!pulse_len_ms && dirty_motor_sync && !rm->state_runstop_event && pulse_wait_ms==0) //allow current pulse to finish before handling new event
+    if (!pulse_len_ms && !pulse_wait_ms && dirty_motor_sync && !rm->state_runstop_event) //allow current pulse to finish before handling new event
     {
         pulse_len_ms=SYNC_PULSE_ON_SHARED+1; //+1 so step loop comes out correct
         dirty_motor_sync=0;
@@ -136,16 +136,15 @@ void SyncManager::step_shared_sync()
         digitalWrite(RUNSTOP_M3, LOW);
     }
     pulse_wait_ms=max(0,pulse_wait_ms-1);
-    interrupts();
 }
-
 
 void SyncManager::step() //Called at 1Khz from TC4 ISR
 {
+    if(!pulse_len_ms && !pulse_wait_ms && syncs_queued)
+        trigger_motor_sync();
+
   if(BOARD_VARIANT_DEDICATED_SYNC)
     step_dedicated_sync();
   else
     step_shared_sync();
 }
-
-

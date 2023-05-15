@@ -27,7 +27,7 @@
 // Version 0.2.7: Add velocity watchdog
 // Version 0.2.8: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
-// Version 0.4.0: Move to fast motor sync, aux status, drop traj error msg, and P3
+// Version 0.4.0: Move to fast motor sync, status_debug, drop traj error msg, and P3
 #define FIRMWARE_VERSION_HR "Stepper.v0.4.0p3"
 
 /////////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@
 #define RPC_READ_TRACE 27
 #define RPC_REPLY_READ_TRACE 28
 #define RPC_GET_STATUS_AUX  29
-#define RPC_REPLY_STATUS_AUX 30
+#define RPC_REPLY_STATUS_AUX  30
 
 #define MODE_SAFETY 0
 #define MODE_FREEWHEEL 1
@@ -176,9 +176,13 @@ struct __attribute__ ((packed)) Status{
 };
 
 struct __attribute__ ((packed)) StatusAux{
-  uint16_t cmd_cnt;
+  uint16_t cmd_cnt_rpc;
+  uint16_t cmd_cnt_exec;
+  uint16_t cmd_rpc_overflow;
   uint16_t sync_irq_cnt;
+  uint16_t sync_irq_overflow;
 };
+
 /////////////////////////////////////////////////////////////////
 struct __attribute__ ((packed)) Command{
   uint8_t mode;
@@ -191,6 +195,7 @@ struct __attribute__ ((packed)) Command{
   float i_contact_neg; //A
   uint8_t incr_trigger;
 };
+
 
 struct __attribute__ ((packed)) LoadTest{
   uint8_t data[1024];

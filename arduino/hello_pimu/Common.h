@@ -27,7 +27,7 @@
 // Version 0.2.5: Initial production release for RE2 Nina
 // Version 0.2.6: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
-// Version 0.4.0: Move to fast motor sync, aux_status, and P3
+// Version 0.4.0: Move to fast motor sync, status_aux, and P3
 
 #define FIRMWARE_VERSION "Pimu.v0.4.0p3"
 
@@ -178,9 +178,9 @@ struct __attribute__ ((packed)) Pimu_Status{
   float debug;
 };
 
-
+//Dummy struct for now, for future expansion
 struct __attribute__ ((packed)) Pimu_Status_Aux{
-  uint16_t motor_sync_cnt; //Count the successful motor syncs
+  uint16_t motor_sync_cnt;
 };
 
 struct __attribute__ ((packed)) Pimu_Trigger{
