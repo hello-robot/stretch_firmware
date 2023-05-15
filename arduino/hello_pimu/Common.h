@@ -48,6 +48,10 @@
 #define RPC_REPLY_READ_TRACE 12
 #define RPC_GET_PIMU_STATUS_AUX 13
 #define RPC_REPLY_PIMU_STATUS_AUX 14
+#define RPC_LOAD_TEST_PULL 15
+#define RPC_REPLY_LOAD_TEST_PULL 16
+#define RPC_LOAD_TEST_PUSH 17
+#define RPC_REPLY_LOAD_TEST_PUSH 18
 
 /////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
@@ -200,7 +204,9 @@ struct __attribute__ ((packed)) Pimu_Board_Info{
 /////////////////////////////////////////////////////////////////
 
 
-
+struct __attribute__ ((packed)) LoadTest{
+  uint8_t data[1024];
+};
 
 
 

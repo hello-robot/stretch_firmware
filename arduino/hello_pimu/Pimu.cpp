@@ -59,9 +59,11 @@ LightBarManager light_bar_manager;
 Pimu_Config cfg_in, cfg;
 Pimu_Trigger trg_in, trg;
 Pimu_Status stat, stat_out;
+Pimu_Status_Aux stat_aux;
 Pimu_Motor_Sync_Reply sync_reply;
 Pimu_Board_Info board_info;
 Pimu_Status_Aux stat_aux;
+LoadTest load_test;
 
 void setupTimer4_and_5();
 void toggle_led(int rate_ms);
@@ -239,7 +241,12 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status data
           num_byte_rpc_out=sizeof(Pimu_Status_Aux)+1;
           break;
-
+     case RPC_GET_PIMU_STATUS_AUX:
+          stat_aux.motor_sync_cnt=sync_manager.motor_sync_cnt;
+          rpc_out[0]=RPC_REPLY_PIMU_STATUS_AUX;
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status_aux data
+          num_byte_rpc_out=sizeof(Pimu_Status_Aux)+1;
+          break;
      case RPC_GET_PIMU_BOARD_INFO:
           rpc_out[0]=RPC_REPLY_PIMU_BOARD_INFO;
           memcpy(rpc_out + 1, (uint8_t *) (&board_info), sizeof(Pimu_Board_Info)); //Collect the status data
@@ -258,7 +265,21 @@ void handleNewRPC()
           break;
    case RPC_READ_TRACE: 
           num_byte_rpc_out=trace_manager.rpc_read(rpc_out);
-          break; 
+          break;
+    case RPC_LOAD_TEST_PUSH:
+          memcpy(&load_test, rpc_in+1, sizeof(LoadTest)); //copy in the command
+          rpc_out[0]=RPC_REPLY_LOAD_TEST_PUSH;
+          num_byte_rpc_out=1;
+          break;
+    case RPC_LOAD_TEST_PULL:
+          ll=load_test.data[0];
+          for(int i=0;i<1023;i++)
+            load_test.data[i]=load_test.data[i+1];
+          load_test.data[1023]=ll;
+          rpc_out[0]=RPC_REPLY_LOAD_TEST_PULL;
+          memcpy(rpc_out + 1, (uint8_t *) (&load_test), sizeof(LoadTest));
+          num_byte_rpc_out=sizeof(LoadTest)+1;
+          break;
    default:
         break;
   };

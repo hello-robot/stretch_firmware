@@ -248,7 +248,7 @@ void setupHelloController()
   memset(&trg, 0, sizeof(Trigger));
   memset(&trg_in, 0, sizeof(Trigger));
   memset(&stat, 0, sizeof(Status));
-  memset(&stat_out, 0, sizeof(StatusAux));
+  memset(&stat_out, 0, sizeof(Status));
   memset(&stat_aux, 0, sizeof(StatusAux));
   memset(&motion_limits, 0, sizeof(MotionLimits));
   memset(&pos_history, 0, N_POS_HISTORY*sizeof(float));
@@ -399,14 +399,18 @@ void handleNewRPC()
           interrupts();
           break;
 
-    case RPC_LOAD_TEST:
+    case RPC_LOAD_TEST_PUSH:
           memcpy(&load_test, rpc_in+1, sizeof(LoadTest)); //copy in the command
+          rpc_out[0]=RPC_REPLY_LOAD_TEST_PUSH;
+          num_byte_rpc_out=1;
+          break;
+    case RPC_LOAD_TEST_PULL:
           ll=load_test.data[0];
           for(int i=0;i<1023;i++)
             load_test.data[i]=load_test.data[i+1];
           load_test.data[1023]=ll;
-          rpc_out[0]=RPC_REPLY_LOAD_TEST;
-          memcpy(rpc_out + 1, (uint8_t *) (&load_test), sizeof(LoadTest)); 
+          rpc_out[0]=RPC_REPLY_LOAD_TEST_PULL;
+          memcpy(rpc_out + 1, (uint8_t *) (&load_test), sizeof(LoadTest));
           num_byte_rpc_out=sizeof(LoadTest)+1;
           break;
     case RPC_SET_NEXT_TRAJECTORY_SEG:
