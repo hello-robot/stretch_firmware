@@ -23,7 +23,7 @@ Wacc_Config cfg, cfg_in;
 Wacc_Command cmd, cmd_in;
 Wacc_Status stat, stat_out;
 Wacc_Board_Info board_info;
-
+LoadTest load_test;
 
 float accel_LPFa = 0.0; 
 float accel_LPFb = 1.0;
@@ -51,7 +51,6 @@ void setupWacc() {
   setupTimer4_and_5();
   time_manager.clock_zero();
 }
-
 
 uint8_t    BOARD_VARIANT;
 
@@ -83,6 +82,7 @@ void setupBoardVariants()
 
 void handleNewRPC()
 {
+    int ll;
   switch(rpc_in[0])
   {
     case RPC_SET_WACC_COMMAND: 
@@ -97,12 +97,12 @@ void handleNewRPC()
           num_byte_rpc_out=1;
           dirty_config=true;
           break;
-    case RPC_GET_WACC_STATUS: 
-          rpc_out[0]=RPC_REPLY_WACC_STATUS;
+    case RPC_GET_WACC_STATUS:
           noInterrupts();
+          rpc_out[0]=RPC_REPLY_WACC_STATUS;
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Wacc_Status)); //Collect the status data
-          interrupts();
           num_byte_rpc_out=sizeof(Wacc_Status)+1;
+          interrupts();
           break; 
     case RPC_GET_WACC_BOARD_INFO:
           rpc_out[0]=RPC_REPLY_WACC_BOARD_INFO;
@@ -111,7 +111,21 @@ void handleNewRPC()
           break; 
     case RPC_READ_TRACE: 
           num_byte_rpc_out=trace_manager.rpc_read(rpc_out);
-          break; 
+          break;
+    case RPC_LOAD_TEST_PUSH:
+          memcpy(&load_test, rpc_in+1, sizeof(LoadTest)); //copy in the command
+          rpc_out[0]=RPC_REPLY_LOAD_TEST_PUSH;
+          num_byte_rpc_out=1;
+          break;
+    case RPC_LOAD_TEST_PULL:
+          ll=load_test.data[0];
+          for(int i=0;i<1023;i++)
+            load_test.data[i]=load_test.data[i+1];
+          load_test.data[1023]=ll;
+          rpc_out[0]=RPC_REPLY_LOAD_TEST_PULL;
+          memcpy(rpc_out + 1, (uint8_t *) (&load_test), sizeof(LoadTest));
+          num_byte_rpc_out=sizeof(LoadTest)+1;
+          break;
    default:
         break;
   };
@@ -282,14 +296,14 @@ void TC4_Handler() {                // gets called with FsMg frequency
 
 #define WAIT_TC16_REGS_SYNC(x) while(x->COUNT16.STATUS.bit.SYNCBUSY);
 
-void enableTCInterrupts() {   //enables the controller interrupt ("closed loop mode")
+void enableTCInterrupts() {   //enables the controller interrupt
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC5
   WAIT_TC16_REGS_SYNC(TC5)                      //wait for sync
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC4
   WAIT_TC16_REGS_SYNC(TC4)                      //wait for sync
 }
 
-void disableTCInterrupts() {  //disables the controller interrupt ("closed loop mode")
+void disableTCInterrupts() {  //disables the controller interrupt
   TC5->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC5
   WAIT_TC16_REGS_SYNC(TC5)                      // wait for sync
   TC4->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC5
@@ -335,8 +349,8 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   TC4->COUNT16.INTENSET.bit.OVF = 1;          // enable overfollow
   TC4->COUNT16.INTENSET.bit.MC0 = 1;         // enable compare match to CC0
 
-  NVIC_SetPriority(TC4_IRQn, 1);              //TC4 pulse generator highest priority so timing is correct
-  NVIC_SetPriority(TC5_IRQn, 2);              //Set interrupt priority
+  NVIC_SetPriority(TC4_IRQn, 4);              //TC4 pulse generator highest priority so timing is correct
+  NVIC_SetPriority(TC5_IRQn, 5);              //Set interrupt priority
 
   // Enable InterruptVector
   NVIC_EnableIRQ(TC5_IRQn);
