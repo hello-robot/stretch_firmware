@@ -28,7 +28,8 @@
 // Version 0.2.8: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
 // Version 0.4.0: Move to fast motor sync, status_debug, drop traj error msg, and P3
-#define FIRMWARE_VERSION_HR "Stepper.v0.4.0p3"
+// Version 0.5.0: Move to support for Transport V1
+#define FIRMWARE_VERSION_HR "Stepper.v0.5.0p3"
 
 /////////////////////////////////////////////////////////////////
 

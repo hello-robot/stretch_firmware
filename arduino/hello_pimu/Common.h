@@ -28,8 +28,9 @@
 // Version 0.2.6: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
 // Version 0.4.0: Move to fast motor sync, status_aux, and P3
+// Version 0.5.0: Move to support for Transport V1
 
-#define FIRMWARE_VERSION "Pimu.v0.4.0p3"
+#define FIRMWARE_VERSION "Pimu.v0.5.0p3"
 
 #define FS 100 //Loop rate in Hz for TC5
 
