@@ -185,7 +185,7 @@ struct __attribute__ ((packed)) Pimu_Status{
 
 //Dummy struct for now, for future expansion
 struct __attribute__ ((packed)) Pimu_Status_Aux{
-  uint16_t motor_sync_cnt;
+  uint16_t foo;
 };
 
 struct __attribute__ ((packed)) Pimu_Trigger{

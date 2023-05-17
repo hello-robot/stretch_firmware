@@ -34,6 +34,7 @@ void write_to_lookup(uint8_t page_id, float * data);
 
 
 Command cmd,cmd_in;
+CommandReply cmd_reply;
 Gains gains, gains_in;
 Trigger trg, trg_in;
 Status stat,stat_out;
@@ -92,6 +93,7 @@ float uMAX_N=0;
 float uMAX_PF=0;
 float uMAX_NF=0;
 int cntr=0;
+volatile uint16_t ctrl_cycle_cnt=0;
 
 //Filter params    
 volatile float efLPFa = 0.0; 
@@ -320,14 +322,16 @@ void handleNewRPC()
           num_byte_rpc_out=sizeof(Stepper_Board_Info)+1;
           break; 
     case RPC_SET_COMMAND:
-    noInterrupts();
+          noInterrupts();
           memcpy(&cmd_in, rpc_in+1, sizeof(Command)); //copy in the command
           cmd_cnt_rpc++;
+          cmd_reply.ctrl_cycle_cnt=ctrl_cycle_cnt;
           if(dirty_cmd)
             cmd_rpc_overflow++;
           dirty_cmd=1;
           rpc_out[0]=RPC_REPLY_COMMAND;
-          num_byte_rpc_out=1;
+          memcpy(rpc_out + 1, (uint8_t *) (&cmd_reply), sizeof(CommandReply)); //Collect the status data
+          num_byte_rpc_out=sizeof(CommandReply)+1;
     interrupts();
           break;
     case RPC_SET_GAINS: 
@@ -380,7 +384,19 @@ void handleNewRPC()
           }
           break;
     case RPC_GET_STATUS:
+        //Make sure that at least one ctrl cycle has executed since the last SET_CMD
+        if (dirty_cmd && ctrl_cycle_cnt==cmd_reply.ctrl_cycle_cnt)
+        {
+            for(int i=0;i<10000;i++)
+            {
+                //delayMicroseconds(10);
+                    if(ctrl_cycle_cnt!=cmd_reply.ctrl_cycle_cnt)
+                        break;
+            }
+        }
         noInterrupts();
+        stat_out.debug=ctrl_cycle_cnt;
+          //update_status();
           rpc_out[0]=RPC_REPLY_STATUS;
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Status)+1;
@@ -521,6 +537,7 @@ float stiffness_target=0;
 
 float eff_max=0;
 float xdes=0;
+
 
 void stepHelloController()
 {
@@ -1196,7 +1213,7 @@ void stepHelloController()
   first_filter=false;
 
 update_status();
-    
+ ctrl_cycle_cnt++;
 }
 
 ///////////////////////// Commutation Loop ///////////////////////////

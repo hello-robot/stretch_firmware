@@ -39,8 +39,8 @@
 #define RPC_REPLY_STATUS  4
 #define RPC_SET_GAINS  5
 #define RPC_REPLY_GAINS  6
-#define RPC_LOAD_TEST 7
-#define RPC_REPLY_LOAD_TEST 8
+#define RPC_LOAD_TEST_PUSH 7
+#define RPC_REPLY_LOAD_TEST_PUSH 8
 #define RPC_SET_TRIGGER  9
 #define RPC_REPLY_SET_TRIGGER 10
 #define RPC_SET_ENC_CALIB 11
@@ -184,6 +184,7 @@ struct __attribute__ ((packed)) StatusAux{
   uint16_t cmd_rpc_overflow;
   uint16_t sync_irq_cnt;
   uint16_t sync_irq_overflow;
+  uint16_t ctrl_cycle_cnt;
 };
 
 /////////////////////////////////////////////////////////////////
@@ -197,6 +198,10 @@ struct __attribute__ ((packed)) Command{
   float i_contact_pos; //A
   float i_contact_neg; //A
   uint8_t incr_trigger;
+};
+
+struct __attribute__ ((packed)) CommandReply{
+  uint16_t ctrl_cycle_cnt;
 };
 
 

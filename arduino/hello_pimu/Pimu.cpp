@@ -62,7 +62,6 @@ Pimu_Status stat, stat_out;
 Pimu_Status_Aux stat_aux;
 Pimu_Motor_Sync_Reply sync_reply;
 Pimu_Board_Info board_info;
-Pimu_Status_Aux stat_aux;
 LoadTest load_test;
 
 void setupTimer4_and_5();
@@ -235,14 +234,8 @@ void handleNewRPC()
           num_byte_rpc_out=sizeof(Pimu_Status)+1;
           break;
 
-    case RPC_GET_PIMU_STATUS:
-          stat_aux.motor_sync_cnt=sync_manager.motor_sync_cnt;
-          rpc_out[0]=RPC_REPLY_PIMU_STATUS_AUX;
-          memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status data
-          num_byte_rpc_out=sizeof(Pimu_Status_Aux)+1;
-          break;
      case RPC_GET_PIMU_STATUS_AUX:
-          stat_aux.motor_sync_cnt=sync_manager.motor_sync_cnt;
+          stat_aux.foo=sync_manager.motor_sync_cnt;
           rpc_out[0]=RPC_REPLY_PIMU_STATUS_AUX;
           memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status_aux data
           num_byte_rpc_out=sizeof(Pimu_Status_Aux)+1;
