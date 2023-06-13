@@ -28,7 +28,7 @@
 // Version 0.2.8: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.3.0p2"
+#define FIRMWARE_VERSION_HR "Stepper.v0.3.1p2"
 
 /////////////////////////////////////////////////////////////////
 
