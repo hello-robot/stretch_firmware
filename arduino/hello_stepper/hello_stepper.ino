@@ -38,7 +38,6 @@ void setup()        // This code runs once at startup
   setupPins();                      // configure pins
   setupTCInterrupts();              // configure controller interrupt
   
-  
 
   SerialUSB.begin(2000000); 
   
@@ -71,7 +70,7 @@ void setup()        // This code runs once at startup
     enableMGInterrupts();
     enableMotorDrivers(); //Turn on now that gains are loaded
 #endif
-
+setupWDT(WDT_TIMEOUT_PERIOD);
 }
   
 
@@ -83,6 +82,8 @@ void setup()        // This code runs once at startup
 
 void loop()                 // main loop
 {
+
+resetWDT();
 
 #ifdef HELLO
 //Flash LED fast when in menu mode, slow in RPC mode
