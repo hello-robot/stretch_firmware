@@ -44,6 +44,7 @@ extern void setupWDT( uint8_t period);
 extern void resetWDT();
 extern void WDTsync();
 extern void systemReset();
+extern void disableWDT();
 
 #define WDT_TIMEOUT_PERIOD 11 //ms range 0-11ms
 #define TC4_LOOP_RATE 1000                                             //Update rate of control loop Hz

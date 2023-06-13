@@ -83,16 +83,16 @@ setupWDT(WDT_TIMEOUT_PERIOD);
 void loop()                 // main loop
 {
 
-resetWDT();
-
 #ifdef HELLO
 //Flash LED fast when in menu mode, slow in RPC mode
 if (hello_interface)
 {
+  resetWDT();
   stepHelloControllerRPC();
 }
 else
-{
+{ 
+  disableWDT();  // Disable WDT on menu interface because it is blocking >11ms
   serialCheck();
   toggle_led(200);
 }

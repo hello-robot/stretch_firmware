@@ -1300,3 +1300,8 @@ void setupWDT( uint8_t period) {
   WDT->CTRL.reg = WDT_CTRL_ENABLE; //enable watchdog
   WDTsync(); 
 }
+
+void disableWDT(){
+  WDT->CTRL.reg = 0; // disable watchdog
+  WDTsync(); // sync is required
+}
