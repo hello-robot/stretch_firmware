@@ -347,6 +347,7 @@ void handleNewRPC()
           rpc_out[0]=RPC_REPLY_MENU_ON;
           num_byte_rpc_out=1;
           switch_to_menu_cnt=5; //allow 5 rpc cycles to pass before switch to menu mode, allows any RPC replies to go out
+          disableWDT();
           break; 
     case RPC_SET_TRIGGER: 
           memcpy(&trg_in, rpc_in+1, sizeof(Trigger)); //copy in the config
