@@ -1279,6 +1279,9 @@ void WDTsync() {
 void resetWDT() {
   // reset the WDT watchdog timer.
   // this must be called before the WDT resets the system
+  if(WDT->CTRL.bit.ENABLE!=1){
+    setupWDT(WDT_TIMEOUT_PERIOD);
+  }
   WDT->CLEAR.reg= 0xA5; // reset the WDT
   WDTsync(); 
 }
