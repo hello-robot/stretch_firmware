@@ -27,7 +27,7 @@
 // Version 0.2.7: Add velocity watchdog
 // Version 0.2.8: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
-// Version 0.3.1: Added Watchdog timer (WDT) reset feture
+// Version 0.3.1: Added Watchdog timer (WDT) reset feture, halved trace buffer
 
 #define FIRMWARE_VERSION_HR "Stepper.v0.3.1p2"
 
