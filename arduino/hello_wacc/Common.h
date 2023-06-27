@@ -24,7 +24,9 @@
 // Version 0.2.3: Add trace function
 // Version 0.2.4: Reorg timing to fix IRQ overruns
 // Version 0.3.0: Move to updated trace and protocol P2
-#define FIRMWARE_VERSION "Wacc.v0.3.0p2"
+// Version 0.3.1: Added Watchdog timer (WDT) reset feture
+
+#define FIRMWARE_VERSION "Wacc.v0.3.1p2"
 
 
 /////////////////////////////////////////////////////////////////
