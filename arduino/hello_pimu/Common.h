@@ -27,6 +27,7 @@
 // Version 0.2.5: Initial production release for RE2 Nina
 // Version 0.2.6: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
+// Version 0.3.1: Added Watchdog timer (WDT) reset feture, halved trace buffer
 // Version 0.4.0: Move to fast motor sync, status_aux, and P3
 // Version 0.5.0: Move to support for Transport V1
 
