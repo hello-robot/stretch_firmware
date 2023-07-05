@@ -17,7 +17,7 @@
 #include "TimeManager.h"
 #include "TraceManager.h"
 
-
+#define WDT_TIMEOUT_PERIOD 11 //ms range 0-11ms
 //////////////////////////////////////
 Wacc_Config cfg, cfg_in;
 Wacc_Command cmd, cmd_in;
@@ -38,6 +38,8 @@ bool dirty_command=false;
 void setupTimer4_and_5();
 float FS_CTRL = 70; //Run Acceleromter read Controller at 70hz
 void toggle_led(int rate_ms);
+void resetWDT();
+void setupWDT(uint8_t period);
 
 void setupWacc() {  
   memset(&cfg, 0, sizeof(Wacc_Config));
@@ -50,6 +52,7 @@ void setupWacc() {
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   setupTimer4_and_5();
   time_manager.clock_zero();
+  setupWDT(WDT_TIMEOUT_PERIOD);
 }
 
 uint8_t    BOARD_VARIANT;
@@ -135,6 +138,7 @@ void stepWaccRPC()
 {
   toggle_led(500);
   stepTransport(handleNewRPC);
+  resetWDT();
 }
 
 ////////////////////////Controller///////////////////////////////////////
@@ -361,5 +365,35 @@ void setupTimer4_and_5() {  // configure the controller interrupt
 }
 
 
+/////////////////////// Watchdog //////////////////////////////////////
+// reference https://forum.arduino.cc/t/wdt-watchdog-timer-code/353610
 
-//////////////////////////////////////
+void WDTsync() {
+  while (WDT->STATUS.bit.SYNCBUSY == 1); //Just wait till WDT is free
+}
+
+void resetWDT() {
+  // reset the WDT watchdog timer.
+  // this must be called before the WDT resets the system
+  WDT->CLEAR.reg= 0xA5; // reset the WDT
+  WDTsync(); 
+}
+
+void systemReset() {
+  // use the WDT watchdog timer to force a system reset.
+  // WDT MUST be running for this to work
+  WDT->CLEAR.reg= 0x00; // system reset via WDT
+  WDTsync(); 
+}
+
+void setupWDT( uint8_t period) {
+  // initialize the WDT watchdog timer
+
+  WDT->CTRL.reg = 0; // disable watchdog
+  WDTsync(); // sync is required
+
+  WDT->CONFIG.reg = min(period,11); // see Table 17-5 Timeout Period (valid values 0-11) (ms)
+
+  WDT->CTRL.reg = WDT_CTRL_ENABLE; //enable watchdog
+  WDTsync(); 
+}
