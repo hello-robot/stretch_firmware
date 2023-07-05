@@ -71,7 +71,7 @@ void setup()        // This code runs once at startup
     enableMGInterrupts();
     enableMotorDrivers(); //Turn on now that gains are loaded
 #endif
-
+setupWDT(WDT_TIMEOUT_PERIOD);
 }
   
 
@@ -88,10 +88,12 @@ void loop()                 // main loop
 //Flash LED fast when in menu mode, slow in RPC mode
 if (hello_interface)
 {
+  resetWDT();
   stepHelloControllerRPC();
 }
 else
 {
+  disableWDT();
   serialCheck();
   toggle_led(200);
 }

@@ -361,6 +361,7 @@ void handleNewRPC()
           rpc_out[0]=RPC_REPLY_MENU_ON;
           num_byte_rpc_out=1;
           switch_to_menu_cnt=5; //allow 5 rpc cycles to pass before switch to menu mode, allows any RPC replies to go out
+          disableWDT();
           break; 
     case RPC_SET_TRIGGER: 
           memcpy(&trg_in, rpc_in+1, sizeof(Trigger)); //copy in the config
@@ -1316,4 +1317,45 @@ void enableMGInterrupts() {   //enables the controller interrupt ("closed loop m
 void disableMGInterrupts() {  //disables the controller interrupt ("closed loop mode")
   TC4->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC4
   WAIT_TC16_REGS_SYNC(TC4)                      // wait for sync
+}
+
+/////////////////////// Watchdog //////////////////////////////////////
+// reference https://forum.arduino.cc/t/wdt-watchdog-timer-code/353610
+
+void WDTsync() {
+  while (WDT->STATUS.bit.SYNCBUSY == 1); //Just wait till WDT is free
+}
+
+void resetWDT() {
+  // reset the WDT watchdog timer.
+  // this must be called before the WDT resets the system
+  if(WDT->CTRL.bit.ENABLE!=1){
+    setupWDT(WDT_TIMEOUT_PERIOD);
+  }
+  WDT->CLEAR.reg= 0xA5; // reset the WDT
+  WDTsync(); 
+}
+
+void systemReset() {
+  // use the WDT watchdog timer to force a system reset.
+  // WDT MUST be running for this to work
+  WDT->CLEAR.reg= 0x00; // system reset via WDT
+  WDTsync(); 
+}
+
+void setupWDT( uint8_t period) {
+  // initialize the WDT watchdog timer
+
+  WDT->CTRL.reg = 0; // disable watchdog
+  WDTsync(); // sync is required
+
+  WDT->CONFIG.reg = min(period,11); // see Table 17-5 Timeout Period (valid values 0-11) (ms)
+
+  WDT->CTRL.reg = WDT_CTRL_ENABLE; //enable watchdog
+  WDTsync(); 
+}
+
+void disableWDT(){
+  WDT->CTRL.reg = 0; // disable watchdog
+  WDTsync(); // sync is required
 }
