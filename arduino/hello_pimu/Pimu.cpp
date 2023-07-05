@@ -68,6 +68,8 @@ void setupTimer4_and_5();
 void toggle_led(int rate_ms);
 uint32_t cycle_cnt=0;
 
+void resetWDT();
+void setupWDT(uint8_t period);
 
 /////////////////////////////////////////////////////////////////////////
 float deg_to_rad(float x)
@@ -82,6 +84,7 @@ float rad_to_deg(float x)
 #define TC5_TICKS_PER_CYCLE (int)( round(48000000 / 16 / FS)) //30,000 at 100hz, 16:1 prescalar TC5 is 32bit timer
 #define US_PER_TC5_CYCLE 1000000/FS //10000 at 100Hz
 #define US_PER_TC5_TICK 1000000.0*16/48000000 //0.33us resolution
+#define WDT_TIMEOUT_PERIOD 11 //ms range 0-11ms
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void handle_trigger();
@@ -165,6 +168,7 @@ void setupPimu() {
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
   setupTimer4_and_5();
+  setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
   
 }
@@ -281,6 +285,7 @@ void handleNewRPC()
 void stepPimuRPC()
 {
   stepTransport(handleNewRPC);
+  resetWDT();
 }
 
 
@@ -541,6 +546,39 @@ void update_status()
   {
     trace_manager.update_trace_status(&stat_out);
   }
+}
+
+/////////////////////// Watchdog //////////////////////////////////////
+// reference https://forum.arduino.cc/t/wdt-watchdog-timer-code/353610
+
+void WDTsync() {
+  while (WDT->STATUS.bit.SYNCBUSY == 1); //Just wait till WDT is free
+}
+
+void resetWDT() {
+  // reset the WDT watchdog timer.
+  // this must be called before the WDT resets the system
+  WDT->CLEAR.reg= 0xA5; // reset the WDT
+  WDTsync(); 
+}
+
+void systemReset() {
+  // use the WDT watchdog timer to force a system reset.
+  // WDT MUST be running for this to work
+  WDT->CLEAR.reg= 0x00; // system reset via WDT
+  WDTsync(); 
+}
+
+void setupWDT( uint8_t period) {
+  // initialize the WDT watchdog timer
+
+  WDT->CTRL.reg = 0; // disable watchdog
+  WDTsync(); // sync is required
+
+  WDT->CONFIG.reg = min(period,11); // see Table 17-5 Timeout Period (valid values 0-11) (ms)
+
+  WDT->CTRL.reg = WDT_CTRL_ENABLE; //enable watchdog
+  WDTsync(); 
 }
 
 ////////////////////// Timer5 /////////////////////////////////////////
