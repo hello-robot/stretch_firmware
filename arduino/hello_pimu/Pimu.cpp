@@ -71,6 +71,7 @@ uint32_t cycle_cnt=0;
 void resetWDT();
 void setupWDT(uint8_t period);
 
+
 /////////////////////////////////////////////////////////////////////////
 float deg_to_rad(float x)
 {

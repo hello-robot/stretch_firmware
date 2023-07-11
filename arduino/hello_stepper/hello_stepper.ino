@@ -38,7 +38,6 @@ void setup()        // This code runs once at startup
   setupPins();                      // configure pins
   setupTCInterrupts();              // configure controller interrupt
   
-  
 
   SerialUSB.begin(2000000); 
   
