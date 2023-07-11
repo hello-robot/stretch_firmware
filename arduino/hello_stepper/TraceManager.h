@@ -23,7 +23,7 @@
 #define TRACE_TYPE_PRINT 2
 
 
-#define TRACE_TYPE TRACE_TYPE_STATUS
+#define TRACE_TYPE TRACE_TYPE_PRINT
 
 /* This class supports generating traces of data at the full control rates. 
  * There are three modes:

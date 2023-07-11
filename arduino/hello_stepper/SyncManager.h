@@ -25,13 +25,14 @@ class SyncManager{
    public: 
     SyncManager();
     volatile bool runstop_active;
-    volatile bool motor_sync_triggered;
     void setupSyncManager();
     void step();
     bool sync_mode_enabled;
     int runstop_trigger_cnt;
     void on_runstop_change();
     void on_sync_change();
+    volatile uint16_t sync_irq_cnt;
+    volatile uint16_t sync_irq_overflow;
   private:
     uint8_t rs_last;
     int last_pulse_duration;

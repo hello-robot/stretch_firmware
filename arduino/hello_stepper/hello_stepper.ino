@@ -91,8 +91,8 @@ if (hello_interface)
   stepHelloControllerRPC();
 }
 else
-{ 
-  disableWDT();  // Disable WDT on menu interface because it is blocking >11ms
+{
+  disableWDT();
   serialCheck();
   toggle_led(200);
 }

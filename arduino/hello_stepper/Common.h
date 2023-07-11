@@ -28,8 +28,9 @@
 // Version 0.2.8: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
 // Version 0.3.1: Added Watchdog timer (WDT) reset feture, halved trace buffer
-
-#define FIRMWARE_VERSION_HR "Stepper.v0.3.1p2"
+// Version 0.4.0: Move to fast motor sync, status_debug, drop traj error msg, and P3
+// Version 0.5.0: Move to support for Transport V1
+#define FIRMWARE_VERSION_HR "Stepper.v0.5.0p3"
 
 /////////////////////////////////////////////////////////////////
 
@@ -39,8 +40,8 @@
 #define RPC_REPLY_STATUS  4
 #define RPC_SET_GAINS  5
 #define RPC_REPLY_GAINS  6
-#define RPC_LOAD_TEST 7
-#define RPC_REPLY_LOAD_TEST 8
+#define RPC_LOAD_TEST_PUSH 7
+#define RPC_REPLY_LOAD_TEST_PUSH 8
 #define RPC_SET_TRIGGER  9
 #define RPC_REPLY_SET_TRIGGER 10
 #define RPC_SET_ENC_CALIB 11
@@ -61,7 +62,10 @@
 #define RPC_REPLY_RESET_TRAJECTORY 26
 #define RPC_READ_TRACE 27
 #define RPC_REPLY_READ_TRACE 28
-
+#define RPC_GET_STATUS_AUX  29
+#define RPC_REPLY_STATUS_AUX  30
+#define RPC_LOAD_TEST_PULL 31
+#define RPC_REPLY_LOAD_TEST_PULL 32
 
 #define MODE_SAFETY 0
 #define MODE_FREEWHEEL 1
@@ -175,6 +179,14 @@ struct __attribute__ ((packed)) Status{
   uint16_t traj_id;             //Id of active trajectory segment
 };
 
+struct __attribute__ ((packed)) StatusAux{
+  uint16_t cmd_cnt_rpc;
+  uint16_t cmd_cnt_exec;
+  uint16_t cmd_rpc_overflow;
+  uint16_t sync_irq_cnt;
+  uint16_t sync_irq_overflow;
+  uint16_t ctrl_cycle_cnt;
+};
 
 /////////////////////////////////////////////////////////////////
 struct __attribute__ ((packed)) Command{
@@ -188,6 +200,11 @@ struct __attribute__ ((packed)) Command{
   float i_contact_neg; //A
   uint8_t incr_trigger;
 };
+
+struct __attribute__ ((packed)) CommandReply{
+  uint16_t ctrl_cycle_cnt;
+};
+
 
 struct __attribute__ ((packed)) LoadTest{
   uint8_t data[1024];
@@ -219,7 +236,6 @@ struct __attribute__ ((packed)) TrajectorySegment{
 
 struct __attribute__ ((packed)) TrajectorySegmentReply{
   uint8_t success;
-  char error_message[100];
 };
 
 /////////////////////////////////////////////////////////////////

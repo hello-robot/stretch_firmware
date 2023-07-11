@@ -38,7 +38,7 @@
  */
  
 /////////////////////////// TRACE //////////////////////////////////////
-#define N_TRACE_RAW 14000  //Raw buffer. (DO NOT INCREASE THIS MEMORY) Allocate enough for min 250 Status messages / 1000 debug messages / 250 print messages
+#define N_TRACE_RAW 14000 //Raw buffer. (DO NOT INCREASE THIS MEMORY) Allocate enough for min 250 Status messages / 1000 debug messages / 250 print messages
 #define N_TRACE_STATUS 365 //Status message is 38 bytes ea
 #define N_TRACE_DEBUG 1000 //Debug message is 14 bytes ea
 #define N_TRACE_PRINT_LN 32

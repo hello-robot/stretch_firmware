@@ -21,13 +21,17 @@ class SyncManager {
     SyncManager(RunstopManager * r);
     void trigger_motor_sync();
     void step();
-    volatile uint16_t pulse_len_ms;
+    volatile uint8_t pulse_wait_ms;
+    volatile uint8_t pulse_len_ms;
     int duration_last_pulse;
+    uint16_t motor_sync_cnt;
+    uint16_t syncs_queued;
   private:
-     
+    void step_shared_sync();
+    void step_dedicated_sync();
     volatile bool motor_stop_enabled;
     volatile bool dirty_motor_sync;
-    int pulse_wait_ms;
+
     RunstopManager * rm;
 };
 

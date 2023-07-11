@@ -28,8 +28,10 @@
 // Version 0.2.6: Add trace function
 // Version 0.3.0: Move to updated trace and protocol P2
 // Version 0.3.1: Added Watchdog timer (WDT) reset feture, halved trace buffer
+// Version 0.4.0: Move to fast motor sync, status_aux, and P3
+// Version 0.5.0: Move to support for Transport V1
 
-#define FIRMWARE_VERSION "Pimu.v0.3.1p2"
+#define FIRMWARE_VERSION "Pimu.v0.5.0p3"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -46,6 +48,12 @@
 #define RPC_REPLY_MOTOR_SYNC 10
 #define RPC_READ_TRACE 11
 #define RPC_REPLY_READ_TRACE 12
+#define RPC_GET_PIMU_STATUS_AUX 13
+#define RPC_REPLY_PIMU_STATUS_AUX 14
+#define RPC_LOAD_TEST_PULL 15
+#define RPC_REPLY_LOAD_TEST_PULL 16
+#define RPC_LOAD_TEST_PUSH 17
+#define RPC_REPLY_LOAD_TEST_PUSH 18
 
 /////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
@@ -176,9 +184,18 @@ struct __attribute__ ((packed)) Pimu_Status{
   float debug;
 };
 
+//Dummy struct for now, for future expansion
+struct __attribute__ ((packed)) Pimu_Status_Aux{
+  uint16_t foo;
+};
 
 struct __attribute__ ((packed)) Pimu_Trigger{
   uint32_t data;
+};
+
+
+struct __attribute__ ((packed)) Pimu_Motor_Sync_Reply{
+  uint16_t motor_sync_cnt;
 };
 
 struct __attribute__ ((packed)) Pimu_Board_Info{
@@ -189,7 +206,9 @@ struct __attribute__ ((packed)) Pimu_Board_Info{
 /////////////////////////////////////////////////////////////////
 
 
-
+struct __attribute__ ((packed)) LoadTest{
+  uint8_t data[1024];
+};
 
 
 
