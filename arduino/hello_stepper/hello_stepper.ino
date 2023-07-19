@@ -97,6 +97,7 @@ else
   toggle_led(200);
 }
 #else
+  disableWDT();
   serialCheck();              //must have this execute in loop for serial commands to function
 #endif
 
