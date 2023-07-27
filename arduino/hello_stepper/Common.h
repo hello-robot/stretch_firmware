@@ -61,6 +61,10 @@
 #define RPC_READ_TRACE 27
 #define RPC_REPLY_READ_TRACE 28
 
+#define RPC_STEP_MG2 29
+#define RPC_REPLY_STEP_MG2 30
+#define RPC_READ_MG2_STATUS 31
+#define RPC_REPLY_READ_MG2_STATUS 32
 
 #define MODE_SAFETY 0
 #define MODE_FREEWHEEL 1
@@ -219,6 +223,38 @@ struct __attribute__ ((packed)) TrajectorySegment{
 struct __attribute__ ((packed)) TrajectorySegmentReply{
   uint8_t success;
   char error_message[100];
+};
+
+
+struct __attribute__ ((packed)) MG2Command{
+  float x_des;
+  float v_des;
+  float a_des;
+};
+
+struct __attribute__ ((packed)) MG2Status{
+    int64_t t;  //time since last set point
+    int64_t dt; //time per cycle 
+    int64_t maxVel;
+    int64_t maxAcc;
+    int64_t pos;
+    int64_t vel;
+    int64_t acc;
+    int64_t oldPos;
+    int64_t oldPosRef;
+    int64_t oldVel;
+    int64_t dBrk;
+    int64_t dAcc;
+    int64_t dVel;
+    int64_t dDec;
+    int64_t dTot;
+    int64_t tBrk;
+    int64_t tAcc;
+    int64_t tVel;
+    int64_t tDec;
+    int64_t velSt;
+    float xdes;
+
 };
 
 /////////////////////////////////////////////////////////////////

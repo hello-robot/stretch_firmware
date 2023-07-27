@@ -107,7 +107,9 @@ void update_status();
 VelocityGenerator vg;
 MotionGenerator mg;
 
-
+MotionGenerator mg2;
+MG2Command mg2_cmd;
+MG2Status mg2_status;
 
 float vs=0;
 float eff=0;
@@ -309,6 +311,42 @@ void handleNewRPC()
 
   switch(rpc_in[0])
   {
+      case RPC_STEP_MG2:
+          memcpy(&mg2_cmd, rpc_in+1, sizeof(MG2Command)); //copy in the command
+          mg2.setMaxVelocity(mg2_cmd.v_des);
+          mg2.setMaxAcceleration(mg2_cmd.a_des);
+          mg2.follow(0,0);
+          rpc_out[0]=RPC_REPLY_STEP_MG2;
+          num_byte_rpc_out=1;
+          break;
+     
+     case RPC_READ_MG2_STATUS:
+          mg2_status.t=mg2.t;  //time since last set point
+          mg2_status.dt=mg2.dt; //time per cycle 
+          mg2_status.maxVel=mg2.maxVel;
+          mg2_status.maxAcc=mg2.maxAcc;
+          mg2_status.pos=mg2.pos;
+          mg2_status.vel=mg2.vel;
+          mg2_status.acc=mg2.acc;
+          mg2_status.oldPos=mg2.oldPos;
+          mg2_status.oldPosRef=mg2.oldPosRef;
+          mg2_status.oldVel=mg2.oldVel;
+          mg2_status.dBrk=mg2.dBrk;
+          mg2_status.dAcc=mg2.dAcc;
+          mg2_status.dVel=mg2.dVel;
+          mg2_status.dDec=mg2.dDec;
+          mg2_status.dTot=mg2.dTot;
+          mg2_status.tBrk=mg2.tBrk;
+          mg2_status.tAcc=mg2.tAcc;
+          mg2_status.tVel=mg2.tVel;
+          mg2_status.tDec=mg2.tDec;
+          mg2_status.velSt=mg2.velSt;
+          mg2_status.xdes=mg2.update(mg2_cmd.x_des);
+          rpc_out[0]=RPC_REPLY_READ_MG2_STATUS;
+          memcpy(rpc_out + 1, (uint8_t *) (&mg2_status), sizeof(MG2Status)); //Collect the status data
+          num_byte_rpc_out=sizeof(MG2Status)+1;
+          break;
+
     case RPC_GET_STEPPER_BOARD_INFO:
           rpc_out[0]=RPC_REPLY_STEPPER_BOARD_INFO;
           memcpy(rpc_out + 1, (uint8_t *) (&board_info), sizeof(Stepper_Board_Info)); //Collect the status data
