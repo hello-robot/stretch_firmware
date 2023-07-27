@@ -85,8 +85,7 @@ int64_t convert_pos(float x)
 
 float convert_pos_back(int64_t x)
 {
-  float f = (float)(x/FLOAT_SCALE_MS);
-  return f/FLOAT_SCALE_US;
+  return (float)(x/FLOAT_SCALE_NS);
 }
 
 
@@ -96,7 +95,7 @@ float convert_pos_back(int64_t x)
 MotionGenerator::MotionGenerator()
 {
   dt=1;//float_to_scaled_int(1/1000.0); //ms
-  maxVel=0;
+	maxVel=0;
   maxAcc=0;
 
   pos     = 0;
@@ -163,79 +162,79 @@ void  MotionGenerator::follow(float x,float v)
 }
 
 float MotionGenerator::update(float posRef) {
-  int64_t PRS=convert_pos(posRef);
-  if (oldPosRef != PRS || force_recalc)  // reference changed
-  {
-    isFinished = false;
+	int64_t PRS=convert_pos(posRef);
+	if (oldPosRef != PRS || force_recalc)  // reference changed
+	{
+		isFinished = false;
    force_recalc=false;
-    // Shift state variables
-    oldPosRef = PRS; 
-    oldPos = pos; 
-    oldVel = vel;
-    t = 0;
-    
-    // Calculate braking time and distance (in case is neeeded)
-    tBrk = abs(oldVel) / maxAcc;
-    dBrk = tBrk * abs(oldVel) / 2;
-    
-    // Caculate Sign of motion
-    signM = sign(PRS - (oldPos + sign(oldVel)*dBrk));
+		// Shift state variables
+		oldPosRef = PRS; 
+		oldPos = pos; 
+		oldVel = vel;
+		t = 0;
+		
+		// Calculate braking time and distance (in case is neeeded)
+		tBrk = abs(oldVel) / maxAcc;
+		dBrk = tBrk * abs(oldVel) / 2;
+		
+		// Caculate Sign of motion
+		signM = sign(PRS - (oldPos + sign(oldVel)*dBrk));
     signMacc=signM;
-    
-    if (signM != sign(oldVel))  // means brake is needed
-    {
-      tAcc = (maxVel / maxAcc);
-      dAcc = tAcc * (maxVel / 2);
-    }
-    else
-    {
-      tBrk = 0;
-      dBrk = 0;
-      tAcc = (abs(maxVel - abs(oldVel)) / maxAcc);
-      dAcc = tAcc * (maxVel + abs(oldVel)) / 2;
+		
+		if (signM != sign(oldVel))  // means brake is needed
+		{
+			tAcc = (maxVel / maxAcc);
+			dAcc = tAcc * (maxVel / 2);
+		}
+		else
+		{
+			tBrk = 0;
+			dBrk = 0;
+			tAcc = (abs(maxVel - abs(oldVel)) / maxAcc);
+			dAcc = tAcc * (maxVel + abs(oldVel)) / 2;
      if (maxVel<abs(oldVel))//Need to decel in accel phase:
         signMacc=signMacc*-1;
-    }
-    
-    // Calculate total distance to go after braking
-    dTot = abs(PRS - oldPos + signM*dBrk);
-    
-    tDec = maxVel / maxAcc;
-    dDec = tDec * (maxVel) / 2;
-    dVel = dTot - (dAcc + dDec);
-    tVel = (dVel / maxVel);
-    
-    if (tVel > 0)    // trapezoidal shape
-      shape = true;
-    else             // triangular shape
-    {
-      shape = false;
-      // Recalculate distances and periods
-      if (signM != sign(oldVel))  // means brake is needed
-      {
-        velSt = sqrt(maxAcc*(dTot));
-        tAcc = ((velSt / maxAcc));
-        dAcc = tAcc * (velSt / 2);
-      }
-      else
-      {
-        tBrk = 0;
-        dBrk = 0;
-        dTot = abs(PRS - oldPos);      // recalculate total distance
-        velSt = sqrt((oldVel*oldVel)/2 + maxAcc*dTot);
-        tAcc = ((velSt - abs(oldVel)) / maxAcc);
-        dAcc = tAcc * (velSt + abs(oldVel)) / 2;
-      }
-      tDec = (velSt / maxAcc);
-      dDec = (tDec * (velSt) / 2);
-    }
-    
-  }
-  
-  t = t+dt;
-  calculateTrapezoidalProfile(PRS);
+		}
+		
+		// Calculate total distance to go after braking
+		dTot = abs(PRS - oldPos + signM*dBrk);
+		
+		tDec = maxVel / maxAcc;
+		dDec = tDec * (maxVel) / 2;
+		dVel = dTot - (dAcc + dDec);
+		tVel = (dVel / maxVel);
+		
+		if (tVel > 0)    // trapezoidal shape
+			shape = true;
+		else             // triangular shape
+		{
+			shape = false;
+			// Recalculate distances and periods
+			if (signM != sign(oldVel))  // means brake is needed
+			{
+				velSt = sqrt(maxAcc*(dTot));
+				tAcc = ((velSt / maxAcc));
+				dAcc = tAcc * (velSt / 2);
+			}
+			else
+			{
+				tBrk = 0;
+				dBrk = 0;
+				dTot = abs(PRS - oldPos);      // recalculate total distance
+				velSt = sqrt((oldVel*oldVel)/2 + maxAcc*dTot);
+				tAcc = ((velSt - abs(oldVel)) / maxAcc);
+				dAcc = tAcc * (velSt + abs(oldVel)) / 2;
+			}
+			tDec = (velSt / maxAcc);
+			dDec = (tDec * (velSt) / 2);
+		}
+		
+	}
+	
+	t = t+dt;
+	calculateTrapezoidalProfile(PRS);
 
-  return convert_pos_back(pos);
+	return convert_pos_back(pos);
 }
 
 bool MotionGenerator::isAccelerating(){
@@ -246,57 +245,57 @@ bool MotionGenerator::isMoving(){
 }
 
 void MotionGenerator::calculateTrapezoidalProfile(int64_t posRef) {
-  
-  if (shape)   // trapezoidal shape
-  {
-    if (t <= (tBrk+tAcc))
-    {
-      pos = oldPos + oldVel*t + signMacc * (maxAcc/2)*t*t;
-      vel = oldVel + signMacc * maxAcc*t;
-      acc = signMacc * maxAcc;
-    }
-    else if (t > (tBrk+tAcc) && t < (tBrk+tAcc+tVel))
-    {
-      pos = oldPos + signM * (-dBrk + dAcc + maxVel*(t-tBrk-tAcc));
-      vel = signM * maxVel;
-      acc = 0;
-    }
-    else if (t >= (tBrk+tAcc+tVel) && t < (tBrk+tAcc+tVel+tDec))
-    {
-      pos = oldPos + signM * (-dBrk + dAcc + dVel + maxVel*(t-tBrk-tAcc-tVel) - (maxAcc/2)*(t-tBrk-tAcc-tVel)*(t-tBrk-tAcc-tVel));
-      vel = signM * (maxVel - maxAcc*(t-tBrk-tAcc-tVel));
-      acc = - signM * maxAcc;
-    }
-    else
-    {
-      pos = posRef;
-      vel = 0;
-      acc = 0;
-      isFinished = true;
-    }
-  }
-  else            // triangular shape
-  {
-    if (t <= (tBrk+tAcc))
-    {
-      pos = oldPos + oldVel*t + signM * (maxAcc/2)*t*t;
-      vel = oldVel + signM * maxAcc*t;
-      acc = signM * maxAcc;
-    }
-    else if (t > (tBrk+tAcc) && t < (tBrk+tAcc+tDec))
-    {
-      pos = oldPos + signM * (-dBrk + dAcc + velSt*(t-tBrk-tAcc) - (maxAcc/2)*(t-tBrk-tAcc)*(t-tBrk-tAcc));
-      vel = signM * (velSt - maxAcc*(t-tBrk-tAcc));
-      acc = - signM * maxAcc;
-    }
-    else
-    {
-      pos = posRef;
-      vel = 0;
-      acc = 0;
-      isFinished = true;
-    }
-    
-  }
+	
+	if (shape)   // trapezoidal shape
+	{
+		if (t <= (tBrk+tAcc))
+		{
+			pos = oldPos + oldVel*t + signMacc * (maxAcc/2)*t*t;
+			vel = oldVel + signMacc * maxAcc*t;
+			acc = signMacc * maxAcc;
+		}
+		else if (t > (tBrk+tAcc) && t < (tBrk+tAcc+tVel))
+		{
+			pos = oldPos + signM * (-dBrk + dAcc + maxVel*(t-tBrk-tAcc));
+			vel = signM * maxVel;
+			acc = 0;
+		}
+		else if (t >= (tBrk+tAcc+tVel) && t < (tBrk+tAcc+tVel+tDec))
+		{
+			pos = oldPos + signM * (-dBrk + dAcc + dVel + maxVel*(t-tBrk-tAcc-tVel) - (maxAcc/2)*(t-tBrk-tAcc-tVel)*(t-tBrk-tAcc-tVel));
+			vel = signM * (maxVel - maxAcc*(t-tBrk-tAcc-tVel));
+			acc = - signM * maxAcc;
+		}
+		else
+		{
+			pos = posRef;
+			vel = 0;
+			acc = 0;
+			isFinished = true;
+		}
+	}
+	else            // triangular shape
+	{
+		if (t <= (tBrk+tAcc))
+		{
+			pos = oldPos + oldVel*t + signM * (maxAcc/2)*t*t;
+			vel = oldVel + signM * maxAcc*t;
+			acc = signM * maxAcc;
+		}
+		else if (t > (tBrk+tAcc) && t < (tBrk+tAcc+tDec))
+		{
+			pos = oldPos + signM * (-dBrk + dAcc + velSt*(t-tBrk-tAcc) - (maxAcc/2)*(t-tBrk-tAcc)*(t-tBrk-tAcc));
+			vel = signM * (velSt - maxAcc*(t-tBrk-tAcc));
+			acc = - signM * maxAcc;
+		}
+		else
+		{
+			pos = posRef;
+			vel = 0;
+			acc = 0;
+			isFinished = true;
+		}
+		
+	}
 
 } 

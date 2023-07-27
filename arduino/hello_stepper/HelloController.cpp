@@ -416,6 +416,14 @@ void handleNewRPC()
 
 ///////////////////////// Status ///////////////////////////
 
+float mpos_d;
+float x_des_incr=0;
+#define STIFFNESS_SLEW .1
+float stiffness_target=0;
+
+float eff_max=0;
+float xdes=0;
+
 void update_status()
 {
   //noInterrupts();
@@ -453,9 +461,13 @@ void update_status()
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 
+  stat.debug=mg.dt;
    if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
     //Example of setting trace debug data
+    
+    trace_manager.debug_msg.f_1= xdes; //mg.pos;//
+    trace_manager.debug_msg.f_2=mg.t;
     trace_manager.debug_msg.f_3=stat.pos;
     trace_manager.update_trace_debug();
   }
@@ -481,13 +493,8 @@ void update_status()
 ///////////////////////// Controller Loop  ///////////////////////////
 //Called every control cycle waypoint TC4 interrupt
 
-float mpos_d;
-float x_des_incr=0;
-#define STIFFNESS_SLEW .1
-float stiffness_target=0;
 
-float eff_max=0;
-float xdes=0;
+bool dirty_enable_trace=false;
 
 void stepHelloController()
 {
@@ -521,7 +528,8 @@ void stepHelloController()
 
         if (trg.data & TRIGGER_ENABLE_TRACE)
         {
-            trace_manager.enable_trace();
+          dirty_enable_trace=true;
+            //trace_manager.enable_trace();
         }
 
         if (trg.data & TRIGGER_DISABLE_TRACE)
@@ -700,7 +708,11 @@ void stepHelloController()
       if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
 
-        
+        if (dirty_enable_trace)
+        {
+          trace_manager.enable_trace();
+          dirty_enable_trace=false;
+        }
         
         diag_waiting_on_sync=false;
 
@@ -755,13 +767,13 @@ void stepHelloController()
               break; 
             case MODE_POS_TRAJ:
               mg.safe_switch_on(yw,v);
-              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
-              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+              mg.setMaxVelocity(abs(cmd_in.v_des));
+              mg.setMaxAcceleration(abs(cmd_in.a_des));
               break; 
             case MODE_POS_TRAJ_INCR:
               mg.safe_switch_on(yw,v);
-              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
-              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
+              mg.setMaxVelocity(abs(cmd_in.v_des));
+              mg.setMaxAcceleration(abs(cmd_in.a_des));
               break; 
             case MODE_POS_TRAJ_WAYPOINT:
               eff_max=0;
@@ -1019,7 +1031,7 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
-            stat.debug=abs((rad_to_deg(cmd.x_des) -yw));
+            //stat.debug=abs((rad_to_deg(cmd.x_des) -yw));
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
