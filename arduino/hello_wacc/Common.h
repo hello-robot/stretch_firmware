@@ -27,8 +27,9 @@
 // Version 0.3.1: Added Watchdog timer (WDT) reset feature
 // Version 0.4.0: Move to fast transport V1 and P3
 // Version 0.5.0: Move to support for Transport V1
+// Version 0.5.1: Fix trace rollover issue
 
-#define FIRMWARE_VERSION "Wacc.v0.5.0p3"
+#define FIRMWARE_VERSION "Wacc.v0.5.1p3"
 
 
 

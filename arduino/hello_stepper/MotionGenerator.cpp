@@ -41,11 +41,64 @@ SOFTWARE.
 #include "Parameters.h"
 #include "HelloController.h"
 
+
+#define FLOAT_SCALE_MS 1000
+#define FLOAT_SCALE_US 1000000
+#define FLOAT_SCALE_NS 1000000000
+
+//Convert a float to 64 bit int
+//Float has 6-7 digits of precision
+//Drop digits beyond this and scale by 10^9
+int64_t float_to_scaled_int64(float x)
+{
+  int64_t xx = (int64_t)(FLOAT_SCALE_US*x+0.4999999);
+  return xx*1000;
+}
+
+//Convert radians to nano-radians
+int64_t rad_TO_nano_rad(float x)
+{
+  int64_t nano_rad = float_to_scaled_int64(x);
+  return nano_rad;
+}
+
+
+
+
+//Convert a radians/sec^2 to nano-radians/ms^2
+int64_t convert_accel(float x)
+{
+  int64_t nano_rad_per_s2 = rad_TO_nano_rad(x);
+  int64_t nano_rad_per_ms2 = nano_rad_per_s2/FLOAT_SCALE_US;
+  return nano_rad_per_ms2;
+}
+
+//Convert radians/s to nano-radians/ms
+int64_t convert_vel(float x)
+{
+  int64_t nano_rad_per_s = rad_TO_nano_rad(x);
+  int64_t nano_rad_per_ms=nano_rad_per_s/FLOAT_SCALE_MS;
+  return nano_rad_per_ms;
+}
+
+int64_t convert_pos(float x)
+{
+  return rad_TO_nano_rad(x);
+}
+
+float convert_pos_back(int64_t x)
+{
+  float f = (float)(x/FLOAT_SCALE_MS);
+  return f/FLOAT_SCALE_US;
+}
+
+
+
  
 MotionGenerator::MotionGenerator()
 {
-  dt=1/FsCtrl;
-	maxVel=0;
+  dt=1; //1/FsCtrl; (1ms at 1Khz update)
+  maxVel=0;
   maxAcc=0;
 
   pos     = 0;
@@ -77,12 +130,12 @@ MotionGenerator::MotionGenerator()
 
 
 void MotionGenerator::setMaxVelocity(float aMaxVel) {
-  maxVel = abs(aMaxVel);
+  maxVel = abs(convert_vel(aMaxVel));
   force_recalc=true;
 }
 
 void MotionGenerator::setMaxAcceleration(float aMaxAcc) {
-  maxAcc = abs(aMaxAcc);
+  maxAcc = abs(convert_accel(aMaxAcc));
   force_recalc=true;
 }
 
@@ -99,27 +152,27 @@ short int MotionGenerator::sign(float aVal) {
 
 void  MotionGenerator::safe_switch_on(float x,float v)
 {
-  vel = v;
-  pos = x;
+  vel = convert_vel(v);
+  pos = convert_pos(x);
   oldPosRef = 0;
   force_recalc=true;
 }
 
 void  MotionGenerator::follow(float x,float v)
 {
-  vel = v;
-  pos = x;
-  oldPosRef = x;
+  vel = convert_vel(v);
+  pos = convert_pos(x);
+  oldPosRef = pos;
 }
 
-float MotionGenerator::update(float posRef) {	
-		
-	if (oldPosRef != posRef || force_recalc)  // reference changed
+float MotionGenerator::update(float posRef) {
+    int64_t PRS=convert_pos(posRef);
+	if (oldPosRef != PRS || force_recalc)  // reference changed
 	{
 		isFinished = false;
    force_recalc=false;
 		// Shift state variables
-		oldPosRef = posRef; 
+		oldPosRef = PRS;
 		oldPos = pos; 
 		oldVel = vel;
 		t = 0;
@@ -129,7 +182,7 @@ float MotionGenerator::update(float posRef) {
 		dBrk = tBrk * abs(oldVel) / 2;
 		
 		// Caculate Sign of motion
-		signM = sign(posRef - (oldPos + sign(oldVel)*dBrk));
+		signM = sign(PRS - (oldPos + sign(oldVel)*dBrk));
     signMacc=signM;
 		
 		if (signM != sign(oldVel))  // means brake is needed
@@ -148,7 +201,7 @@ float MotionGenerator::update(float posRef) {
 		}
 		
 		// Calculate total distance to go after braking
-		dTot = abs(posRef - oldPos + signM*dBrk);
+		dTot = abs(PRS - oldPos + signM*dBrk);
 		
 		tDec = maxVel / maxAcc;
 		dDec = tDec * (maxVel) / 2;
@@ -171,8 +224,8 @@ float MotionGenerator::update(float posRef) {
 			{
 				tBrk = 0;
 				dBrk = 0;
-				dTot = abs(posRef - oldPos);      // recalculate total distance
-				velSt = sqrt(0.5*oldVel*oldVel + maxAcc*dTot);
+				dTot = abs(PRS - oldPos);      // recalculate total distance
+                velSt = sqrt((oldVel*oldVel)/2 + maxAcc*dTot);
 				tAcc = (velSt - abs(oldVel)) / maxAcc;
 				dAcc = tAcc * (velSt + abs(oldVel)) / 2;
 			}
@@ -183,9 +236,9 @@ float MotionGenerator::update(float posRef) {
 	}
 	
 	t = t+dt;
-	calculateTrapezoidalProfile(posRef);
+	calculateTrapezoidalProfile(PRS);
 
-	return pos;
+	return convert_pos_back(pos);
 }
 
 bool MotionGenerator::isAccelerating(){
@@ -195,13 +248,13 @@ bool MotionGenerator::isMoving(){
   return vel!=0;
 }
 
-void MotionGenerator::calculateTrapezoidalProfile(float posRef) {
+void MotionGenerator::calculateTrapezoidalProfile(int64_t posRef) {
 	
 	if (shape)   // trapezoidal shape
 	{
 		if (t <= (tBrk+tAcc))
 		{
-			pos = oldPos + oldVel*t + signMacc * 0.5*maxAcc*t*t;
+			pos = oldPos + oldVel*t + signMacc * (maxAcc/2)*t*t;
 			vel = oldVel + signMacc * maxAcc*t;
 			acc = signMacc * maxAcc;
 		}
@@ -213,7 +266,7 @@ void MotionGenerator::calculateTrapezoidalProfile(float posRef) {
 		}
 		else if (t >= (tBrk+tAcc+tVel) && t < (tBrk+tAcc+tVel+tDec))
 		{
-			pos = oldPos + signM * (-dBrk + dAcc + dVel + maxVel*(t-tBrk-tAcc-tVel) - 0.5*maxAcc*(t-tBrk-tAcc-tVel)*(t-tBrk-tAcc-tVel));
+			pos = oldPos + signM * (-dBrk + dAcc + dVel + maxVel*(t-tBrk-tAcc-tVel) - (maxAcc/2)*(t-tBrk-tAcc-tVel)*(t-tBrk-tAcc-tVel));
 			vel = signM * (maxVel - maxAcc*(t-tBrk-tAcc-tVel));
 			acc = - signM * maxAcc;
 		}
@@ -229,13 +282,13 @@ void MotionGenerator::calculateTrapezoidalProfile(float posRef) {
 	{
 		if (t <= (tBrk+tAcc))
 		{
-			pos = oldPos + oldVel*t + signM * 0.5*maxAcc*t*t;
+			pos = oldPos + oldVel*t + signM * (maxAcc/2)*t*t;
 			vel = oldVel + signM * maxAcc*t;
 			acc = signM * maxAcc;
 		}
 		else if (t > (tBrk+tAcc) && t < (tBrk+tAcc+tDec))
 		{
-			pos = oldPos + signM * (-dBrk + dAcc + velSt*(t-tBrk-tAcc) - 0.5*maxAcc*(t-tBrk-tAcc)*(t-tBrk-tAcc));
+			pos = oldPos + signM * (-dBrk + dAcc + velSt*(t-tBrk-tAcc) - (maxAcc/2)*(t-tBrk-tAcc)*(t-tBrk-tAcc));
 			vel = signM * (velSt - maxAcc*(t-tBrk-tAcc));
 			acc = - signM * maxAcc;
 		}

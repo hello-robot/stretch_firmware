@@ -30,8 +30,9 @@
 // Version 0.3.1: Added Watchdog timer (WDT) reset feture, halved trace buffer
 // Version 0.4.0: Move to fast motor sync, status_aux, and P3
 // Version 0.5.0: Move to support for Transport V1
+// Version 0.5.1: Fix trace rollover issue
 
-#define FIRMWARE_VERSION "Pimu.v0.5.0p3"
+#define FIRMWARE_VERSION "Pimu.v0.5.1p3"
 
 #define FS 100 //Loop rate in Hz for TC5
 

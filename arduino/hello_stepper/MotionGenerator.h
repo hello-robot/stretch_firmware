@@ -53,36 +53,35 @@ class MotionGenerator {
 		void setMaxAcceleration(float aMaxAcc);
 		bool isAccelerating();
     bool isMoving();
-	
-	private:					
-		void calculateTrapezoidalProfile(float);	
+						
+		void calculateTrapezoidalProfile(int64_t);
 		short int sign(float aVal);		
 		
-		float maxVel;
-		float maxAcc;		
+		int64_t maxVel;
+		int64_t maxAcc;
 
-  	float pos;
-  	float vel;
-  	float acc;
-  	float oldPos;
-  	float oldPosRef;
-  	float oldVel;
+  	int64_t pos;
+  	int64_t vel;
+  	int64_t acc;
+  	int64_t oldPos;
+  	int64_t oldPosRef;
+  	int64_t oldVel;
   
-  	float dBrk;
-  	float dAcc;
-  	float dVel;
-  	float dDec;
-  	float dTot;
+  	int64_t dBrk;
+  	int64_t dAcc;
+  	int64_t dVel;
+  	int64_t dDec;
+  	int64_t dTot;
   
-  	float tBrk;
-  	float tAcc;
-  	float tVel;
-  	float tDec;
+  	int64_t tBrk;
+  	int64_t tAcc;
+  	int64_t tVel;
+  	int64_t tDec;
    
-    float dt; //time per cycle
-    float t;  //time since last set point
+    int64_t dt; //time per cycle
+    int64_t t;  //time since last set point
 
-    float velSt;
+    int64_t velSt;
   	short int signM;      	// 1 = positive change, -1 = negative change
     short int signMacc;
   	bool shape;      	// true = trapezoidal, false = triangular

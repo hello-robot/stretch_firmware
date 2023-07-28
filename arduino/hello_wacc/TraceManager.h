@@ -76,13 +76,13 @@ class TraceManager {
     
     bool trace_on;
     
-   private:
     uint8_t raw_data[N_TRACE_RAW];
     int trace_write_idx;
     int trace_read_idx;
     bool reading_trace;
     int n_trace_read;
     int idx_trace_print;
+    int n_trace_write;
     
 };
 

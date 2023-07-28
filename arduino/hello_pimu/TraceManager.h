@@ -82,6 +82,7 @@ class TraceManager {
     int trace_read_idx;
     bool reading_trace;
     int n_trace_read;
+    int n_trace_write;
     int idx_trace_print;
     
 };

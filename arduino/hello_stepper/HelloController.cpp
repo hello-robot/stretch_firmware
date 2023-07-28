@@ -1,4 +1,5 @@
 /*
+/*
   -------------------------------------------------------------
   Hello Robot - Hello Stepper
 
@@ -528,6 +529,8 @@ if (trace_manager.trace_on)
 }
 
 
+
+
 ///////////////////////// Controller Loop  ///////////////////////////
 //Called every control cycle waypoint TC4 interrupt
 
@@ -538,6 +541,36 @@ float stiffness_target=0;
 
 float eff_max=0;
 float xdes=0;
+
+
+//Example of setting trace data
+void update_trace()
+{
+
+  stat.debug=mg.dt;
+   if(TRACE_TYPE==TRACE_TYPE_DEBUG)
+  {
+    trace_manager.debug_msg.f_1= xdes;
+    trace_manager.debug_msg.f_2=mg.t;
+    trace_manager.debug_msg.f_3=stat.pos;
+    trace_manager.debug_msg.u8_1=trace_manager.trace_write_idx;
+    trace_manager.debug_msg.u8_2=trace_manager.trace_on;
+    trace_manager.update_trace_debug();
+  }
+
+  if(TRACE_TYPE==TRACE_TYPE_PRINT)
+  {
+   sprintf(trace_manager.print_msg.msg, "Pos: %d\n",(int)stat.pos);
+   trace_manager.print_msg.x=stat.pos;
+   trace_manager.print_msg.timestamp=stat.timestamp;
+   trace_manager.update_trace_print();
+  }
+
+  if(TRACE_TYPE==TRACE_TYPE_STATUS)
+  {
+    trace_manager.update_trace_status(&stat_out);
+  }
+}
 
 
 void stepHelloController()
@@ -1214,6 +1247,7 @@ void stepHelloController()
   first_filter=false;
 
 update_status();
+update_trace();
  ctrl_cycle_cnt++;
 }
 

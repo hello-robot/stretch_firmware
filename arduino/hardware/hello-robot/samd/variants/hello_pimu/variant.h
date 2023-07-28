@@ -116,6 +116,12 @@ static const uint8_t D10  = PIN_D10;
 /*
  * Serial interfaces
  */
+ // Serial (EDBG)
+#define PIN_SERIAL_RX       (31ul)
+#define PIN_SERIAL_TX       (30ul)
+#define PAD_SERIAL_TX       (UART_TX_PAD_2)
+#define PAD_SERIAL_RX       (SERCOM_RX_PAD_3)
+
 // Serial1
 #define PIN_SERIAL1_RX       (0ul)
 #define PIN_SERIAL1_TX       (1ul)
@@ -183,6 +189,7 @@ extern SERCOM sercom3;
 extern SERCOM sercom4;
 extern SERCOM sercom5;
 
+extern Uart Serial;
 extern Uart Serial1;
 
 //Hello Hack for Serial based libraries (Framer) to work with Zero.
@@ -205,7 +212,7 @@ extern Uart Serial1;
 //
 // SERIAL_PORT_HARDWARE_OPEN  Hardware serial ports which are open for use.  Their RX & TX
 //                            pins are NOT connected to anything by default.
-#define SERIAL_PORT_USBVIRTUAL      Serial
+#define SERIAL_PORT_USBVIRTUAL      SerialUSB
 #define SERIAL_PORT_MONITOR         Serial
 // Serial has no physical pins broken out, so it's not listed as HARDWARE port
 #define SERIAL_PORT_HARDWARE        Serial1

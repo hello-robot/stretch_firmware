@@ -30,7 +30,9 @@
 // Version 0.3.1: Added Watchdog timer (WDT) reset feture, halved trace buffer
 // Version 0.4.0: Move to fast motor sync, status_debug, drop traj error msg, and P3
 // Version 0.5.0: Move to support for Transport V1
-#define FIRMWARE_VERSION_HR "Stepper.v0.5.0p3"
+// Version 0.5.1: Move to int64_t for motion generator / fix trace rollover issue
+
+#define FIRMWARE_VERSION_HR "Stepper.v0.5.1p3"
 
 /////////////////////////////////////////////////////////////////
 
