@@ -123,6 +123,10 @@ MotionGenerator::MotionGenerator()
   shape = true;   // true = trapezoidal, false = triangular
   isFinished = false;
   force_recalc=false;
+
+//mg2_idx=0;
+
+
 }
 
 
@@ -162,10 +166,14 @@ void  MotionGenerator::follow(float x,float v)
   oldPosRef = pos;
 }
 
+int update_itr=0;
 float MotionGenerator::update(float posRef) {
   int64_t PRS=convert_pos(posRef);
   if (oldPosRef != PRS || force_recalc)  // reference changed
   {
+    //mg2_idx=0;
+
+
     isFinished = false;
    force_recalc=false;
     // Shift state variables
@@ -233,7 +241,38 @@ float MotionGenerator::update(float posRef) {
   }
   
   t = t+dt;
+  update_itr++;
   calculateTrapezoidalProfile(PRS);
+
+  if(update_itr%10==0)
+  {
+    /*if(mg2_idx<5)
+    {
+        mg2_status[mg2_idx].t=t;  //time since last set point
+        mg2_status[mg2_idx].dt=dt; //time per cycle 
+        mg2_status[mg2_idx].maxVel=maxVel;
+        mg2_status[mg2_idx].maxAcc=maxAcc;
+        mg2_status[mg2_idx].pos=pos;
+        mg2_status[mg2_idx].vel=vel;
+        mg2_status[mg2_idx].acc=acc;
+        mg2_status[mg2_idx].oldPos=oldPos;
+        mg2_status[mg2_idx].oldPosRef=oldPosRef;
+        mg2_status[mg2_idx].oldVel=oldVel;
+        mg2_status[mg2_idx].dBrk=dBrk;
+        mg2_status[mg2_idx].dAcc=dAcc;
+        mg2_status[mg2_idx].dVel=dVel;
+        mg2_status[mg2_idx].dDec=dDec;
+        mg2_status[mg2_idx].dTot=dTot;
+        mg2_status[mg2_idx].tBrk=tBrk;
+        mg2_status[mg2_idx].tAcc=tAcc;
+        mg2_status[mg2_idx].tVel=tVel;
+        mg2_status[mg2_idx].tDec=tDec;
+        mg2_status[mg2_idx].velSt=velSt;
+        mg2_status[mg2_idx].xdes=convert_pos_back(pos);
+      mg2_idx++;
+      
+    }*/
+  }
 
   return convert_pos_back(pos);
 }

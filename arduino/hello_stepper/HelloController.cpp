@@ -107,9 +107,9 @@ void update_status();
 VelocityGenerator vg;
 MotionGenerator mg;
 
-MotionGenerator mg2;
-MG2Command mg2_cmd;
-MG2Status mg2_status;
+int mg2_idx=0;
+MG2Command mg2_cmd[5];
+MG2Status mg2_status[5];
 
 float vs=0;
 float eff=0;
@@ -304,46 +304,24 @@ void stepHelloControllerRPC()
 }
 
 
-
+int mg2_read_idx=0;
 void handleNewRPC()
 {
   int ll,idx;
 
   switch(rpc_in[0])
   {
-      case RPC_STEP_MG2:
+     case RPC_STEP_MG2:
           memcpy(&mg2_cmd, rpc_in+1, sizeof(MG2Command)); //copy in the command
-          mg2.setMaxVelocity(mg2_cmd.v_des);
-          mg2.setMaxAcceleration(mg2_cmd.a_des);
-          mg2.follow(0,0);
+          mg2_read_idx=0;
           rpc_out[0]=RPC_REPLY_STEP_MG2;
           num_byte_rpc_out=1;
           break;
      
      case RPC_READ_MG2_STATUS:
-          mg2_status.t=mg2.t;  //time since last set point
-          mg2_status.dt=mg2.dt; //time per cycle 
-          mg2_status.maxVel=mg2.maxVel;
-          mg2_status.maxAcc=mg2.maxAcc;
-          mg2_status.pos=mg2.pos;
-          mg2_status.vel=mg2.vel;
-          mg2_status.acc=mg2.acc;
-          mg2_status.oldPos=mg2.oldPos;
-          mg2_status.oldPosRef=mg2.oldPosRef;
-          mg2_status.oldVel=mg2.oldVel;
-          mg2_status.dBrk=mg2.dBrk;
-          mg2_status.dAcc=mg2.dAcc;
-          mg2_status.dVel=mg2.dVel;
-          mg2_status.dDec=mg2.dDec;
-          mg2_status.dTot=mg2.dTot;
-          mg2_status.tBrk=mg2.tBrk;
-          mg2_status.tAcc=mg2.tAcc;
-          mg2_status.tVel=mg2.tVel;
-          mg2_status.tDec=mg2.tDec;
-          mg2_status.velSt=mg2.velSt;
-          mg2_status.xdes=mg2.update(mg2_cmd.x_des);
+          //memcpy(rpc_out + 1, (uint8_t *) (&(mg.mg2_status[mg2_read_idx])), sizeof(MG2Status)); //Collect the status data
+          mg2_read_idx=min(4,mg2_read_idx+1);
           rpc_out[0]=RPC_REPLY_READ_MG2_STATUS;
-          memcpy(rpc_out + 1, (uint8_t *) (&mg2_status), sizeof(MG2Status)); //Collect the status data
           num_byte_rpc_out=sizeof(MG2Status)+1;
           break;
 
@@ -452,6 +430,7 @@ void handleNewRPC()
   };
 }
 
+
 ///////////////////////// Status ///////////////////////////
 
 float mpos_d;
@@ -499,14 +478,30 @@ void update_status()
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 
+
+}
+
+///////////////////////// Controller Loop  ///////////////////////////
+//Called every control cycle waypoint TC4 interrupt
+
+
+int cycle_cnt=0;
+
+
+
+void update_trace()
+{
+  
   stat.debug=mg.dt;
    if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
     //Example of setting trace debug data
     
-    trace_manager.debug_msg.f_1= xdes; //mg.pos;//
+    trace_manager.debug_msg.f_1= xdes;//mg.pos;//
     trace_manager.debug_msg.f_2=mg.t;
-    trace_manager.debug_msg.f_3=stat.pos;
+    trace_manager.debug_msg.f_3=cycle_cnt;
+    trace_manager.debug_msg.u8_1=trace_manager.trace_write_idx;
+    trace_manager.debug_msg.u8_2=trace_manager.trace_on;
     trace_manager.update_trace_debug();
   }
 
@@ -523,16 +518,8 @@ void update_status()
   {
     trace_manager.update_trace_status(&stat_out);
   }
-  
-
+  cycle_cnt++;
 }
-
-
-///////////////////////// Controller Loop  ///////////////////////////
-//Called every control cycle waypoint TC4 interrupt
-
-
-bool dirty_enable_trace=false;
 
 void stepHelloController()
 {
@@ -566,8 +553,8 @@ void stepHelloController()
 
         if (trg.data & TRIGGER_ENABLE_TRACE)
         {
-          dirty_enable_trace=true;
-            //trace_manager.enable_trace();
+          cycle_cnt=0;
+          trace_manager.enable_trace();
         }
 
         if (trg.data & TRIGGER_DISABLE_TRACE)
@@ -746,11 +733,7 @@ void stepHelloController()
       if (!sync_manager.sync_mode_enabled || (sync_manager.sync_mode_enabled && sync_manager.motor_sync_triggered) || (sync_manager.sync_mode_enabled && cmd_in.mode == MODE_SAFETY) ) //Don't require sync to go into safety
       {
 
-        if (dirty_enable_trace)
-        {
-          trace_manager.enable_trace();
-          dirty_enable_trace=false;
-        }
+   
         
         diag_waiting_on_sync=false;
 
@@ -805,13 +788,13 @@ void stepHelloController()
               break; 
             case MODE_POS_TRAJ:
               mg.safe_switch_on(yw,v);
-              mg.setMaxVelocity(abs(cmd_in.v_des));
-              mg.setMaxAcceleration(abs(cmd_in.a_des));
+              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_POS_TRAJ_INCR:
               mg.safe_switch_on(yw,v);
-              mg.setMaxVelocity(abs(cmd_in.v_des));
-              mg.setMaxAcceleration(abs(cmd_in.a_des));
+              mg.setMaxVelocity(abs(rad_to_deg(cmd_in.v_des)));
+              mg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_POS_TRAJ_WAYPOINT:
               eff_max=0;
@@ -1213,7 +1196,7 @@ void stepHelloController()
   trg.data=0; //Clear triggers
   first_filter=false;
 
-    
+  update_trace();  
 }
 
 ///////////////////////// Commutation Loop ///////////////////////////

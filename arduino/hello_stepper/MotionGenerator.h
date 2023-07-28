@@ -39,6 +39,8 @@ SOFTWARE.
  
 #include "Arduino.h"
 
+#include "Common.h"
+     
 
 
 class MotionGenerator {		
@@ -56,7 +58,12 @@ class MotionGenerator {
 	
 	int64_t t;  //time since last set point
   int64_t dt; //time per cycle
-  
+
+
+//MG2Status mg2_status[5];
+//int mg2_idx;
+
+
 	//private:					
 		void calculateTrapezoidalProfile(int64_t);
 		short int sign(float aVal);		

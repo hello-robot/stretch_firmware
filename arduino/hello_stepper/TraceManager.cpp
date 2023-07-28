@@ -23,6 +23,7 @@ TraceManager::TraceManager()
     trace_on=false;
     reading_trace=false;
     n_trace_read=0;
+    n_trace_write=0;
 }
 
 void TraceManager::enable_trace()
@@ -32,6 +33,7 @@ void TraceManager::enable_trace()
   memset((uint8_t*)&debug_msg,0,sizeof(DebugTrace));
   memset((uint8_t*)&print_msg,0,sizeof(PrintTrace));
   trace_write_idx=0;
+  n_trace_write=0;
 }
 
 void TraceManager::disable_trace()
@@ -47,6 +49,7 @@ void TraceManager::update_trace_status(Status * stat)
     trace_write_idx=trace_write_idx+1;
     if(trace_write_idx==N_TRACE_STATUS)
       trace_write_idx=0;
+    n_trace_write++;
   }
 }
 
@@ -58,6 +61,7 @@ void TraceManager::update_trace_debug()
     trace_write_idx=trace_write_idx+1;
     if(trace_write_idx==N_TRACE_DEBUG)
       trace_write_idx=0;
+    n_trace_write++;
   }
 }
 
@@ -70,6 +74,7 @@ void TraceManager::update_trace_print()
     trace_write_idx=trace_write_idx+1;
     if(trace_write_idx==N_TRACE_PRINT)
       trace_write_idx=0;
+    n_trace_write++;
   }
 }
 
@@ -91,6 +96,12 @@ int TraceManager::rpc_read(uint8_t * rpc_out)
 
         if(TRACE_TYPE==TRACE_TYPE_PRINT)
           n_trace_read=N_TRACE_PRINT;
+
+        if (n_trace_write<n_trace_read) //Trace buffer hasn't rolled over, then start reading at 0
+        {
+          trace_read_idx=0;
+          n_trace_read=n_trace_write;
+        }
       }
 
       rpc_out[0]=RPC_REPLY_READ_TRACE;
@@ -109,6 +120,7 @@ int TraceManager::rpc_read(uint8_t * rpc_out)
                 
       if(TRACE_TYPE==TRACE_TYPE_DEBUG)
       {
+        DebugTrace * p = (DebugTrace *)&(raw_data[trace_read_idx*sizeof(DebugTrace)]);
         memcpy(rpc_out + 3, (uint8_t *)&(raw_data[trace_read_idx*sizeof(DebugTrace)]), sizeof(DebugTrace)); //Collect the status data
         num_byte_rpc_out=sizeof(DebugTrace)+3;    
         trace_read_idx++;
