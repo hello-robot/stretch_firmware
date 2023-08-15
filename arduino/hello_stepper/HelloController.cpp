@@ -815,8 +815,8 @@ void stepHelloController()
         cmd.stiffness=cmd_in.stiffness;
         cmd.i_contact_pos =cmd_in.i_contact_pos;
         cmd.i_contact_neg =cmd_in.i_contact_neg;
-        g_eff_pos=current_to_effort(abs(cmd.i_contact_pos));
-        g_eff_neg=current_to_effort(-1*abs(cmd.i_contact_neg));
+        g_eff_pos=current_to_effort(cmd.i_contact_pos);
+        g_eff_neg=current_to_effort(cmd.i_contact_neg)
       
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
