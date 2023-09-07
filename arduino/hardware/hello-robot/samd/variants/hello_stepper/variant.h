@@ -101,6 +101,7 @@ extern "C"
 #define BOARD_ID_1          (31ul) //PB23
 #define BOARD_ID_2          (26ul) //PA27
 
+
 #define PIN_D0               (42ul)
 static const uint8_t D0  = PIN_D0;
 
@@ -113,6 +114,7 @@ static const uint8_t RS0  = PIN_RS0;
 static const uint8_t RS1  = PIN_RS1;
 
 #define PIN_SYNC              (3ul) //PA9
+#define PIN_VOLTAGE           (14ul) //PA2
 
 static const uint8_t A0  = PIN_A0;
 static const uint8_t A1  = PIN_A1;

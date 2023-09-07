@@ -31,8 +31,9 @@
 // Version 0.4.0: Move to fast motor sync, status_debug, drop traj error msg, and P3
 // Version 0.5.0: Move to support for Transport V1
 // Version 0.5.1: Move to int64_t for motion generator / fix trace rollover issue
+// Version 0.6.0: Initial production release S3 Prince and protocol P4 (BOARD_VARIANT 3). Add battery voltage reading.
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.5.1p3"
+#define FIRMWARE_VERSION_HR "Stepper.v0.6.0p4"
 
 /////////////////////////////////////////////////////////////////
 
@@ -155,6 +156,7 @@ struct __attribute__ ((packed)) Gains{
   float vpK1;
   float vpK2;
   float vpK3;
+  float voltage_LPF; //Low pass filter roll-off for voltage (Hz)
 };
 
 struct __attribute__ ((packed)) MotionLimits{
@@ -179,6 +181,7 @@ struct __attribute__ ((packed)) Status{
   uint32_t guarded_event;       //counter of guarded events since power-up
   float traj_setpoint;          //Target of waypoint trajectory
   uint16_t traj_id;             //Id of active trajectory segment
+  float voltage;
 };
 
 struct __attribute__ ((packed)) StatusAux{
