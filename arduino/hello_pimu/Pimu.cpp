@@ -154,6 +154,10 @@ void setupBoardVariants()
     digitalWrite(RUNSTOP_OUT, LOW);
     digitalWrite(SYNC_OUT, LOW);
   }
+if (BOARD_VARIANT>=3)
+  {
+
+  }
 }
 
 void setupPimu() {  
@@ -406,7 +410,7 @@ void update_fan()
 void update_imu()
 {
   stat.timestamp= time_manager.current_time_us();  //Tag timestamp just before reading IMU
-  stepIMU();
+  //stepIMU();
   memcpy(&stat.imu,&imu_status, sizeof(IMU_Status));
 }
 ////////////////////////////
@@ -507,7 +511,16 @@ void update_status()
     stat.bump_event_cnt++;
 
   stat.voltage=analog_manager.voltage;
-  stat.current=analog_manager.current;
+  if (BOARD_VARIANT>=3) //with Variant 3 use E-fuse to monitor current.
+  {
+    stat.current=analog_manager.current_efuse;
+    stat.current_charge=analog_manager.current_charge;
+  }
+  else
+  {
+    stat.current=analog_manager.current;
+    stat.current_charge=0; //Not available
+  }
   stat.temp=analog_manager.temp;
 
   stat.state=0;

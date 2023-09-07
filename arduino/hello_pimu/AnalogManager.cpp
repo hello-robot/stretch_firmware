@@ -10,6 +10,7 @@
   --------------------------------------------------------------
 */
 #include "AnalogManager.h"
+#include "Pimu.h"
 #include "Common.h"
 
 AnalogManager analog_manager;
@@ -19,13 +20,18 @@ AnalogManager analog_manager;
 // Use the SAMD21's ISR to transfer ADC results to buffer array in memory
 
 
-#define IDX_ANA_V_BATT 0
-#define IDX_ANA_CLIFF_0 2
-#define IDX_ANA_CLIFF_1 3
-#define IDX_ANA_CLIFF_2 4
-#define IDX_ANA_CLIFF_3 5
-#define IDX_ANA_TEMP 6
-#define IDX_ANA_CURRENT 7
+#define IDX_ANA_V_BATT 0 //AIN0 MUXPOS 0x00
+#define IDX_ANA_CLIFF_0 1 //AIN2 MUXPOS 0x02
+#define IDX_ANA_CLIFF_1 2 //AIN3 MUXPOS 0x03
+#define IDX_ANA_CLIFF_2 3 //AIN4 MUXPOS 0x04
+#define IDX_ANA_CLIFF_3 4 //AIN5 MUXPOS 0x05
+#define IDX_ANA_TEMP 5 //AIN6 MUXPOS 0x06
+#define IDX_ANA_CURRENT 6 //AIN7 MUXPOS 0x07
+#define IDX_ANA_CURRENT_CHARGE 7//AIN18 MUXPOS 0x12
+#define IDX_ANA_CURRENT_EFUSE 8//AIN19 MUXPOS 0x13
+
+
+
 
 
 AnalogManager::AnalogManager(){
@@ -41,6 +47,16 @@ AnalogManager::AnalogManager(){
   first_read_done=0;
   first_config=1;
   adc_input_id=0;
+
+  mux_map[IDX_ANA_V_BATT]=0x00;
+  mux_map[IDX_ANA_CLIFF_0]=0x02;
+  mux_map[IDX_ANA_CLIFF_1]=0x03;
+  mux_map[IDX_ANA_CLIFF_2]=0x04;
+  mux_map[IDX_ANA_CLIFF_3]=0x05;
+  mux_map[IDX_ANA_TEMP]=0x06;
+  mux_map[IDX_ANA_CURRENT]=0x07;
+  mux_map[IDX_ANA_CURRENT_CHARGE]=0x12;
+  mux_map[IDX_ANA_CURRENT_EFUSE]=0x13;
   }
   
 void AnalogManager::update_config(Pimu_Config * cfg_new, Pimu_Config * cfg_old)
@@ -69,6 +85,16 @@ void AnalogManager::update_config(Pimu_Config * cfg_new, Pimu_Config * cfg_old)
   {
     voltage = adcResult[IDX_ANA_V_BATT];
     current = adcResult[IDX_ANA_CURRENT];
+    if (BOARD_VARIANT>=3)
+    {
+        current_efuse = adcResult[IDX_ANA_CURRENT_EFUSE];
+        current_charge = adcResult[IDX_ANA_CURRENT_CHARGE];
+    }
+    else
+    {
+        current_efuse = 0;
+        current_charge = 0;
+    }
     temp =    adcResult[IDX_ANA_TEMP];
     cliff[0] = adcResult[IDX_ANA_CLIFF_0];
     cliff[1] = adcResult[IDX_ANA_CLIFF_1];
@@ -93,11 +119,26 @@ void AnalogManager::step(Pimu_Status * stat, Pimu_Config * cfg)
     cliff[1] = adcResult[IDX_ANA_CLIFF_1];
     cliff[2] = adcResult[IDX_ANA_CLIFF_2];
     cliff[3] = adcResult[IDX_ANA_CLIFF_3];
+    if (BOARD_VARIANT>=3)
+    {
+        current_charge = adcResult[IDX_ANA_CURRENT];
+        current = adcResult[IDX_ANA_CURRENT_EFUSE];
+    }
+    else
+    {
+        current_efuse = 0;
+        current_charge = 0;
+    }
     first_filter=false;
   }
 
   voltage = voltage * voltage_LPFa +  voltage_LPFb* adcResult[IDX_ANA_V_BATT];
   current = current * current_LPFa +  current_LPFb* adcResult[IDX_ANA_CURRENT];
+  if (BOARD_VARIANT>=3)
+    {
+    current_efuse = current_efuse * current_LPFa +  current_LPFb* adcResult[IDX_ANA_CURRENT_EFUSE];
+    current_charge = current_charge * current_LPFa +  current_LPFb* adcResult[IDX_ANA_CURRENT_CHARGE];
+    }
   temp =    temp *    temp_LPFa +     temp_LPFb*    adcResult[IDX_ANA_TEMP];
   cliff[0]= cliff_LPFa*cliff[0] +  cliff_LPFb*adcResult[IDX_ANA_CLIFF_0];
   cliff[1]= cliff_LPFa*cliff[1] +  cliff_LPFb*adcResult[IDX_ANA_CLIFF_1];
@@ -119,7 +160,7 @@ void AnalogManager::step(Pimu_Status * stat, Pimu_Config * cfg)
 void AnalogManager::setupADC()
 {
   //ADC ISR setup
-  ADC->INPUTCTRL.bit.MUXPOS = adc_input_id;                   // Set the analog input to A0
+  ADC->INPUTCTRL.bit.MUXPOS = mux_map[adc_input_id];                
   while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization
   //SAMPLEN 5:0 bits, sample time =(samplen+1)*(clk_adc/2)
   ADC->SAMPCTRL.bit.SAMPLEN = 0x07;                  // Set max Sampling Time Length to 4x ADC clock pulse (42us)
@@ -155,7 +196,7 @@ void ADC_Handler()
     }
     ADC->CTRLA.bit.ENABLE = 0;                     // Disable the ADC
     while(ADC->STATUS.bit.SYNCBUSY);               // Wait for synchronization
-    ADC->INPUTCTRL.bit.MUXPOS = analog_manager.adc_input_id;         // Set the analog input channel
+    ADC->INPUTCTRL.bit.MUXPOS = analog_manager.mux_map[analog_manager.adc_input_id];         // Set the analog input channel
     while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization
     ADC->CTRLA.bit.ENABLE = 1;                         // Enable the ADC
     while(ADC->STATUS.bit.SYNCBUSY);                   // Wait for synchronization

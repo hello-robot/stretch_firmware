@@ -15,7 +15,7 @@
 
 #include "Common.h"
 
-#define NUM_ADC_INPUTS 8
+#define NUM_ADC_INPUTS 9
 
 class AnalogManager {    
   public: 
@@ -36,8 +36,11 @@ class AnalogManager {
     bool at_cliff[4];
     float voltage;
     float current;
+    float current_charge;
+    float current_efuse;
     float temp;
     volatile uint16_t adcResult[NUM_ADC_INPUTS] = {};         // ADC results buffer
+    uint8_t mux_map[NUM_ADC_INPUTS];
     uint8_t adc_input_id;
     bool first_read_done;
   private:
