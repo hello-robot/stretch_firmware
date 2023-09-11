@@ -23,6 +23,8 @@
 #include "RunstopManager.h"
 #include "LightBarManager.h"
 #include "TraceManager.h"
+#include "IMU_BNO085.h"
+
 
 #define V_TO_RAW(v) v*1024/20.0 //per circuit
 #define RAW_TO_V(r) (float)r*0.01953125 //20.0/1024.0
@@ -62,6 +64,7 @@ Pimu_Status stat, stat_out;
 Pimu_Status_Aux stat_aux;
 Pimu_Motor_Sync_Reply sync_reply;
 Pimu_Board_Info board_info;
+IMU_Status imu_status;
 LoadTest load_test;
 
 void setupTimer4_and_5();
@@ -154,9 +157,10 @@ void setupBoardVariants()
     digitalWrite(RUNSTOP_OUT, LOW);
     digitalWrite(SYNC_OUT, LOW);
   }
-if (BOARD_VARIANT>=3)
+  if (BOARD_VARIANT>=3)
   {
-
+    pinMode(IMU_BNO085_INT, INPUT_PULLUP);
+    pinMode(IMU_BNO085_RESET, OUTPUT);
   }
 }
 
@@ -391,7 +395,7 @@ void update_config()
 
 
     memcpy(&cfg,&cfg_in,sizeof(Pimu_Config));
-    setIMUCalibration();
+    setIMUCalibration(&cfg);
 }
 ////////////////////////////
 
@@ -410,9 +414,10 @@ void update_fan()
 void update_imu()
 {
   stat.timestamp= time_manager.current_time_us();  //Tag timestamp just before reading IMU
-  //stepIMU();
+  stepIMU(&imu_status);
   memcpy(&stat.imu,&imu_status, sizeof(IMU_Status));
 }
+
 ////////////////////////////
 void update_voltage_monitor()
 {
@@ -507,6 +512,8 @@ void update_cliff_monitor()
 
 void update_status()
 {
+
+  stat.debug=imu_b.irq_cnt;
   if(stat.imu.bump>cfg.bump_thresh)
     stat.bump_event_cnt++;
 

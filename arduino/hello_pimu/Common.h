@@ -129,7 +129,6 @@
 
 
 struct __attribute__ ((packed)) IMU_Status{
-  
   float ax;
   float ay;
   float az;
