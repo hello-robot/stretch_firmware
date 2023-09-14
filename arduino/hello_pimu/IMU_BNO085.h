@@ -34,6 +34,8 @@ class IMU_BNO085{
     volatile bool dirtyAccelerometer;
     volatile bool dirtyMagnetometer;
     volatile bool dirtyGyro;
+    volatile bool dirtyLinearAcc;
+    volatile bool dirtyQuat;
     BNO080 device;
 
 };

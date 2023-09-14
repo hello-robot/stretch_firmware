@@ -31,15 +31,34 @@ IMU_BNO085 imu_b;
 
 // ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void imu_bno085_interrupt_handler()
+
+float ax, ay, az, qx, qy, qz, qw; // (qx, qy, qz, qw = i,j,k, real)
+byte linAccuracy = 0;
+float quatRadianAccuracy = 0;
+byte quatAccuracy = 0;
+
+void interrupt_handler()
 {
     imu_b.irq_cnt++;
      switch (imu_b.device.getReadings())
      {
+        
         case SENSOR_REPORTID_ACCELEROMETER: {
+          
           imu_b.dirtyAccelerometer = 1;
         }
+     
+     case SENSOR_REPORTID_LINEAR_ACCELERATION: {
+        imu_b.dirtyLinearAcc = 1;
+      }
+      break;
+      
+      case SENSOR_REPORTID_ROTATION_VECTOR:
+      case SENSOR_REPORTID_GAME_ROTATION_VECTOR: {
+         imu_b.dirtyQuat = 1;
+      }
         break;
+        
         case SENSOR_REPORTID_GYROSCOPE: {
           imu_b.dirtyGyro = 1;
         }
@@ -76,29 +95,36 @@ void IMU_BNO085::setupIMU()
   //https://github.com/sparkfun/SparkFun_BNO080_Arduino_Library/tree/main
 
  //Reset IMU here (toggle low, high = enabled)(10ms)
-  digitalWrite(IMU_BNO085_RESET, LOW);
-  delay(10);//ms
-  digitalWrite(IMU_BNO085_RESET, HIGH);
+  //digitalWrite(IMU_BNO085_RESET, LOW); 
+  delay(10);//ms  
+  //digitalWrite(IMU_BNO085_RESET, HIGH);
 
   Wire.begin();
   imu_valid=device.begin(0x4A, Wire, IMU_BNO085_INT);
-  if (imu_valid)
+  if (imu_valid)  
   {
       Wire.setClock(400000); //Increase I2C data rate to 400kHz
-      attachInterrupt(digitalPinToInterrupt(IMU_BNO085_INT), imu_bno085_interrupt_handler, FALLING);
+      attachInterrupt(digitalPinToInterrupt(IMU_BNO085_INT), interrupt_handler, FALLING);
       interrupts();
-      device.enableGyroIntegratedRotationVector(10);//RotationVector(10); //Send data update every 10ms
-      //device.enableAccelerometer(10); //Send data update every 10ms
+
+      device.enableLinearAccelerometer(50);  // m/s^2 no gravity, data update every 50 ms
+      device.enableRotationVector(100); //Send data update every 100 ms
+  
+      //device.enableGyroIntegratedRotationVector(100);//RotationVector(10); //Send data update every 10ms
+      //device.enableAccelerometer(50); //Send data update every 10ms
       //device.enableMagnetometer(50); //Send data update every 10ms // cannot be enabled at the same time as RotationVector (will not produce data)
       //device.enableGyro(10); //Send data update every 10ms
       dirtyRotationVector=false;
       dirtyAccelerometer=false;
       dirtyMagnetometer=false;
       dirtyGyro=false;
+      dirtyLinearAcc=false;
+      dirtyQuat=false;
       irq_cnt=0;
+      //imu_b.irq_cnt++;
+      //imu_b.irq_cnt++;
   }
 }
-
 
 void IMU_BNO085::stepIMU(IMU_Status * imu_status)
 {
@@ -106,6 +132,23 @@ void IMU_BNO085::stepIMU(IMU_Status * imu_status)
   if (!imu_valid)
     return;
 
+  if(dirtyLinearAcc)
+  {
+    device.getLinAccel(ax, ay, az, linAccuracy);
+    imu_status->ax = ax;
+    imu_status->ay = ay;
+    imu_status->az = az;
+    dirtyLinearAcc=0;
+  }
+  if(dirtyQuat)
+  {
+    device.getQuat(qx, qy, qz, qw, quatRadianAccuracy, quatAccuracy);
+    imu_status->qx = qx;
+    imu_status->qy = qy;
+    imu_status->qz = qz;
+    imu_status->qw = qw;
+    dirtyQuat=0;
+  }
   if(dirtyAccelerometer)
   {
     imu_status->ax = device.getAccelX();
@@ -148,4 +191,5 @@ void IMU_BNO085::stepIMU(IMU_Status * imu_status)
     
     dirtyRotationVector=0;
   }
+
 }

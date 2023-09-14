@@ -60,10 +60,13 @@ extern "C"
  */
 // #define digitalPinToTimer(P)
 
-// LEDs
+
 #define PIN_LED_13           (24u)
 #define PIN_LED              PIN_LED_13
 #define LED_BUILTIN          PIN_LED_13
+
+#define PIN_IMU_BNO085_RESET (27u) //PA21 27
+#define PIN_IMU_BNO085_INT (17u) //PA13 17
 
 
 #define PIN_PB2 (22u)
