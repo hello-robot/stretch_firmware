@@ -65,9 +65,6 @@ extern "C"
 #define PIN_LED              PIN_LED_13
 #define LED_BUILTIN          PIN_LED_13
 
-#define PIN_IMU_BNO085_RESET (27u) //PA21 27
-#define PIN_IMU_BNO085_INT (17u) //PA13 17
-
 
 #define PIN_PB2 (22u)
 #define PIN_PA20 (25u)
