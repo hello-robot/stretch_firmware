@@ -20,14 +20,14 @@ IMU_BNO085 imu_b;
 
 // ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-//In S3, board is oriented such that
-//Az+/Mz+: Point down to x
-//Ax+/Mx+: Points in direction of  x
-//Ay+/My+: Points to x
+//In SE3, board is oriented such that
+//Az+/Mz+: Point down to ground
+//Ax+/Mx+: Points in direction of arm reach
+//Ay+/My+: Points to back of robot
 
-//Gz+: Base rotates x
-//Gy+: Base rotates x
-//Gx+: Base rotates x
+//Gz+: Base rotates CW
+//Gy+: Base rotates side to side
+//Gx+: Base rotates front to back
 
 // ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -37,6 +37,8 @@ byte linAccuracy = 0;
 float quatRadianAccuracy = 0;
 byte quatAccuracy = 0;
 
+/*
+ * Not working currently, polling instead
 void interrupt_handler()
 {
     imu_b.irq_cnt++;
@@ -77,7 +79,7 @@ void interrupt_handler()
            // Unhandled Input Report
            break;
      }
-}
+}*/
 
 void IMU_BNO085::setIMUCalibration()
 {
@@ -111,9 +113,10 @@ void IMU_BNO085::setupIMU()
       //device.enableRotationVector(100); //Send data update every 100 ms
   
       device.enableGyroIntegratedRotationVector(50);//RotationVector(10); //Send data update every 10ms
-      device.enableAccelerometer(50); //Send data update every 10ms
-      device.enableMagnetometer(50); //Send data update every 10ms // cannot be enabled at the same time as RotationVector (will not produce data)
+      device.enableAccelerometer(50); //Send data update every 50
+      device.enableMagnetometer(50); //Send data update every 50 // cannot be enabled at the same time as RotationVector (will not produce data)
       //device.enableGyro(10); //Send data update every 10ms
+      //device.enableTapDetector(50); //Send data update every 50ms
       dirtyRotationVector=false;
       dirtyAccelerometer=false;
       dirtyMagnetometer=false;
@@ -144,6 +147,15 @@ if (device.dataAvailable() == true)
     imu_status->gz = device.getFastGyroZ();
 
     imu_status->roll=(device.getRoll()) * 180.0 / PI; 
+    
+    //Roll/Pitch/Yaw Euler
+    //Move rollover point out of normal operation
+    //IC is upside down so flip
+    if (imu_status->roll <0)
+      imu_status->roll+=180;
+    else
+      imu_status->roll-=180;
+      
     imu_status->pitch=(device.getPitch()) * 180.0 / PI;;
     imu_status->heading=(device.getYaw()) * 180.0 / PI; ;
 
@@ -154,6 +166,29 @@ if (device.dataAvailable() == true)
     imu_status->mx = device.getMagX();
     imu_status->my = device.getMagY();
     imu_status->mz = device.getMagZ();
+
+    float maxx,maxy,maxz;
+    int i;
+    accel_max_log[0][accel_max_idx]=imu_status->ax;
+    accel_max_log[1][accel_max_idx]=imu_status->ay;
+    accel_max_log[2][accel_max_idx]=imu_status->az;
+
+    accel_max_idx++;
+    if (accel_max_idx==8)
+      accel_max_idx=0;
+    
+    maxx=0;
+    maxy=0;
+    maxz=0;
+    for (i=0;i<8;i++)
+    {
+      maxx=max(maxx,abs(accel_max_log[0][i])); //maximum of last 8 filtered readings
+      maxy=max(maxy,abs(accel_max_log[1][i]));
+      maxz=max(maxz,abs(accel_max_log[2][i]));
+    }
+    imu_status->bump=maxx*maxx+maxy*maxy+maxz*maxz - 96.17; //magnitude minus gravity
+  
+    //imu_status->bump=(float)device.getTapDetector();
   }
     /*
   if(dirtyLinearAcc)

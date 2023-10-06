@@ -37,6 +37,8 @@ class IMU_BNO085{
     volatile bool dirtyLinearAcc;
     volatile bool dirtyQuat;
     BNO080 device;
+    float accel_max_log[3][8];
+    int accel_max_idx=0;
 
 };
 

@@ -218,9 +218,10 @@ void IMU_FXOS8700_FXAS21002::stepIMU(IMU_Status * imu_status)
   imu_status->mx = mx;
   imu_status->my = my;
   imu_status->mz = mz;
-
+  
   //Roll/Pitch/Yaw Euler
-  //PCBA is mounted upside down so flip
+  //Move rollover point out of normal operation
+  //IC is upside down so flip
   if (roll <0)
     roll+=180;
   else

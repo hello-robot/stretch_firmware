@@ -514,9 +514,9 @@ void update_status()
 {
 
   stat.debug=imu_b.irq_cnt;
-  if(stat.imu.bump>cfg.bump_thresh)
-    stat.bump_event_cnt++;
 
+  if(stat.imu.bump>cfg.bump_thresh) //Use the FW tap detector
+      stat.bump_event_cnt++;
   stat.voltage=analog_manager.voltage;
   if (BOARD_VARIANT>=3) //with Variant 3 use E-fuse to monitor current.
   {
