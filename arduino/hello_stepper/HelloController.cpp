@@ -480,6 +480,8 @@ void update_analog_read()
   {
     voltage = voltage * voltage_LPFa +  voltage_LPFb* (analogRead(PIN_VOLTAGE)-VOLTAGE_BIAS);
   }
+  else
+    voltage=0;
 }
 
 void update_status()
