@@ -23,6 +23,8 @@
 #include "RunstopManager.h"
 #include "LightBarManager.h"
 #include "TraceManager.h"
+#include "IMU_BNO085.h"
+
 
 #define V_TO_RAW(v) v*1024/20.0 //per circuit
 #define RAW_TO_V(r) (float)r*0.01953125 //20.0/1024.0
@@ -62,6 +64,7 @@ Pimu_Status stat, stat_out;
 Pimu_Status_Aux stat_aux;
 Pimu_Motor_Sync_Reply sync_reply;
 Pimu_Board_Info board_info;
+IMU_Status imu_status;
 LoadTest load_test;
 
 void setupTimer4_and_5();
@@ -154,6 +157,11 @@ void setupBoardVariants()
     digitalWrite(RUNSTOP_OUT, LOW);
     digitalWrite(SYNC_OUT, LOW);
   }
+  if (BOARD_VARIANT>=3)
+  {
+    pinMode(IMU_BNO085_INT, INPUT_PULLUP);
+    pinMode(IMU_BNO085_RESET, OUTPUT);
+  }
 }
 
 void setupPimu() {  
@@ -217,17 +225,17 @@ void handleNewRPC()
   {
     case RPC_SET_PIMU_CONFIG: 
           memcpy(&cfg_in, rpc_in+1, sizeof(Pimu_Config)); //copy in the config
-          noInterrupts();
+          //noInterrupts();
           update_config();
-          interrupts();
+          //interrupts();
           rpc_out[0]=RPC_REPLY_PIMU_CONFIG;
           num_byte_rpc_out=1;
           break;
     case RPC_SET_PIMU_TRIGGER: 
           memcpy(&trg, rpc_in+1, sizeof(Pimu_Trigger)); //copy in
-          noInterrupts();
+          //noInterrupts();
           handle_trigger();
-          interrupts();
+          //interrupts();
           rpc_out[0]=RPC_REPLY_PIMU_TRIGGER;
           memcpy(rpc_out+1,(uint8_t *)&(trg_in.data),sizeof(uint32_t));
           num_byte_rpc_out=1+sizeof(uint32_t);
@@ -258,7 +266,7 @@ void handleNewRPC()
           sync_reply.motor_sync_cnt=sync_manager.motor_sync_cnt;
            memcpy(rpc_out + 1, (uint8_t *) (&sync_reply), sizeof(Pimu_Motor_Sync_Reply));
           num_byte_rpc_out=sizeof(Pimu_Motor_Sync_Reply)+1;
-          interrupts();
+          //interrupts();
 
           break;
    case RPC_READ_TRACE: 
@@ -387,7 +395,7 @@ void update_config()
 
 
     memcpy(&cfg,&cfg_in,sizeof(Pimu_Config));
-    setIMUCalibration();
+    setIMUCalibration(&cfg);
 }
 ////////////////////////////
 
@@ -406,9 +414,10 @@ void update_fan()
 void update_imu()
 {
   stat.timestamp= time_manager.current_time_us();  //Tag timestamp just before reading IMU
-  stepIMU();
+  stepIMU(&imu_status);
   memcpy(&stat.imu,&imu_status, sizeof(IMU_Status));
 }
+
 ////////////////////////////
 void update_voltage_monitor()
 {
@@ -503,11 +512,22 @@ void update_cliff_monitor()
 
 void update_status()
 {
-  if(stat.imu.bump>cfg.bump_thresh)
-    stat.bump_event_cnt++;
 
+  stat.debug=imu_b.irq_cnt;
+
+  if(stat.imu.bump>cfg.bump_thresh) //Use the FW tap detector
+      stat.bump_event_cnt++;
   stat.voltage=analog_manager.voltage;
-  stat.current=analog_manager.current;
+  if (BOARD_VARIANT>=3) //with Variant 3 use E-fuse to monitor current.
+  {
+    stat.current=analog_manager.current_efuse;
+    stat.current_charge=analog_manager.current_charge;
+  }
+  else
+  {
+    stat.current=analog_manager.current;
+    stat.current_charge=0; //Not available
+  }
   stat.temp=analog_manager.temp;
 
   stat.state=0;

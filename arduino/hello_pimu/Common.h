@@ -31,8 +31,9 @@
 // Version 0.4.0: Move to fast motor sync, status_aux, and P3
 // Version 0.5.0: Move to support for Transport V1
 // Version 0.5.1: Fix trace rollover issue
+// Version 0.6.0: Production release for S3 and P4. Move to new IMU and current monitoring.
 
-#define FIRMWARE_VERSION "Pimu.v0.5.1p3"
+#define FIRMWARE_VERSION "Pimu.v0.6.0p4"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -58,13 +59,15 @@
 
 /////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
-#define ANA_V_BATT A0
-#define ANA_CLIFF_0 A1
-#define ANA_CLIFF_1 A2
-#define ANA_CLIFF_2 A3
-#define ANA_CLIFF_3 A4
-#define ANA_TEMP A5
-#define ANA_CURRENT A6
+#define ANA_V_BATT PIN_A0
+#define ANA_CLIFF_0 PIN_A1
+#define ANA_CLIFF_1 PIN_A2
+#define ANA_CLIFF_2 PIN_A3
+#define ANA_CLIFF_3 PIN_A4
+#define ANA_TEMP PIN_A5
+#define ANA_CURRENT PIN_A6 //Stretch 2 and earlier, shunt on battery supply
+#define ANA_CURRENT_EFUSE PIN_A7//Stretch 3 and later, e-fuse measurement: PA11
+#define ANA_CURRENT_CHARGE PIN_A8//Stretch 3 and later, current supplied by charger : PA10
 
 #define RUNSTOP_SW D0
 #define LED D3
@@ -126,7 +129,6 @@
 
 
 struct __attribute__ ((packed)) IMU_Status{
-  
   float ax;
   float ay;
   float az;
@@ -183,6 +185,8 @@ struct __attribute__ ((packed)) Pimu_Status{
   uint64_t timestamp; //us
   uint16_t bump_event_cnt;
   float debug;
+  float current_charge;
+
 };
 
 //Dummy struct for now, for future expansion

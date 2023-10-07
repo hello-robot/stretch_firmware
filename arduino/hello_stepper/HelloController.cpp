@@ -103,6 +103,9 @@ volatile float efLPF = 0;
 volatile float vsLPF = 0.0;  
 volatile float vsLPFa = 0.0; 
 volatile float vsLPFb = 1.0;
+volatile float voltage_LPFa = 0.0; 
+volatile float voltage_LPFb = 1.0;
+  
 bool first_filter=true;
 
 bool led_on=false;
@@ -231,9 +234,12 @@ void setupBoardVariants()
     pinMode(DRV8842_FAULT_A, INPUT);
     pinMode(DRV8842_FAULT_B, INPUT);
 
-
     //attachInterrupt(digitalPinToInterrupt(BOARD_VARIANT_PIN_RUNSTOP), sync_manager.on_runstop_change, CHANGE);
     //attachInterrupt(digitalPinToInterrupt(PIN_SYNC), sync_manager.on_sync_change, CHANGE);
+  }
+  if (BOARD_VARIANT>=3)
+  {
+    pinMode(PIN_VOLTAGE, INPUT);
   }
 
   k_e2c = 1/k_c2e;
@@ -309,6 +315,7 @@ void stepHelloControllerRPC()
     }
   }
 }
+
 
 
 void handleNewRPC()
@@ -396,8 +403,9 @@ void handleNewRPC()
                         break;
             }
         }
+
         noInterrupts();
-        stat_out.debug=ctrl_cycle_cnt;
+        //stat_out.debug=ctrl_cycle_cnt;
           //update_status();
           rpc_out[0]=RPC_REPLY_STATUS;
           memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Status)); //Collect the status data
@@ -463,9 +471,26 @@ void handleNewRPC()
 
 ///////////////////////// Status ///////////////////////////
 
+
+float voltage=614.4; //Start filter at 12V (1024ticks/20V scaling)
+#define VOLTAGE_BIAS 10.24 //Subtract of 0.2V to accomodate TVS drop (1024ticks/20V scaling)
+void update_analog_read()
+{
+   if (BOARD_VARIANT>=3)
+  {
+    voltage = voltage * voltage_LPFa +  voltage_LPFb* (analogRead(PIN_VOLTAGE)-VOLTAGE_BIAS);
+  }
+  else
+    voltage=0;
+}
+
 void update_status()
 {
-stat.debug=cmd_rpc_overflow;
+
+
+  
+  
+//stat.debug=cmd_rpc_overflow;
   //noInterrupts();
   //stat.timestamp=time_manager.get_encoder_timestamp();
   stat.effort= eff;
@@ -474,6 +499,7 @@ stat.debug=cmd_rpc_overflow;
   stat.err=deg_to_rad(e);               //controller error (inner loop)
   stat.mode=cmd.mode; 
   stat.guarded_event = guarded_event_cnt;
+  stat.voltage=voltage;
   stat.diag=0;
   stat.diag= diag_pos_calibrated ?      stat.diag|DIAG_POS_CALIBRATED : stat.diag;
   stat.diag= diag_runstop_on ?          stat.diag|DIAG_RUNSTOP_ON : stat.diag;
@@ -547,7 +573,7 @@ float xdes=0;
 void update_trace()
 {
 
-  stat.debug=mg.dt;
+  //stat.debug=mg.dt;
    if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
     trace_manager.debug_msg.f_1= xdes;
@@ -627,6 +653,7 @@ void stepHelloController()
     
     if (dirty_gains)
     {
+    
       //RC = 1/(2*pi*Hz)
       //A = exp(-1/(RC*Fs)) = exp(-2*pi*Hz/Fs)
       //B = 1-A
@@ -649,6 +676,11 @@ void stepHelloController()
       {
         vsLPFa = exp(gains_in.vel_status_LPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
         vsLPFb = (1.0-vsLPFa)* FsCtrl;
+      }
+      if (gains_in.voltage_LPF!=gains.voltage_LPF) //Voltage
+      {
+        voltage_LPFa = exp(gains_in.voltage_LPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
+        voltage_LPFb = (1.0-voltage_LPFa)* FsCtrl;
       }
       
       if (gains_in.vTe_d != gains.vTe_d)
@@ -1245,10 +1277,10 @@ void stepHelloController()
   //Cleanup
   trg.data=0; //Clear triggers
   first_filter=false;
-
-update_status();
-update_trace();
- ctrl_cycle_cnt++;
+  update_analog_read();
+  update_status();
+  update_trace();
+  ctrl_cycle_cnt++;
 }
 
 ///////////////////////// Commutation Loop ///////////////////////////

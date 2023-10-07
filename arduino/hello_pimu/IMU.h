@@ -1,6 +1,9 @@
 /*
   -------------------------------------------------------------
   Hello Robot - Hello Pimu
+/*
+  -------------------------------------------------------------
+  Hello Robot - Hello Pimu
     
   All materials released under the GNU General Public License v3.0 (GNU GPLv3).
   
@@ -14,13 +17,11 @@
 #define  __IMU_H__
 #include "Common.h"
 
-extern IMU_Status imu_status;
-extern Pimu_Config cfg;
-extern float accel_LPFa; 
-extern float accel_LPFb;
 
-void setupIMU();         
-void stepIMU();
-void setIMUCalibration();
+void setupIMU();
+void stepIMU(IMU_Status * imu_status);
+void setIMUCalibration(Pimu_Config * cfg);
 bool isIMUOrientationValid();
+
+
 #endif
