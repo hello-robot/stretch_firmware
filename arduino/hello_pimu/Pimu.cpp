@@ -224,17 +224,17 @@ void handleNewRPC()
   {
     case RPC_SET_PIMU_CONFIG: 
           memcpy(&cfg_in, rpc_in+1, sizeof(Pimu_Config)); //copy in the config
-          //noInterrupts();
+          noInterrupts();
           update_config();
-          //interrupts();
+          interrupts();
           rpc_out[0]=RPC_REPLY_PIMU_CONFIG;
           num_byte_rpc_out=1;
           break;
     case RPC_SET_PIMU_TRIGGER: 
           memcpy(&trg, rpc_in+1, sizeof(Pimu_Trigger)); //copy in
-          //noInterrupts();
+          noInterrupts();
           handle_trigger();
-          //interrupts();
+          interrupts();
           rpc_out[0]=RPC_REPLY_PIMU_TRIGGER;
           memcpy(rpc_out+1,(uint8_t *)&(trg_in.data),sizeof(uint32_t));
           num_byte_rpc_out=1+sizeof(uint32_t);
@@ -265,7 +265,7 @@ void handleNewRPC()
           sync_reply.motor_sync_cnt=sync_manager.motor_sync_cnt;
            memcpy(rpc_out + 1, (uint8_t *) (&sync_reply), sizeof(Pimu_Motor_Sync_Reply));
           num_byte_rpc_out=sizeof(Pimu_Motor_Sync_Reply)+1;
-          //interrupts();
+          interrupts();
 
           break;
    case RPC_READ_TRACE: 
