@@ -33,9 +33,10 @@ void stepIMU(IMU_Status * imu_status)
 }
 
 
-void setIMUCalibration(Pimu_Config * cfg)
+void setIMUConfig(Pimu_Config * cfg_in, Pimu_Config * cfg)
 {
-  imu_f.setIMUCalibration(cfg);
+  if (BOARD_VARIANT<3)
+    imu_f.setIMUConfig(cfg_in,cfg);
 }
 
 bool isIMUOrientationValid()

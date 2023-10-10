@@ -25,7 +25,7 @@ class IMU_FXOS8700_FXAS21002{
     IMU_FXOS8700_FXAS21002();
     void setupIMU();
     void stepIMU(IMU_Status * imu_status);
-    void setIMUCalibration(Pimu_Config * cfg);
+    void setIMUConfig(Pimu_Config * cfg_in, Pimu_Config * cfg);
     bool isIMUOrientationValid();
     Adafruit_FXAS21002C gyro = Adafruit_FXAS21002C(0x0021002C);
     Adafruit_FXOS8700 accelmag = Adafruit_FXOS8700(0x8700A, 0x8700B);

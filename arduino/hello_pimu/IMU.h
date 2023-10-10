@@ -20,7 +20,7 @@
 
 void setupIMU();
 void stepIMU(IMU_Status * imu_status);
-void setIMUCalibration(Pimu_Config * cfg);
+void setIMUConfig(Pimu_Config * cfg_in, Pimu_Config * cfg);
 bool isIMUOrientationValid();
 
 

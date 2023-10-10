@@ -61,32 +61,41 @@ IMU_FXOS8700_FXAS21002::IMU_FXOS8700_FXAS21002()
     mag_field_strength = 47.02F;
     gravity_vector_scale = 1.0;
     rate_gyro_vector_scale=1.0;
+    accel_LPFa=1.0;
+    accel_LPFb=0.0;
 }
 
-void IMU_FXOS8700_FXAS21002::setIMUCalibration(Pimu_Config * cfg)
+void IMU_FXOS8700_FXAS21002::setIMUConfig(Pimu_Config * cfg_in, Pimu_Config * cfg)
 {
-  mag_offsets[0]=cfg->mag_offsets[0];
-  mag_offsets[1]=cfg->mag_offsets[1];
-  mag_offsets[2]=cfg->mag_offsets[2];
 
-  gyro_zero_offsets[0]=cfg->gyro_zero_offsets[0];
-  gyro_zero_offsets[1]=cfg->gyro_zero_offsets[1];
-  gyro_zero_offsets[2]=cfg->gyro_zero_offsets[2];
+    if (cfg_in->accel_LPF!=cfg->accel_LPF) //Effort filter
+    {
+      accel_LPFa = exp(cfg_in->accel_LPF*-2*3.14159/FS); // z = e^st pole mapping
+      accel_LPFb = (1.0-accel_LPFa);
+    }
+    
+  mag_offsets[0]=cfg_in->mag_offsets[0];
+  mag_offsets[1]=cfg_in->mag_offsets[1];
+  mag_offsets[2]=cfg_in->mag_offsets[2];
 
-  mag_softiron_matrix[0][0]=cfg->mag_softiron_matrix[0];
-  mag_softiron_matrix[0][1]=cfg->mag_softiron_matrix[1];
-  mag_softiron_matrix[0][2]=cfg->mag_softiron_matrix[2];
+  gyro_zero_offsets[0]=cfg_in->gyro_zero_offsets[0];
+  gyro_zero_offsets[1]=cfg_in->gyro_zero_offsets[1];
+  gyro_zero_offsets[2]=cfg_in->gyro_zero_offsets[2];
 
-  mag_softiron_matrix[1][0]=cfg->mag_softiron_matrix[3];
-  mag_softiron_matrix[1][1]=cfg->mag_softiron_matrix[4];
-  mag_softiron_matrix[1][2]=cfg->mag_softiron_matrix[5];
+  mag_softiron_matrix[0][0]=cfg_in->mag_softiron_matrix[0];
+  mag_softiron_matrix[0][1]=cfg_in->mag_softiron_matrix[1];
+  mag_softiron_matrix[0][2]=cfg_in->mag_softiron_matrix[2];
 
-  mag_softiron_matrix[2][0]=cfg->mag_softiron_matrix[6];
-  mag_softiron_matrix[2][1]=cfg->mag_softiron_matrix[7];
-  mag_softiron_matrix[2][2]=cfg->mag_softiron_matrix[8];
+  mag_softiron_matrix[1][0]=cfg_in->mag_softiron_matrix[3];
+  mag_softiron_matrix[1][1]=cfg_in->mag_softiron_matrix[4];
+  mag_softiron_matrix[1][2]=cfg_in->mag_softiron_matrix[5];
 
-  gravity_vector_scale=cfg->gravity_vector_scale;
-  rate_gyro_vector_scale=cfg->rate_gyro_vector_scale;
+  mag_softiron_matrix[2][0]=cfg_in->mag_softiron_matrix[6];
+  mag_softiron_matrix[2][1]=cfg_in->mag_softiron_matrix[7];
+  mag_softiron_matrix[2][2]=cfg_in->mag_softiron_matrix[8];
+
+  gravity_vector_scale=cfg_in->gravity_vector_scale;
+  rate_gyro_vector_scale=cfg_in->rate_gyro_vector_scale;
   imu_calibration_rcvd=true;
 }
 
@@ -98,14 +107,12 @@ bool IMU_FXOS8700_FXAS21002::isIMUOrientationValid()
 
 void IMU_FXOS8700_FXAS21002::setupIMU()
 {
-
   // Initialize the sensors.
   if(!gyro.begin())
   {
     imu_valid=false;
     return ;
   }
-
   if(!accelmag.begin(ACCEL_RANGE_4G))
   {
     imu_valid=false;
@@ -114,6 +121,7 @@ void IMU_FXOS8700_FXAS21002::setupIMU()
   // Filter rate of 100hz, Beta=1.0 works well
   filter.set_beta(1.0);
   filter.begin(100);
+  imu_valid=true;
 }
 
 
@@ -126,6 +134,7 @@ void IMU_FXOS8700_FXAS21002::stepIMU(IMU_Status * imu_status)
   sensors_event_t gyro_event;
   sensors_event_t accel_event;
   sensors_event_t mag_event;
+
 
   if (!imu_valid)
     return;
@@ -237,5 +246,7 @@ void IMU_FXOS8700_FXAS21002::stepIMU(IMU_Status * imu_status)
   imu_status->qx=qx;
   imu_status->qy=qy;
   imu_status->qz=qz;
+
+  
 
 }

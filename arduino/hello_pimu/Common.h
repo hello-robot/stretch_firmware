@@ -31,7 +31,7 @@
 // Version 0.4.0: Move to fast motor sync, status_aux, and P3
 // Version 0.5.0: Move to support for Transport V1
 // Version 0.5.1: Fix trace rollover issue
-// Version 0.6.0: Production release for S3 and P4. Move to new IMU and current monitoring.
+// Version 0.6.0: Production release for S3 and P4. Move to new IMU and current monitoring. (BOARD VARIANT=3 for new IMU)
 
 #define FIRMWARE_VERSION "Pimu.v0.6.0p4"
 
