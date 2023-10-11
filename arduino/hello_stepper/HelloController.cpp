@@ -476,12 +476,12 @@ float voltage=614.4; //Start filter at 12V (1024ticks/20V scaling)
 #define VOLTAGE_BIAS 10.24 //Subtract of 0.2V to accomodate TVS drop (1024ticks/20V scaling)
 void update_analog_read()
 {
-   if (BOARD_VARIANT>=3)
-  {
-    voltage = voltage * voltage_LPFa +  voltage_LPFb* (analogRead(PIN_VOLTAGE)-VOLTAGE_BIAS);
-  }
-  else
-    voltage=0;
+  //  if (BOARD_VARIANT>=3)
+  // {
+  //   voltage = voltage * voltage_LPFa +  voltage_LPFb* (analogRead(PIN_VOLTAGE)-VOLTAGE_BIAS); // analogRead() is slow and causes issues
+  // }
+  // else
+    voltage=0; // Omitting voltage reading for now
 }
 
 void update_status()
