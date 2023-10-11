@@ -34,7 +34,7 @@
 // Version 0.6.0: Initial production release S3 Prince and protocol P4 (BOARD_VARIANT 3). Add battery voltage reading.
 // Version 0.6.1: analogRead on voltage pin omitted
 
-#define FIRMWARE_VERSION_HR "Stepper.v0.6.0p4"
+#define FIRMWARE_VERSION_HR "Stepper.v0.6.1p4"
 
 /////////////////////////////////////////////////////////////////
 
