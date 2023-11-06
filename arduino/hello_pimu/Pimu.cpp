@@ -191,7 +191,7 @@ void stepPimuController()
   analog_manager.step(&stat, &cfg);
   light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, RAW_TO_V(analog_manager.voltage));
   update_fan();  
-  update_imu();
+  //update_imu();
   update_board_reset();
   
   startup_cnt=max(0,startup_cnt-1);
