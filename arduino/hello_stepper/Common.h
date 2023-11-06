@@ -33,8 +33,8 @@
 // Version 0.5.1: Move to int64_t for motion generator / fix trace rollover issue
 // Version 0.6.0: Initial production release S3 Prince and protocol P4 (BOARD_VARIANT 3). Add battery voltage reading.
 // Version 0.6.1: analogRead on voltage pin omitted
-
-#define FIRMWARE_VERSION_HR "Stepper.v0.6.1p4"
+// Version 0.6.2: Enable acceleration limits for VEL_PID
+#define FIRMWARE_VERSION_HR "Stepper.v0.6.2p4"
 
 /////////////////////////////////////////////////////////////////
 
@@ -92,7 +92,7 @@
 #define DIAG_IS_MG_MOVING 128         //Is controller motion generator velocity non-zero
 #define DIAG_CALIBRATION_RCVD 256      //Is the calibration table in flash
 #define DIAG_IN_GUARDED_EVENT 512     //Guarded event occured
-#define DIAG_IN_SAFETY_EVENT 1024     //Guarded event occured
+#define DIAG_IN_SAFETY_EVENT 1024     //Safety event occured
 #define DIAG_WAITING_ON_SYNC 2048         //Command rcvd but no sync trigger yet
 #define DIAG_TRAJ_ACTIVE 4096             //Currently executing a splined trajectory
 #define DIAG_TRAJ_WAITING_ON_SYNC 8192    //Currently waiting on a sync signal before starting trajectory

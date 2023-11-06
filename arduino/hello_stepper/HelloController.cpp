@@ -865,6 +865,8 @@ void stepHelloController()
               break; 
             case MODE_VEL_PID:
               r=v;
+              vg.safe_switch_on(yw,v);
+              vg.setMaxAcceleration(abs(rad_to_deg(cmd_in.a_des)));
               break; 
             case MODE_VEL_TRAJ:
               vg.safe_switch_on(yw,v);
@@ -917,7 +919,7 @@ void stepHelloController()
         cmd.v_des=cmd_in.v_des;
         cmd.a_des=cmd_in.a_des;
       }
-     if (cmd.mode==MODE_VEL_TRAJ)
+     if (cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_VEL_PID)
         vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
       
       dirty_cmd=0;
@@ -1052,7 +1054,8 @@ void stepHelloController()
             break;    
         
         case MODE_VEL_PID:
-            e = (rad_to_deg(cmd.v_des) -v);   
+            vg.update(rad_to_deg(cmd.v_des),yw);
+            e = (vg.vel -v);
             ITerm += (gains.vKi * e);                 //Integral wind up limit
             if (ITerm > gains.vKi_limit) ITerm = gains.vKi_limit;
             else if (ITerm < -gains.vKi_limit) ITerm = -gains.vKi_limit;
@@ -1060,12 +1063,11 @@ void stepHelloController()
             u=u*stiffness_target;
             diag_near_pos_setpoint=0;
             diag_near_vel_setpoint=abs(e)<gains.vel_near_setpoint_d;
-            diag_is_mg_accelerating=0;
-            diag_is_mg_moving=0;
+            diag_is_mg_accelerating=vg.isAccelerating();
+            diag_is_mg_moving=vg.isMoving();
             break;
         
         case MODE_VEL_TRAJ:
- 
             xdes=vg.update(rad_to_deg(cmd.v_des),yw); //get target position
             e = (xdes - yw);
             ITerm += (gains.pKi * e);                             //Integral wind up limit

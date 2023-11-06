@@ -58,14 +58,14 @@ class VelocityGenerator {
     bool isAccelerating();
     bool isMoving();
     float update(float vd, float xa);
-
+    float vel;
     
   private:
  
    
     float e_max;
     float pos;
-    float vel;
+
     float acc;
     float dt;
 };
