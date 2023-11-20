@@ -191,7 +191,7 @@ void stepPimuController()
   analog_manager.step(&stat, &cfg);
   light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, RAW_TO_V(analog_manager.voltage));
   update_fan();  
-  //update_imu();
+  update_imu();
   update_board_reset();
   
   startup_cnt=max(0,startup_cnt-1);
@@ -363,9 +363,19 @@ void handle_trigger()
     }
     if (trg.data & TRIGGER_IMU_RESET)
     {
-         digitalWrite(IMU_RESET, LOW);
-         delay(1);
-         digitalWrite(IMU_RESET, HIGH);
+         if (BOARD_VARIANT >= 3)
+         {
+          //Setting imu orientation to match other robots (clear orientation = false)
+          //setting clear orientation to true clears the system orientation register
+          bool clear_orientation_frs = false;
+          imu_b.writeSystemOrientation(clear_orientation_frs);
+         }
+         else
+         {
+          digitalWrite(IMU_RESET, LOW);
+          delay(1);
+          digitalWrite(IMU_RESET, HIGH);
+         }
     }
 }
 ////////////////////////////

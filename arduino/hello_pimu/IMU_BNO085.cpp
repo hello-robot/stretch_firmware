@@ -32,54 +32,73 @@ IMU_BNO085 imu_b;
 // ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-float ax, ay, az, qx, qy, qz, qw; // (qx, qy, qz, qw = i,j,k, real)
-byte linAccuracy = 0;
+float ax, ay, az, qx, qy, qz, qw, mx,my,mz; // (qx, qy, qz, qw = i,j,k, real)
+byte Accelaccuracy = 0;
 float quatRadianAccuracy = 0;
 byte quatAccuracy = 0;
+byte magAccuracy = 0;
 
-/*
- * Not working currently, polling instead
+uint32_t systemorientation[4] = {SYSTEM_QX_ORIENTATION, SYSTEM_QY_ORIENTATION, SYSTEM_QZ_ORIENTATION, SYSTEM_QW_ORIENTATION};
+
+//Not working currently, polling instead
 void interrupt_handler()
 {
-    imu_b.irq_cnt++;
-     switch (imu_b.device.getReadings())
-     {
-        
-        case SENSOR_REPORTID_ACCELEROMETER: {
+
+  switch (imu_b.device.getReadings())
+  {
+
+    case SENSOR_REPORTID_ACCELEROMETER: 
+    {
+      imu_b.dirtyAccelerometer = 1;
+    }
+    break;
+
+    case SENSOR_REPORTID_GYRO_INTEGRATED_ROTATION_VECTOR: 
+    {
+        imu_b.dirtyQuat = 1;
+    }
+    break;
+
+    case SENSOR_REPORTID_MAGNETIC_FIELD:
+    {
+      imu_b.dirtyMagnetometer = 1;
+    }
+
+    default:
+        // Unhandled Input Report
+        break;
+  }       
+}
+
+bool frsWriteResponse()
+{
+    while (1)
+    {
+      uint8_t counter = 0;
+      while(imu_b.device.receivePacket() == false)
+      {
+          if (counter++ > 100)
+              return false;
+          delay(1);
+      }
+
+      //0xF5 is Write Response first 2 byte in shtp data is status
+      if (imu_b.device.shtpData[0] == FRS_WRITE_RESPONSE)
+      {
+          uint8_t frsStatus = imu_b.device.shtpData[1];
+          if (frsStatus == 0 || frsStatus == 3 || frsStatus == 4)
+          {
+
+            return true;
+          }
+          else
+          {
+            return false;
+          }
           
-          imu_b.dirtyAccelerometer = 1;
-        }
-     
-     case SENSOR_REPORTID_LINEAR_ACCELERATION: {
-        imu_b.dirtyLinearAcc = 1;
       }
-      break;
-      
-      case SENSOR_REPORTID_ROTATION_VECTOR:
-      case SENSOR_REPORTID_GAME_ROTATION_VECTOR: {
-         imu_b.dirtyQuat = 1;
-      }
-        break;
-        
-        case SENSOR_REPORTID_GYROSCOPE: {
-          imu_b.dirtyGyro = 1;
-        }
-        break;
-
-        case SENSOR_REPORTID_MAGNETIC_FIELD: {
-          imu_b.dirtyMagnetometer = 1;
-        }
-        break;
-
-        case SENSOR_REPORTID_GYRO_INTEGRATED_ROTATION_VECTOR:{//SENSOR_REPORTID_ROTATION_VECTOR: {
-          imu_b.dirtyRotationVector = 1;
-        }
-        break;
-        default:
-           // Unhandled Input Report
-           break;
-     }
-}*/
+    }
+}
 
 void IMU_BNO085::setIMUCalibration()
 {
@@ -106,17 +125,19 @@ void IMU_BNO085::setupIMU()
   if (imu_valid)  
   {
       Wire.setClock(400000); //Increase I2C data rate to 400kHz
-      //attachInterrupt(digitalPinToInterrupt(IMU_BNO085_INT), interrupt_handler, FALLING);
-      //interrupts();
-
-      //device.enableLinearAccelerometer(50);  // m/s^2 no gravity, data update every 50 ms
-      //device.enableRotationVector(100); //Send data update every 100 ms
+      
+      __enable_irq();
+      attachInterrupt(digitalPinToInterrupt(IMU_BNO085_INT), interrupt_handler, FALLING);
+      
+      
+      // device.enableLinearAccelerometer(50);  // m/s^2 no gravity, data update every 50 ms
+      // device.enableRotationVector(100); //Send data update every 100 ms
   
       device.enableGyroIntegratedRotationVector(50);//RotationVector(10); //Send data update every 10ms
       device.enableAccelerometer(50); //Send data update every 50
       device.enableMagnetometer(50); //Send data update every 50 // cannot be enabled at the same time as RotationVector (will not produce data)
-      //device.enableGyro(10); //Send data update every 10ms
-      //device.enableTapDetector(50); //Send data update every 50ms
+      // device.enableGyro(50); //Send data update every 10ms
+      // device.enableTapDetector(50); //Send data update every 50ms
       dirtyRotationVector=false;
       dirtyAccelerometer=false;
       dirtyMagnetometer=false;
@@ -124,29 +145,91 @@ void IMU_BNO085::setupIMU()
       dirtyLinearAcc=false;
       dirtyQuat=false;
       irq_cnt=0;
-      //imu_b.irq_cnt++;
-      //imu_b.irq_cnt++;
+
   }
 }
+
+
+
+void IMU_BNO085::writeSystemOrientation(bool resetOrientation)
+{
+    __disable_irq();
+    uint16_t length;
+    uint32_t *data = systemorientation;
+    
+    if (resetOrientation == true)
+    {
+      length = 0;
+    }
+    else
+    {
+      length = 4;
+    }
+
+    uint8_t offset = 0;
+    device.shtpData[0] = FRS_WRITE_REQUEST; //FRS Read Request
+    device.shtpData[1] = 0;                   //Reserved
+    device.shtpData[2] = (length >> 0) & 0xFF;       //Read Offset LSB
+    device.shtpData[3] = (length >> 8) & 0xFF;      //Read Offset MSB
+    device.shtpData[4] = (FRS_SYSTEM_ORIENTATION_ID >> 0) & 0xFF;       //FRS Type LSB
+    device.shtpData[5] = (FRS_SYSTEM_ORIENTATION_ID >> 8) & 0xFF;       //FRS Type MSB
+
+    //Transmit packet on channel 2, 6 bytes
+    device.sendPacket(CHANNEL_CONTROL, 6);
+
+    if (frsWriteResponse() == true)
+    {
+      while (1)
+      {
+        for (uint8_t i = 0; i <= 2; i += 2)
+        {
+
+          device.shtpData[0] = FRS_WRITE_DATA_REQUEST; //FRS Read Request
+          device.shtpData[1] = 0;                        //Reserved
+          device.shtpData[2] = (offset+i >> 0) & 0xFF;     //Read Offset LSB
+          device.shtpData[3] = (offset+i >> 8) & 0xFF;      //Read Offset MSB
+          device.shtpData[4] = (data[i] >> 0) & 0xFF;
+          device.shtpData[5] = (data[i]  >> 8) & 0xFF;
+          device.shtpData[6] = (data[i] >> 16) & 0xFF;
+          device.shtpData[7] = (data[i] >> 24) & 0xFF;
+          device.shtpData[8] = (data[i+1] >> 0) & 0xFF;
+          device.shtpData[9] = (data[i+1] >> 8) & 0xFF;
+          device.shtpData[10] = (data[i+1] >> 16) & 0xFF;
+          device.shtpData[11] = (data[i+1] >> 24) & 0xFF;
+          device.sendPacket(CHANNEL_CONTROL, 12);
+        }
+        if (frsWriteResponse() == true)
+        {
+          break;
+        }
+        if (frsWriteResponse() == false)
+        {
+          break;
+        }
+      }
+      __enable_irq();
+    }
+}
+
 
 void IMU_BNO085::stepIMU(IMU_Status * imu_status)
 {
 
   if (!imu_valid)
     return;
-
-if (device.dataAvailable() == true)
+  if(dirtyQuat)
   {
-    imu_status->qx = device.getQuatReal();
-    imu_status->qy = device.getQuatI();
-    imu_status->qz = device.getQuatJ();
-    imu_status->qw = device.getQuatK();
+    device.getQuat(qx, qy, qz, qw, quatRadianAccuracy, quatAccuracy);
+    imu_status->qx = qx;
+    imu_status->qy = qy;
+    imu_status->qz = qz;
+    imu_status->qw = qw;
 
     imu_status->gx = device.getFastGyroX();
     imu_status->gy = device.getFastGyroY();
     imu_status->gz = device.getFastGyroZ();
 
-    imu_status->roll=(device.getRoll()) * 180.0 / PI; 
+     imu_status->roll=(device.getRoll()) * 180.0 / PI; 
     
     //Roll/Pitch/Yaw Euler
     //Move rollover point out of normal operation
@@ -157,15 +240,17 @@ if (device.dataAvailable() == true)
       imu_status->roll-=180;
       
     imu_status->pitch=(device.getPitch()) * 180.0 / PI;;
-    imu_status->heading=(device.getYaw()) * 180.0 / PI; ;
+    imu_status->heading=(device.getYaw()) * 180.0 / PI;
 
-    imu_status->ax = device.getAccelX();
-    imu_status->ay = device.getAccelY();
-    imu_status->az = device.getAccelZ();
-    
-    imu_status->mx = device.getMagX();
-    imu_status->my = device.getMagY();
-    imu_status->mz = device.getMagZ();
+    dirtyQuat=0;
+  }
+  
+  if(dirtyAccelerometer)
+  {
+    device.getAccel(ax, ay, az, Accelaccuracy);
+    imu_status->ax = ax;
+    imu_status->ay = ay;
+    imu_status->az = az;
 
     float maxx,maxy,maxz;
     int i;
@@ -187,68 +272,17 @@ if (device.dataAvailable() == true)
       maxz=max(maxz,abs(accel_max_log[2][i]));
     }
     imu_status->bump=maxx*maxx+maxy*maxy+maxz*maxz - 96.17; //magnitude minus gravity
-  
-    //imu_status->bump=(float)device.getTapDetector();
-  }
-    /*
-  if(dirtyLinearAcc)
-  {
-    device.getLinAccel(ax, ay, az, linAccuracy);
-    imu_status->ax = ax;
-    imu_status->ay = ay;
-    imu_status->az = az;
-    dirtyLinearAcc=0;
-  }
-  if(dirtyQuat)
-  {
-    device.getQuat(qx, qy, qz, qw, quatRadianAccuracy, quatAccuracy);
-    imu_status->qx = qx;
-    imu_status->qy = qy;
-    imu_status->qz = qz;
-    imu_status->qw = qw;
-    dirtyQuat=0;
-  }
-  if(dirtyAccelerometer)
-  {
-    imu_status->ax = device.getAccelX();
-    imu_status->ay = device.getAccelY();
-    imu_status->az = device.getAccelZ();
-    dirtyAccelerometer=0;
-  }
 
-  if(dirtyGyro)
-  {
-    imu_status->gx = device.getGyroX();
-    imu_status->gy = device.getGyroY();
-    imu_status->gz = device.getGyroZ();
-    dirtyGyro=0;
+    dirtyAccelerometer = 0;
   }
 
   if(dirtyMagnetometer)
   {
-    imu_status->mx = device.getMagX();
-    imu_status->my = device.getMagY();
-    imu_status->mz = device.getMagZ();
+    device.getMag(mx, my, mz, magAccuracy);
+    imu_status->mx = mx;
+    imu_status->my = my;
+    imu_status->mz = mz;
     dirtyMagnetometer=0;
   }
-
-  if(dirtyRotationVector)
-  {
-    imu_status->roll=(device.getRoll()) * 180.0 / PI; 
-    imu_status->pitch=(device.getPitch()) * 180.0 / PI;;
-    imu_status->heading=(device.getYaw()) * 180.0 / PI; ;
-
-    //q= x + yI + zJ +wK
-    imu_status->qx = device.getQuatReal();
-    imu_status->qy = device.getQuatI();
-    imu_status->qz = device.getQuatJ();
-    imu_status->qw = device.getQuatK();
-
-    imu_status->gx = device.getFastGyroX();
-    imu_status->gy = device.getFastGyroY();
-    imu_status->gz = device.getFastGyroZ();
-    
-    dirtyRotationVector=0;
-  }*/
 
 }
