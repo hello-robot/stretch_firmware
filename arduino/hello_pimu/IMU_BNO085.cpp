@@ -167,12 +167,12 @@ void IMU_BNO085::writeSystemOrientation(bool resetOrientation)
     }
 
     uint8_t offset = 0;
-    device.shtpData[0] = FRS_WRITE_REQUEST; //FRS Read Request
-    device.shtpData[1] = 0;                   //Reserved
-    device.shtpData[2] = (length >> 0) & 0xFF;       //Read Offset LSB
-    device.shtpData[3] = (length >> 8) & 0xFF;      //Read Offset MSB
-    device.shtpData[4] = (FRS_SYSTEM_ORIENTATION_ID >> 0) & 0xFF;       //FRS Type LSB
-    device.shtpData[5] = (FRS_SYSTEM_ORIENTATION_ID >> 8) & 0xFF;       //FRS Type MSB
+    device.shtpData[0] = FRS_WRITE_REQUEST;     //FRS Write Request
+    device.shtpData[1] = 0;                     //Reserved
+    device.shtpData[2] = (length >> 0) & 0xFF;  //Word Length LSB
+    device.shtpData[3] = (length >> 8) & 0xFF;  //Word Length MSB
+    device.shtpData[4] = (FRS_SYSTEM_ORIENTATION_ID >> 0) & 0xFF; //FRS Type LSB
+    device.shtpData[5] = (FRS_SYSTEM_ORIENTATION_ID >> 8) & 0xFF; //FRS Type MSB
 
     //Transmit packet on channel 2, 6 bytes
     device.sendPacket(CHANNEL_CONTROL, 6);
@@ -184,18 +184,18 @@ void IMU_BNO085::writeSystemOrientation(bool resetOrientation)
         for (uint8_t i = 0; i <= 2; i += 2)
         {
 
-          device.shtpData[0] = FRS_WRITE_DATA_REQUEST; //FRS Read Request
-          device.shtpData[1] = 0;                        //Reserved
-          device.shtpData[2] = (offset+i >> 0) & 0xFF;     //Read Offset LSB
-          device.shtpData[3] = (offset+i >> 8) & 0xFF;      //Read Offset MSB
-          device.shtpData[4] = (data[i] >> 0) & 0xFF;
+          device.shtpData[0] = FRS_WRITE_DATA_REQUEST; //FRS Write Data Request
+          device.shtpData[1] = 0;                      //Reserved
+          device.shtpData[2] = (offset+i >> 0) & 0xFF; //Write Offset LSB
+          device.shtpData[3] = (offset+i >> 8) & 0xFF; //Write Offset MSB
+          device.shtpData[4] = (data[i] >> 0) & 0xFF;  //Data 0 LSB
           device.shtpData[5] = (data[i]  >> 8) & 0xFF;
           device.shtpData[6] = (data[i] >> 16) & 0xFF;
-          device.shtpData[7] = (data[i] >> 24) & 0xFF;
-          device.shtpData[8] = (data[i+1] >> 0) & 0xFF;
+          device.shtpData[7] = (data[i] >> 24) & 0xFF; //Data 0 MSB
+          device.shtpData[8] = (data[i+1] >> 0) & 0xFF;//Data 1 LSB
           device.shtpData[9] = (data[i+1] >> 8) & 0xFF;
           device.shtpData[10] = (data[i+1] >> 16) & 0xFF;
-          device.shtpData[11] = (data[i+1] >> 24) & 0xFF;
+          device.shtpData[11] = (data[i+1] >> 24) & 0xFF;//Data 1 MSB
           device.sendPacket(CHANNEL_CONTROL, 12);
         }
         if (frsWriteResponse() == true)
