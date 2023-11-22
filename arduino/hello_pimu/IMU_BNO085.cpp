@@ -40,7 +40,6 @@ byte magAccuracy = 0;
 
 uint32_t systemorientation[4] = {SYSTEM_QX_ORIENTATION, SYSTEM_QY_ORIENTATION, SYSTEM_QZ_ORIENTATION, SYSTEM_QW_ORIENTATION};
 
-//Not working currently, polling instead
 void interrupt_handler()
 {
 
