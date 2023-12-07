@@ -34,7 +34,8 @@
 // Version 0.6.0: Initial production release S3 Prince and protocol P4 (BOARD_VARIANT 3). Add battery voltage reading.
 // Version 0.6.1: analogRead on voltage pin omitted
 // Version 0.6.2: Enable acceleration limits for VEL_PID
-#define FIRMWARE_VERSION_HR "Stepper.v0.6.2p4"
+// Version 0.6.3: Enable Decay pin of DRV8842 for lift stepper board to operate correctly
+#define FIRMWARE_VERSION_HR "Stepper.v0.6.3p4"
 
 /////////////////////////////////////////////////////////////////
 

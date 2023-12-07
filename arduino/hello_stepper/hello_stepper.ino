@@ -71,6 +71,7 @@ void setup()        // This code runs once at startup
     enableMotorDrivers(); //Turn on now that gains are loaded
 #endif
 setupWDT(WDT_TIMEOUT_PERIOD);
+enableMotorDecay(); //Needed for Brake circuit on lift stepper board 
 }
   
 

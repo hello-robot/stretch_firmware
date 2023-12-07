@@ -242,6 +242,11 @@ void setupBoardVariants()
     pinMode(PIN_VOLTAGE, INPUT);
   }
 
+  if (BOARD_VARIANT >= 4)
+  {
+    pinMode(DRV8842_DECAY, OUTPUT);
+  }
+
   k_e2c = 1/k_c2e;
   pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT);
   pinMode(BOARD_VARIANT_PIN_RUNSTOP, INPUT_PULLUP); //Default to high if no cable (disables motor)
@@ -286,6 +291,7 @@ void enableMotorDrivers()
     digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
     digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
   }
+
 }
 void disableMotorDrivers()
 {
@@ -295,7 +301,15 @@ void disableMotorDrivers()
     digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
     delay(5);
     digitalWrite(MOTOR_SHUNT, LOW); //Turn the shunt off (for lift dof)
+  }
+}
 
+//Needed for lift brake circuit to run correctly 
+void enableMotorDecay()
+{
+  if (BOARD_VARIANT >= 4)
+  {
+    digitalWrite(DRV8842_DECAY, HIGH);
   }
 }
 ///////////////////////// RPC ///////////////////////////
