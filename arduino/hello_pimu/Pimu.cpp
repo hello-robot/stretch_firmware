@@ -24,11 +24,15 @@
 #include "LightBarManager.h"
 #include "TraceManager.h"
 #include "IMU_BNO085.h"
+#include "ChargerManager.h"
 
 
 #define V_TO_RAW(v) v*1024/20.0 //per circuit
 #define RAW_TO_V(r) (float)r*0.01953125 //20.0/1024.0
 #define I_TO_RAW(i) (i*1000)*0.408*1024.0/3300 //per circuit
+
+#define RAW_TO_I(r) (float)r*0.01438686
+#define RAW_TO_CHRG_I(r) (float)r*0.01498910
 
 float low_voltage_alert=V_TO_RAW(10.5);
 int low_voltage_alert_cnt=0;
@@ -45,12 +49,15 @@ bool state_buzzer_on=false;
 bool state_low_voltage_alert=false;
 bool state_high_current_alert=false;
 bool state_over_tilt_alert=false;
-bool state_charger_connected=false;
+// bool state_charger_connected=false;
 bool state_boot_detected=false;
 
 RunstopManager runstop_manager;
 SyncManager sync_manager(&runstop_manager);
 LightBarManager light_bar_manager;
+
+ChargerManager charger_manager;
+chargerState state_charger_connected = CHARGER_FALSE;
 
 
 
@@ -175,6 +182,7 @@ void setupPimu() {
   sprintf(board_info.board_variant, "Pimu.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
+  analog_manager.factory_config();
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
@@ -429,7 +437,15 @@ void update_voltage_monitor()
   if (BOARD_VARIANT>=1)
   {
     //For Variant 1, indicate charging required on the Neopixel
-    state_charger_connected=digitalRead(CHARGER_CONNECTED);
+    // state_charger_connected=digitalRead(CHARGER_CONNECTED);
+
+    state_charger_connected = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge));
+    if (state_charger_connected == CHARGER_NOT_PLUGGED)
+    {
+      state_charger_connected = CHARGER_FALSE;
+    }
+    
+
     if(analog_manager.voltage<low_voltage_alert) //dropped below
       {
         state_low_voltage_alert=true;

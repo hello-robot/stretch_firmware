@@ -30,7 +30,11 @@ AnalogManager analog_manager;
 #define IDX_ANA_CURRENT_CHARGE 7//AIN18 MUXPOS 0x12
 #define IDX_ANA_CURRENT_EFUSE 8//AIN19 MUXPOS 0x13
 
-
+//Default LPF Values
+#define FACTORY_VOLTAGE_LPF 1
+#define FACTORY_CURRENT_LPF 10
+#define FACTORY_CLIFF_LPF 10
+#define FACTORY_TEMP_LPF 1
 
 
 
@@ -58,6 +62,31 @@ AnalogManager::AnalogManager(){
   mux_map[IDX_ANA_CURRENT_CHARGE]=0x12;
   mux_map[IDX_ANA_CURRENT_EFUSE]=0x13;
   }
+  
+//TODO: Write gains to Flash instead of hardcoding them here////
+void AnalogManager::factory_config()
+{
+  Pimu_Config factory_config;
+  factory_config.voltage_LPF = FACTORY_VOLTAGE_LPF;
+  factory_config.current_LPF = FACTORY_CURRENT_LPF;
+
+  factory_config.cliff_LPF = FACTORY_CLIFF_LPF;
+  factory_config.temp_LPF = FACTORY_TEMP_LPF;
+
+
+  cliff_LPFa = exp(factory_config.cliff_LPF*-2*3.14159/FS); // z = e^st pole mapping
+  cliff_LPFb = (1.0-cliff_LPFa);
+
+  voltage_LPFa = exp(factory_config.voltage_LPF*-2*3.14159/FS); // z = e^st pole mapping
+  voltage_LPFb = (1.0-voltage_LPFa);
+
+  current_LPFa = exp(factory_config.current_LPF*-2*3.14159/FS); // z = e^st pole mapping
+  current_LPFb = (1.0-current_LPFa);
+
+  temp_LPFa = exp(factory_config.temp_LPF*-2*3.14159/FS); // z = e^st pole mapping
+  temp_LPFb = (1.0-temp_LPFa);
+
+}
   
 void AnalogManager::update_config(Pimu_Config * cfg_new, Pimu_Config * cfg_old)
 {

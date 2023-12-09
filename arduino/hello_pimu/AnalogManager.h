@@ -23,6 +23,7 @@ class AnalogManager {
     void update_config(Pimu_Config * cfg_new, Pimu_Config * cfg_old);
     void step(Pimu_Status * stat, Pimu_Config * cfg);
     void setupADC();
+    void factory_config();
     
     float cliff_LPFa; 
     float cliff_LPFb;

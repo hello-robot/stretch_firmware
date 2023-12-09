@@ -170,7 +170,7 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
 
 ////////////////////////////////////////////////////////////////////// 
   
-  void ColoredBatteryLevel(float v_bat, float v_bat_min, float v_bat_max,bool runstop_on, bool runstop_led_on,bool charger_on)
+  void ColoredBatteryLevel(float v_bat, float v_bat_min, float v_bat_max,bool runstop_on, bool runstop_led_on,chargerState charger_on)
   {
     if (runstop_led_on || !runstop_on)
     {
@@ -216,7 +216,7 @@ class LightBarPatterns : public Adafruit_NeoPixel_ZeroDMA
       uint8_t r = ((float)(Red(c2)-Red(c1)))*interp+Red(c1);
       uint8_t g = ((float)(Green(c2)-Green(c1)))*interp+Green(c1);
       uint8_t b = ((float)(Blue(c2)-Blue(c1)))*interp+Blue(c1);
-      if (charger_on && !runstop_on)
+      if (charger_on == CHARGER_TRUE && !runstop_on)
       {
         ColoredScanUpdate(Color(PX_OFF),Color(r,g,b),1000);
       } 
@@ -259,7 +259,7 @@ void LightBarManager::start_test()
   running_test=true;
 }
 
-void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on,float v_bat) 
+void LightBarManager::step(bool boot_detected, bool runstop_on, chargerState charger_on, bool charging_required, bool runstop_led_on,float v_bat) 
 {
   if (pixels)
   {

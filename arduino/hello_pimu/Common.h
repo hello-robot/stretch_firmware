@@ -33,8 +33,9 @@
 // Version 0.5.1: Fix trace rollover issue
 // Version 0.6.0: Production release for S3 and P4. Move to new IMU and current monitoring. (BOARD VARIANT=3 for new IMU)
 // Version 0.6.2: added interrupts for imu data, added writing to system orientation record for IMU orientation to match older robots
+// Version 0.6.3: incorporting charging detection class
 
-#define FIRMWARE_VERSION "Pimu.v0.6.2p4"
+#define FIRMWARE_VERSION "Pimu.v0.6.3p4"
 
 #define FS 100 //Loop rate in Hz for TC5
 
