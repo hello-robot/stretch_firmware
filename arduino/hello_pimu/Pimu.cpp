@@ -32,6 +32,8 @@
 #define I_TO_RAW(i) (i*1000)*0.408*1024.0/3300 //per circuit
 
 #define RAW_TO_I(r) (float)r*0.01438686
+#define RAW_TO_IS(r) (float)r*0.00789866
+
 #define RAW_TO_CHRG_I(r) (float)r*0.01498910
 
 float low_voltage_alert=V_TO_RAW(10.5);
@@ -57,7 +59,8 @@ SyncManager sync_manager(&runstop_manager);
 LightBarManager light_bar_manager;
 
 ChargerManager charger_manager;
-chargerState state_charger_connected = CHARGER_FALSE;
+// chargerState state_charger_connected = CHARGER_FALSE;
+bool state_charger_connected = false;
 
 
 
@@ -434,18 +437,16 @@ void update_imu()
 ////////////////////////////
 void update_voltage_monitor()
 {
-  if (BOARD_VARIANT>=1)
+  if (BOARD_VARIANT >= 1)
   {
-    //For Variant 1, indicate charging required on the Neopixel
-    // state_charger_connected=digitalRead(CHARGER_CONNECTED);
-
-    state_charger_connected = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge));
-    if (state_charger_connected == CHARGER_NOT_PLUGGED)
+    if (BOARD_VARIANT < 3)
     {
-      state_charger_connected = CHARGER_FALSE;
+      state_charger_connected = charger_manager.step(RAW_TO_V(analog_manager.voltage),RAW_TO_IS(analog_manager.current), 0.0 , BOARD_VARIANT);
     }
-    
-
+    if (BOARD_VARIANT >= 3)
+    {
+      state_charger_connected = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
+    }
     if(analog_manager.voltage<low_voltage_alert) //dropped below
       {
         state_low_voltage_alert=true;
@@ -457,7 +458,7 @@ void update_voltage_monitor()
         state_low_voltage_alert=false;
       }
   }
-  
+
   if (BOARD_VARIANT==0)
   {
     //For Variant 0, do the double beep at low voltage and trigger the runstop
