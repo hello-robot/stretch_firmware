@@ -5,10 +5,20 @@
 
 unsigned long t_charger_last=0;
 
-bool charging_sts_flag = false;
+bool charging_sts_flag = true;
 bool hotplug_sts_flag = false;
+bool unplug_sts_flag = false;
 
 float v1 = 0.0;
+float current_change = 0.0;
+float voltage_change = 0.0;
+
+float sys_curr_array[10] = {};
+float sys_volt_array[10] = {};
+int curr_cnt = 0;
+
+float prev_voltage_change = 0.0;
+
 
 bool hotplug_check(const float v_d)
 {
@@ -41,6 +51,7 @@ bool ChargerManager::step(float vbat, float sys_current, float charge_current, i
 			v1 = vbat;
 			hotplug_sts_flag = true;
 			charging_sts_flag = false;
+			unplug_sts_flag = true;
 		}
 
 		//Charger Connected Pin HIGH Charger Connected
@@ -49,26 +60,90 @@ bool ChargerManager::step(float vbat, float sys_current, float charge_current, i
 			
 			float v2 = vbat;
 			float vdiff = v2 - v1;
-			charging_sts_flag = true;
-
-			if (charge_current >= 0.15)
+			// charging_sts_flag = true;
+			sys_curr_array[curr_cnt] = sys_current;
+			sys_volt_array[curr_cnt] = vbat;
+			++curr_cnt;
+			if (hotplug_sts_flag == true)
 			{
-				charging_sts_flag = true;
-				hotplug_sts_flag = false;
+				charging_sts_flag = hotplug_check(vdiff);
 			}
+			if (curr_cnt > 9)
+			{	
+				float voltage_change = sys_volt_array[9] - sys_volt_array[0];
+				// for (int x = 0; x < 10; ++x)
+				// {
+					
+				// 	Serial.print(sys_volt_array[x]);
+				// 	Serial.print(", ");
+				// }
 
-			else if (charge_current < 0.15)
-			{
-				if (hotplug_sts_flag == true)
+				float max_c = sys_curr_array[0];
+				float min_c = sys_curr_array[0];
+				for (int x = 1; x < 9; ++x)
 				{
-					charging_sts_flag = hotplug_check(vdiff);
+					if(sys_curr_array[x] > max_c)
+					{
+						max_c = sys_curr_array[x];
+					}
+					if(sys_curr_array[x] < min_c)
+					{
+						min_c = sys_curr_array[x];
+					}
 				}
-				if (board_variant >=3 && sys_current < 2)
+
+				// Serial.print(max_c - min_c);
+
+				if (voltage_change < -0.15 && (max_c - min_c) < 1)
 				{
 					charging_sts_flag = false;
+					unplug_sts_flag = true;
 				}
+				if (voltage_change > 0.15 && (max_c - min_c) < 1 && unplug_sts_flag == true)
+				{
+					charging_sts_flag = true;
+					unplug_sts_flag = false;
+				}
+				
+				// Serial.print(", ");
+				// Serial.println(charging_sts_flag);
+				// Serial.println();
+
+				
+				
+				sys_curr_array[0] = sys_curr_array[9];
+				sys_volt_array[0] = sys_volt_array[9];
+				for (int i = 9; i > 0; --i)
+				{
+					sys_curr_array[i] = 0;
+					sys_volt_array[i] = 0;
+				}
+				curr_cnt = 1;
 			}
+			// Serial.println(charging_sts_flag);
+
+
+
+
+			// if (charge_current >= 0.15)
+			// {
+			// 	charging_sts_flag = true;
+			// 	hotplug_sts_flag = false;
+			// }
+
+			// else if (charge_current < 0.15)
+			// {
+			// 	if (hotplug_sts_flag == true)
+			// 	{
+			// 		charging_sts_flag = hotplug_check(vdiff);
+			// 	}
+			// 	if (board_variant >=3 && sys_current < 2)
+			// 	{
+			// 		charging_sts_flag = false;
+			// 	}
+			// }
 		}
+	
 
 	}
 	return charging_sts_flag;

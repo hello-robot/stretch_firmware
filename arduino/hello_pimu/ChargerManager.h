@@ -2,7 +2,7 @@
 #define  __CHARGER_MANAGER_H__
 #include "Common.h"
 
-#define CHARGER_SAMPLE_RATE 1000
+#define CHARGER_SAMPLE_RATE 500
 
 
 class ChargerManager{
