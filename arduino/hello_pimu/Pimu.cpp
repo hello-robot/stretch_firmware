@@ -439,7 +439,15 @@ void update_voltage_monitor()
 {
   if (BOARD_VARIANT >= 1)
   {
-    state_charger_connected = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
+    if (BOARD_VARIANT < 3)
+    {
+      state_charger_connected = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_IS(analog_manager.current), 0.0, BOARD_VARIANT);
+    }
+    if (BOARD_VARIANT >=3 )
+    {
+      state_charger_connected = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
+    }
+    
     if(analog_manager.voltage<low_voltage_alert) //dropped below
       {
         state_low_voltage_alert=true;
