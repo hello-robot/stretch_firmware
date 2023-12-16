@@ -5,10 +5,6 @@
 
 unsigned long t_charger_last=0;
 
-bool charging_sts_flag = true;
-bool hotplug_sts_flag = false;
-bool unplug_sts_flag = false;
-
 float v1 = 0.0;
 float current_change = 0.0;
 float voltage_change = 0.0;
@@ -20,20 +16,79 @@ int curr_cnt = 0;
 float prev_voltage_change = 0.0;
 
 
-bool hotplug_check(const float v_d)
+void ChargerManager::hotplug_check(float vd)
 {
 	
 	//hotplug condition 
-	if (v_d >= 0.07)
+	if (vd >= 0.07 && hotplug_sts_flag)
 	{
 		hotplug_sts_flag = false;
-		return true;
+		charging_sts_flag = true;
 	}
-	if (v_d <= 0.05)
+	if (vd <= 0.05 && hotplug_sts_flag)
 	{
-		return false;
+		charging_sts_flag = false;
 	}
-	
+}
+
+void ChargerManager::unplug_check(float v, float c)
+{
+	sys_curr_array[curr_cnt] = c;
+	sys_volt_array[curr_cnt] = v;
+			
+	if (curr_cnt > 9)
+	{	
+		float voltage_change = sys_volt_array[9] - sys_volt_array[0];
+
+		float max_c = sys_curr_array[0];
+		float min_c = sys_curr_array[0];
+		for (int x = 1; x < 10; ++x)
+		{
+			if(sys_curr_array[x] > max_c)
+			{
+				max_c = sys_curr_array[x];
+			}
+			if(sys_curr_array[x] < min_c)
+			{
+				min_c = sys_curr_array[x];
+			}
+		}
+
+		if (voltage_change < -0.15 && (max_c - min_c) < 1 && unplug_sts_flag == false)
+		{
+			charging_sts_flag = false;
+			unplug_sts_flag = true;
+		}
+		if (voltage_change > 0.15 && (max_c - min_c) < 1 && unplug_sts_flag == true)
+		{
+			charging_sts_flag = true;
+			unplug_sts_flag = false;
+		}
+
+		// for (int i = 0; i < 10; ++i)
+		// {
+		// 	Serial.print(sys_volt_array[i]);
+		// 	Serial.print(", ");
+		// }
+		// Serial.print(max_c - min_c);
+		// Serial.print(", ");
+		// Serial.print(sys_curr_array[9] - sys_curr_array[1]);
+		// Serial.print(", ");
+		// Serial.print(c);
+		// Serial.println();
+
+		
+		sys_curr_array[0] = sys_curr_array[9];
+		sys_volt_array[0] = sys_volt_array[9];
+		for (int i = 9; i > 0; --i)
+		{
+			sys_curr_array[i] = 0;
+			sys_volt_array[i] = 0;
+		}
+		curr_cnt = 0;
+	}
+	++curr_cnt;
+
 }
 
 bool ChargerManager::step(float vbat, float sys_current, float charge_current, int board_variant)
@@ -60,90 +115,28 @@ bool ChargerManager::step(float vbat, float sys_current, float charge_current, i
 			
 			float v2 = vbat;
 			float vdiff = v2 - v1;
-			// charging_sts_flag = true;
-			sys_curr_array[curr_cnt] = sys_current;
-			sys_volt_array[curr_cnt] = vbat;
-			++curr_cnt;
-			if (hotplug_sts_flag == true)
+
+			if (charge_current >= 0.15)
 			{
-				charging_sts_flag = hotplug_check(vdiff);
+				charging_sts_flag = true;
+				unplug_sts_flag = false;
+				hotplug_sts_flag = false;
 			}
-			if (curr_cnt > 9)
-			{	
-				float voltage_change = sys_volt_array[9] - sys_volt_array[0];
-				// for (int x = 0; x < 10; ++x)
-				// {
-					
-				// 	Serial.print(sys_volt_array[x]);
-				// 	Serial.print(", ");
-				// }
 
-				float max_c = sys_curr_array[0];
-				float min_c = sys_curr_array[0];
-				for (int x = 1; x < 9; ++x)
-				{
-					if(sys_curr_array[x] > max_c)
-					{
-						max_c = sys_curr_array[x];
-					}
-					if(sys_curr_array[x] < min_c)
-					{
-						min_c = sys_curr_array[x];
-					}
-				}
-
-				// Serial.print(max_c - min_c);
-
-				if (voltage_change < -0.15 && (max_c - min_c) < 1)
-				{
-					charging_sts_flag = false;
-					unplug_sts_flag = true;
-				}
-				if (voltage_change > 0.15 && (max_c - min_c) < 1 && unplug_sts_flag == true)
-				{
-					charging_sts_flag = true;
-					unplug_sts_flag = false;
-				}
-				
-				// Serial.print(", ");
-				// Serial.println(charging_sts_flag);
-				// Serial.println();
-
-				
-				
-				sys_curr_array[0] = sys_curr_array[9];
-				sys_volt_array[0] = sys_volt_array[9];
-				for (int i = 9; i > 0; --i)
-				{
-					sys_curr_array[i] = 0;
-					sys_volt_array[i] = 0;
-				}
-				curr_cnt = 1;
+			if (charge_current < 0.15 && sys_current <= 2)
+			{
+				charging_sts_flag = false;
+				unplug_sts_flag = true;
+				hotplug_sts_flag = false;
 			}
-			// Serial.println(charging_sts_flag);
 
-
-
-
-			// if (charge_current >= 0.15)
-			// {
-			// 	charging_sts_flag = true;
-			// 	hotplug_sts_flag = false;
-			// }
-
-			// else if (charge_current < 0.15)
-			// {
-			// 	if (hotplug_sts_flag == true)
-			// 	{
-			// 		charging_sts_flag = hotplug_check(vdiff);
-			// 	}
-			// 	if (board_variant >=3 && sys_current < 2)
-			// 	{
-			// 		charging_sts_flag = false;
-			// 	}
-			// }
+			if (charge_current < 0.15 && sys_current > 2)
+			{
+				hotplug_check(vdiff);
+				unplug_check(vbat, sys_current);
+			}
+			
 		}
-	
 
 	}
 	return charging_sts_flag;
