@@ -115,25 +115,32 @@ bool ChargerManager::step(float vbat, float sys_current, float charge_current, i
 			
 			float v2 = vbat;
 			float vdiff = v2 - v1;
-
-			if (charge_current >= 0.15)
+			if (board_variant >= 3)
 			{
-				charging_sts_flag = true;
-				unplug_sts_flag = false;
-				hotplug_sts_flag = false;
+				if (charge_current >= 0.15)
+				{
+					charging_sts_flag = true;
+					unplug_sts_flag = false;
+					hotplug_sts_flag = false;
+				}
+
+				if (charge_current < 0.15 && sys_current <= 2)
+				{
+					charging_sts_flag = false;
+					unplug_sts_flag = true;
+					hotplug_sts_flag = false;
+				}
+
+				if (charge_current < 0.15 && sys_current > 2)
+				{
+					hotplug_check(vdiff);
+					unplug_check(vbat, sys_current);
+				}
 			}
 
-			if (charge_current < 0.15 && sys_current <= 2)
-			{
-				charging_sts_flag = false;
-				unplug_sts_flag = true;
-				hotplug_sts_flag = false;
-			}
-
-			if (charge_current < 0.15 && sys_current > 2)
+			if (board_variant < 3)
 			{
 				hotplug_check(vdiff);
-				unplug_check(vbat, sys_current);
 			}
 			
 		}
