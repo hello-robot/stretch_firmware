@@ -32,9 +32,8 @@ void ChargerManager::unplug_check(float v, float c)
 {
 	sys_curr_array[curr_cnt] = c;
 	sys_volt_array[curr_cnt] = v;
-	++curr_cnt;
-			
-	if (curr_cnt > 9)
+	
+	if (curr_cnt == 9)
 	{	
 		float voltage_change = sys_volt_array[9] - sys_volt_array[0];
 
@@ -63,27 +62,29 @@ void ChargerManager::unplug_check(float v, float c)
 			unplug_sts_flag = false;
 		}
 
-		for (int i = 0; i < 10; ++i)
-		{
-			Serial.print(sys_volt_array[i]);
-			Serial.print(", ");
-		}
+		// for (int y=0; y < 10; y++)
+		// {
+		// 	Serial.print(sys_volt_array[y]);
+		// 	Serial.print(", ");
+		// }
 		// Serial.print(max_c - min_c);
 		// Serial.print(", ");
-		// Serial.print(sys_curr_array[9] - sys_curr_array[1]);
+		// Serial.print(hotplug_sts_flag);
 		// Serial.print(", ");
-		// Serial.print(c);
+		// Serial.print(charging_sts_flag);
 		// Serial.println();
+
 
 		sys_curr_array[0] = sys_curr_array[9];
 		sys_volt_array[0] = sys_volt_array[9];
-		for (int i = 9; i > 0; --i)
+		for (int i = 1; i < 10; i++)
 		{
 			sys_curr_array[i] = 0;
 			sys_volt_array[i] = 0;
 		}
-		curr_cnt = 1;
+		curr_cnt = 0;
 	}
+	curr_cnt++;
 
 }
 
