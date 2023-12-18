@@ -13,15 +13,12 @@ float sys_curr_array[10] = {};
 float sys_volt_array[10] = {};
 int curr_cnt = 0;
 
-float prev_voltage_change = 0.0;
-
 
 void ChargerManager::hotplug_check(float vd)
 {
-	
 	//hotplug condition 
 	if (vd >= 0.07 && hotplug_sts_flag)
-	{
+	{	
 		hotplug_sts_flag = false;
 		charging_sts_flag = true;
 	}
@@ -35,6 +32,7 @@ void ChargerManager::unplug_check(float v, float c)
 {
 	sys_curr_array[curr_cnt] = c;
 	sys_volt_array[curr_cnt] = v;
+	++curr_cnt;
 			
 	if (curr_cnt > 9)
 	{	
@@ -65,11 +63,11 @@ void ChargerManager::unplug_check(float v, float c)
 			unplug_sts_flag = false;
 		}
 
-		// for (int i = 0; i < 10; ++i)
-		// {
-		// 	Serial.print(sys_volt_array[i]);
-		// 	Serial.print(", ");
-		// }
+		for (int i = 0; i < 10; ++i)
+		{
+			Serial.print(sys_volt_array[i]);
+			Serial.print(", ");
+		}
 		// Serial.print(max_c - min_c);
 		// Serial.print(", ");
 		// Serial.print(sys_curr_array[9] - sys_curr_array[1]);
@@ -77,7 +75,6 @@ void ChargerManager::unplug_check(float v, float c)
 		// Serial.print(c);
 		// Serial.println();
 
-		
 		sys_curr_array[0] = sys_curr_array[9];
 		sys_volt_array[0] = sys_volt_array[9];
 		for (int i = 9; i > 0; --i)
@@ -85,9 +82,8 @@ void ChargerManager::unplug_check(float v, float c)
 			sys_curr_array[i] = 0;
 			sys_volt_array[i] = 0;
 		}
-		curr_cnt = 0;
+		curr_cnt = 1;
 	}
-	++curr_cnt;
 
 }
 
@@ -115,6 +111,7 @@ bool ChargerManager::step(float vbat, float sys_current, float charge_current, i
 			
 			float v2 = vbat;
 			float vdiff = v2 - v1;
+
 			if (board_variant >= 3)
 			{
 				if (charge_current >= 0.15)
