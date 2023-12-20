@@ -242,7 +242,7 @@ void setupBoardVariants()
     pinMode(PIN_VOLTAGE, INPUT);
   }
 
-  if (BOARD_VARIANT >= 4)
+  if (BOARD_VARIANT >= 1)
   {
     pinMode(DRV8842_DECAY, OUTPUT);
   }
@@ -307,7 +307,7 @@ void disableMotorDrivers()
 //Needed for lift brake circuit to run correctly 
 void enableMotorDecay()
 {
-  if (BOARD_VARIANT >= 4)
+  if (BOARD_VARIANT >= 1)
   {
     digitalWrite(DRV8842_DECAY, HIGH);
   }
