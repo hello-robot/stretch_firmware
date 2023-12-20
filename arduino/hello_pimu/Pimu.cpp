@@ -32,7 +32,6 @@
 #define I_TO_RAW(i) (i*1000)*0.408*1024.0/3300 //per circuit
 
 #define RAW_TO_I(r) (float)r*0.01438686
-#define RAW_TO_IS(r) (float)r*0.00789866
 
 #define RAW_TO_CHRG_I(r) (float)r*0.01498910
 
