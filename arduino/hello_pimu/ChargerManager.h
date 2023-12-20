@@ -9,12 +9,10 @@ class ChargerManager{
   public:
     bool step(float vbat, float sys_current, float charge_current, int board_variant);
     void hotplug_check(float vd);
-    void unplug_check(float v, float c);
+    void unplug_check(float v, float c, float cc);
     bool charging_sts_flag = true;
     bool hotplug_sts_flag = false;
     bool unplug_sts_flag = false;
-    bool t1 = false;
-    bool t2 = false;
 };
 
 #endif
