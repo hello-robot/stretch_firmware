@@ -55,4 +55,9 @@ extern void disableWDT();
 #define US_PER_TC4_CYCLE 1000000/TC4_LOOP_RATE                          //1000 at 1KHz
 #define US_PER_TC4_TICK 1000000.0*2/48000000                            //41.6ns resolution
 
+#define STEPPER_LEFT_WHEEL 1
+#define STEPPER_RIGHT_WHEEL 2
+#define STEPPER_ARM 3
+#define STEPPER_LIFT 4
+
 #endif

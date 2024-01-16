@@ -13,6 +13,7 @@ class ChargerManager{
     bool charging_sts_flag = true;
     bool hotplug_sts_flag = false;
     bool unplug_sts_flag = false;
+    bool charger_plugged_in_flag = true;
 };
 
 #endif

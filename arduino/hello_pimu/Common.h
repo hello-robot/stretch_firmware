@@ -34,8 +34,8 @@
 // Version 0.6.0: Production release for S3 and P4. Move to new IMU and current monitoring. (BOARD VARIANT=3 for new IMU)
 // Version 0.6.2: added interrupts for imu data, added writing to system orientation record for IMU orientation to match older robots
 // Version 0.6.3: incorporting charging detection class
-
-#define FIRMWARE_VERSION "Pimu.v0.6.3p4"
+// Version 0.6.4: added is_charger_charging state to pimu status
+#define FIRMWARE_VERSION "Pimu.v0.6.4p5"
 
 #define FS 100 //Loop rate in Hz for TC5
 
@@ -110,6 +110,7 @@
 #define STATE_CHARGER_CONNECTED 2048
 #define STATE_BOOT_DETECTED 4096
 #define STATE_IS_TRACE_ON 8192       //Is trace recording
+#define STATE_IS_CHARGER_CHARGING 16384
 
 #define TRIGGER_BOARD_RESET  1
 #define TRIGGER_RUNSTOP_RESET  2

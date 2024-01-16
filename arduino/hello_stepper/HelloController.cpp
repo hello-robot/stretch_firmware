@@ -31,6 +31,8 @@
 #include "TrajectoryManager.h"
 #include "TraceManager.h"
 
+#include "AnalogManager.h"
+
 void write_to_lookup(uint8_t page_id, float * data);
 
 
@@ -47,6 +49,9 @@ TrajectorySegmentReply traj_seg_reply;
 
 Stepper_Board_Info board_info;
 FlashStorage(flash_gains, Gains);
+FlashStorage(flash_stepper_type, uint8_t);
+
+
 
 LoadTest load_test;
 volatile int dirty_cmd=false;
@@ -103,8 +108,7 @@ volatile float efLPF = 0;
 volatile float vsLPF = 0.0;  
 volatile float vsLPFa = 0.0; 
 volatile float vsLPFb = 1.0;
-volatile float voltage_LPFa = 0.0; 
-volatile float voltage_LPFb = 1.0;
+
   
 bool first_filter=true;
 
@@ -142,8 +146,7 @@ int first_step_safety=10; //count down
 uint8_t board_id=0;
 
 int vel_watchdog=TC4_LOOP_RATE; //Watchdog counts down from 1s
-
-
+bool motor_enabled_flag = true;
 
 
 ///////////////////////// UTIL ///////////////////////////
@@ -239,7 +242,8 @@ void setupBoardVariants()
   }
   if (BOARD_VARIANT>=3)
   {
-    pinMode(PIN_VOLTAGE, INPUT);
+    
+    analog_manager.setupADC();//Set up analog read for S3 stepper boards
   }
 
   if (BOARD_VARIANT >= 4)
@@ -270,6 +274,10 @@ void setupHelloController()
   sprintf(board_info.board_variant, "Stepper.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
 
+  //Reading stepper_type from flash memory
+  uint8_t flash_st;
+  flash_st = flash_stepper_type.read();
+  memcpy(&(board_info.stepper_type),&flash_st,sizeof(board_info.stepper_type));
 
   sync_manager.setupSyncManager();
   time_manager.setupTimeManager();
@@ -280,6 +288,7 @@ void setupHelloController()
   dirty_gains=1; //force load of gains
   analogFastWrite(VREF_2, 0);     //set phase currents to zero
   analogFastWrite(VREF_1, 0);
+
   
 }
 
@@ -290,6 +299,7 @@ void enableMotorDrivers()
     digitalWrite(MOTOR_SHUNT, HIGH); //Turn the shunt off (for lift dof)
     digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
     digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
+    motor_enabled_flag = true;
   }
 
 }
@@ -299,8 +309,8 @@ void disableMotorDrivers()
   {
     digitalWrite(DRV8842_NSLEEP_A, LOW); //Logic high enables driver
     digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
-    delay(5);
     digitalWrite(MOTOR_SHUNT, LOW); //Turn the shunt off (for lift dof)
+    motor_enabled_flag = false;
   }
 }
 
@@ -478,6 +488,23 @@ void handleNewRPC()
           traj_hold_pos=yw;
           trajectory_manager.reset();
           break;
+
+    //RPC command to set stepper_type in flash mem
+    case RPC_SET_STEPPER_TYPE: 
+          memcpy(&(board_info.stepper_type),rpc_in+1,sizeof(board_info.stepper_type));
+          flash_stepper_type.write(board_info.stepper_type);
+          rpc_out[0]=RPC_REPLY_SET_STEPPER_TYPE;
+          num_byte_rpc_out=1;
+          break;
+
+    //RPC command to read stepper_type from flash mem
+    case RPC_READ_STEPPER_TYPE_FROM_FLASH:
+          rpc_out[0]=RPC_REPLY_READ_STEPPER_TYPE_FROM_FLASH;
+          uint8_t flash_st;
+          flash_st=flash_stepper_type.read();
+          memcpy(rpc_out + 1, (uint8_t *) (&flash_st), sizeof(board_info.stepper_type)); //Collect the status data
+          num_byte_rpc_out=sizeof(board_info.stepper_type)+1;
+          break; 
    default:
         break;
   };
@@ -485,25 +512,9 @@ void handleNewRPC()
 
 ///////////////////////// Status ///////////////////////////
 
-
-float voltage=614.4; //Start filter at 12V (1024ticks/20V scaling)
-#define VOLTAGE_BIAS 10.24 //Subtract of 0.2V to accomodate TVS drop (1024ticks/20V scaling)
-void update_analog_read()
-{
-  //  if (BOARD_VARIANT>=3)
-  // {
-  //   voltage = voltage * voltage_LPFa +  voltage_LPFb* (analogRead(PIN_VOLTAGE)-VOLTAGE_BIAS); // analogRead() is slow and causes issues
-  // }
-  // else
-    voltage=0; // Omitting voltage reading for now
-}
-
 void update_status()
 {
 
-
-  
-  
 //stat.debug=cmd_rpc_overflow;
   //noInterrupts();
   //stat.timestamp=time_manager.get_encoder_timestamp();
@@ -513,7 +524,15 @@ void update_status()
   stat.err=deg_to_rad(e);               //controller error (inner loop)
   stat.mode=cmd.mode; 
   stat.guarded_event = guarded_event_cnt;
-  stat.voltage=voltage;
+  if (BOARD_VARIANT >= 3)
+  {
+    stat.voltage=analog_manager.voltage;
+  }
+  else
+  {
+    stat.voltage = 0;
+  }
+  
   stat.diag=0;
   stat.diag= diag_pos_calibrated ?      stat.diag|DIAG_POS_CALIBRATED : stat.diag;
   stat.diag= diag_runstop_on ?          stat.diag|DIAG_RUNSTOP_ON : stat.diag;
@@ -564,7 +583,6 @@ if (trace_manager.trace_on)
     trace_manager.update_trace_status(&stat_out);
   }
 }
-  
 
 }
 
@@ -691,10 +709,9 @@ void stepHelloController()
         vsLPFa = exp(gains_in.vel_status_LPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
         vsLPFb = (1.0-vsLPFa)* FsCtrl;
       }
-      if (gains_in.voltage_LPF!=gains.voltage_LPF) //Voltage
+      if (BOARD_VARIANT >= 3)
       {
-        voltage_LPFa = exp(gains_in.voltage_LPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
-        voltage_LPFb = (1.0-voltage_LPFa)* FsCtrl;
+        analog_manager.update_config(&gains_in, &gains);
       }
       
       if (gains_in.vTe_d != gains.vTe_d)
@@ -808,11 +825,21 @@ void stepHelloController()
      if (diag_runstop_on || (vel_watchdog==0 && (gains.config & CONFIG_ENABLE_VEL_WATCHDOG)))
      {
         //stat.debug++;
+
+        //Checks stepper_type from flash mem to allow for disabling the motor drivers when runstoped only for the base wheels
+        if (motor_enabled_flag && (board_info.stepper_type == STEPPER_LEFT_WHEEL || board_info.stepper_type == STEPPER_RIGHT_WHEEL))
+        {
+          disableMotorDrivers();
+        }
         cmd_in.mode=MODE_SAFETY;
         cmd.mode=MODE_SAFETY;
         safety_override=true;
      }
      else
+      if (!motor_enabled_flag && (board_info.stepper_type == STEPPER_LEFT_WHEEL || board_info.stepper_type == STEPPER_RIGHT_WHEEL))
+      {
+        enableMotorDrivers();
+      }
       safety_override=false;
 
     
@@ -1293,7 +1320,7 @@ void stepHelloController()
   //Cleanup
   trg.data=0; //Clear triggers
   first_filter=false;
-  update_analog_read();
+  analog_manager.step();
   update_status();
   update_trace();
   ctrl_cycle_cnt++;

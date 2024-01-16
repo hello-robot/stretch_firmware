@@ -13,6 +13,7 @@ float sys_curr_array[10] = {};
 float sys_volt_array[10] = {};
 int curr_cnt = 0;
 
+//charging_sts_flag is if charger is connected 
 
 void ChargerManager::hotplug_check(float vd)
 {
@@ -21,6 +22,7 @@ void ChargerManager::hotplug_check(float vd)
 	{	
 		hotplug_sts_flag = false;
 		charging_sts_flag = true;
+
 	}
 	if (vd <= 0.05 && hotplug_sts_flag)
 	{
@@ -98,13 +100,14 @@ bool ChargerManager::step(float vbat, float sys_current, float charge_current, i
 			v1 = vbat;
 			hotplug_sts_flag = true;
 			charging_sts_flag = false;
+			charger_plugged_in_flag = false;
 			unplug_sts_flag = true;
 		}
 
 		//Charger Connected Pin HIGH Charger Connected
 		if (digitalRead(CHARGER_CONNECTED) == HIGH)
 		{	
-			
+			charger_plugged_in_flag = true;
 			float v2 = vbat;
 			float vdiff = v2 - v1;
 

@@ -50,7 +50,7 @@ bool state_buzzer_on=false;
 bool state_low_voltage_alert=false;
 bool state_high_current_alert=false;
 bool state_over_tilt_alert=false;
-// bool state_charger_connected=false;
+
 bool state_boot_detected=false;
 
 RunstopManager runstop_manager;
@@ -58,8 +58,9 @@ SyncManager sync_manager(&runstop_manager);
 LightBarManager light_bar_manager;
 
 ChargerManager charger_manager;
-// chargerState state_charger_connected = CHARGER_FALSE;
+
 bool state_charger_connected = false;
+bool state_charger_is_charging = false;
 
 
 
@@ -199,7 +200,7 @@ void stepPimuController()
   runstop_manager.step(&cfg);
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
-  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, RAW_TO_V(analog_manager.voltage));
+  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_is_charging, state_low_voltage_alert, runstop_manager.runstop_led_on, RAW_TO_V(analog_manager.voltage));
   update_fan();  
   update_imu();
   update_board_reset();
@@ -438,8 +439,9 @@ void update_voltage_monitor()
 {
   if (BOARD_VARIANT >= 1)
   {
-
-    state_charger_connected = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
+    state_charger_is_charging = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
+    state_charger_connected = charger_manager.charger_plugged_in_flag;
+    
     
     if(analog_manager.voltage<low_voltage_alert) //dropped below
       {
@@ -561,6 +563,7 @@ void update_status()
   stat.state= state_boot_detected ? stat.state|STATE_BOOT_DETECTED : stat.state;
   stat.state= state_over_tilt_alert ? stat.state|STATE_OVER_TILT_ALERT : stat.state;
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
+  stat.state= state_charger_is_charging ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
   if(TRACE_TYPE==TRACE_TYPE_DEBUG)

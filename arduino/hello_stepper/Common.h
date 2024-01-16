@@ -35,7 +35,8 @@
 // Version 0.6.1: analogRead on voltage pin omitted
 // Version 0.6.2: Enable acceleration limits for VEL_PID
 // Version 0.6.3: Enable Decay pin of DRV8842 for lift stepper board to operate correctly
-#define FIRMWARE_VERSION_HR "Stepper.v0.6.3p4"
+// Version 0.6.4: Storying stepper_type to flash, to allow for wheel stepper motors to turn off when runstopped, fixed voltage input reading
+#define FIRMWARE_VERSION_HR "Stepper.v0.6.4p5"
 
 /////////////////////////////////////////////////////////////////
 
@@ -71,6 +72,13 @@
 #define RPC_REPLY_STATUS_AUX  30
 #define RPC_LOAD_TEST_PULL 31
 #define RPC_REPLY_LOAD_TEST_PULL 32
+
+//////////////////////////////////////////
+#define RPC_SET_STEPPER_TYPE 33
+#define RPC_REPLY_SET_STEPPER_TYPE 34
+#define RPC_READ_STEPPER_TYPE_FROM_FLASH 35
+#define RPC_REPLY_READ_STEPPER_TYPE_FROM_FLASH 36
+//////////////////////////////////////////
 
 #define MODE_SAFETY 0
 #define MODE_FREEWHEEL 1
@@ -155,10 +163,11 @@ struct __attribute__ ((packed)) Gains{
   float i_safety_feedforward; //current (A), for when safety mode is hold
   uint8_t config;
 
-  float vpK1;
-  float vpK2;
-  float vpK3;
+  // float vpK1;
+  // float vpK2;
+  // float vpK3;
   float voltage_LPF; //Low pass filter roll-off for voltage (Hz)
+
 };
 
 struct __attribute__ ((packed)) MotionLimits{
@@ -225,6 +234,7 @@ struct __attribute__ ((packed)) EncCalib{
 struct __attribute__ ((packed)) Stepper_Board_Info{
     char board_variant[20];
     char firmware_version_hr[20];
+    uint8_t stepper_type;
 };
 
 //Cubic or quintic spline / linear plus duration
@@ -244,6 +254,7 @@ struct __attribute__ ((packed)) TrajectorySegment{
 struct __attribute__ ((packed)) TrajectorySegmentReply{
   uint8_t success;
 };
+
 
 /////////////////////////////////////////////////////////////////
 
