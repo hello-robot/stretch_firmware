@@ -1320,7 +1320,10 @@ void stepHelloController()
   //Cleanup
   trg.data=0; //Clear triggers
   first_filter=false;
-  analog_manager.step();
+  if (BOARD_VARIANT >= 3)
+  {
+    analog_manager.step();
+  }
   update_status();
   update_trace();
   ctrl_cycle_cnt++;
