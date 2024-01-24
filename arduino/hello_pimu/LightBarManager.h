@@ -14,6 +14,7 @@
 #define  __LIGHT_BAR_MANAGER_H__
 
 #include "Common.h"
+#include "ChargerManager.h"
 #include <Adafruit_NeoPixel_ZeroDMA.h>
 
 enum  lightbar_mode {OFF,BOOTING, CHARGING_REQUIRED, CHARGING_RUNSTOP_ON, CHARGING_RUNSTOP_OFF, NORMAL_RUNSTOP_OFF, NORMAL_RUNSTOP_ON };

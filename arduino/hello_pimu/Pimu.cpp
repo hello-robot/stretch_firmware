@@ -24,11 +24,16 @@
 #include "LightBarManager.h"
 #include "TraceManager.h"
 #include "IMU_BNO085.h"
+#include "ChargerManager.h"
 
 
 #define V_TO_RAW(v) v*1024/20.0 //per circuit
 #define RAW_TO_V(r) (float)r*0.01953125 //20.0/1024.0
 #define I_TO_RAW(i) (i*1000)*0.408*1024.0/3300 //per circuit
+
+#define RAW_TO_I(r) (float)r*0.01438686
+
+#define RAW_TO_CHRG_I(r) (float)r*0.01498910
 
 float low_voltage_alert=V_TO_RAW(10.5);
 int low_voltage_alert_cnt=0;
@@ -45,12 +50,17 @@ bool state_buzzer_on=false;
 bool state_low_voltage_alert=false;
 bool state_high_current_alert=false;
 bool state_over_tilt_alert=false;
-bool state_charger_connected=false;
+
 bool state_boot_detected=false;
 
 RunstopManager runstop_manager;
 SyncManager sync_manager(&runstop_manager);
 LightBarManager light_bar_manager;
+
+ChargerManager charger_manager;
+
+bool state_charger_connected = false;
+bool state_charger_is_charging = false;
 
 
 
@@ -175,6 +185,7 @@ void setupPimu() {
   sprintf(board_info.board_variant, "Pimu.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
+  analog_manager.factory_config();
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
@@ -189,7 +200,7 @@ void stepPimuController()
   runstop_manager.step(&cfg);
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
-  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, RAW_TO_V(analog_manager.voltage));
+  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_is_charging, state_low_voltage_alert, runstop_manager.runstop_led_on, RAW_TO_V(analog_manager.voltage));
   update_fan();  
   update_imu();
   update_board_reset();
@@ -426,10 +437,12 @@ void update_imu()
 ////////////////////////////
 void update_voltage_monitor()
 {
-  if (BOARD_VARIANT>=1)
+  if (BOARD_VARIANT >= 1)
   {
-    //For Variant 1, indicate charging required on the Neopixel
-    state_charger_connected=digitalRead(CHARGER_CONNECTED);
+    state_charger_is_charging = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
+    state_charger_connected = charger_manager.charger_plugged_in_flag;
+    
+    
     if(analog_manager.voltage<low_voltage_alert) //dropped below
       {
         state_low_voltage_alert=true;
@@ -441,7 +454,7 @@ void update_voltage_monitor()
         state_low_voltage_alert=false;
       }
   }
-  
+
   if (BOARD_VARIANT==0)
   {
     //For Variant 0, do the double beep at low voltage and trigger the runstop
@@ -550,6 +563,7 @@ void update_status()
   stat.state= state_boot_detected ? stat.state|STATE_BOOT_DETECTED : stat.state;
   stat.state= state_over_tilt_alert ? stat.state|STATE_OVER_TILT_ALERT : stat.state;
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
+  stat.state= state_charger_is_charging ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
   if(TRACE_TYPE==TRACE_TYPE_DEBUG)

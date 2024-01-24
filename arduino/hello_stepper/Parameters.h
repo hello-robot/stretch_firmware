@@ -85,6 +85,8 @@ extern const int sin_1[];
 #define DRV8842_NSLEEP_A 38 //PA13
 #define DRV8842_NSLEEP_B 2 //PA14
 #define MOTOR_SHUNT 35 //PA16
+#define DRV8842_DECAY 10 //PA18
+
 #else
 #define ledPin  13
 #endif

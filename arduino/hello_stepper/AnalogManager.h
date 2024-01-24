@@ -15,31 +15,18 @@
 
 #include "Common.h"
 
-#define NUM_ADC_INPUTS 9
+#define NUM_ADC_INPUTS 1
 
 class AnalogManager {    
   public: 
     AnalogManager();
-    void update_config(Pimu_Config * cfg_new, Pimu_Config * cfg_old);
-    void step(Pimu_Status * stat, Pimu_Config * cfg);
+    void update_config(Gains * cfg_new, Gains * cfg_old);
+    void step();
     void setupADC();
-    void factory_config();
-    
-    float cliff_LPFa; 
-    float cliff_LPFb;
+
     float voltage_LPFa; 
     float voltage_LPFb;
-    float current_LPFa; 
-    float current_LPFb;
-    float temp_LPFa; 
-    float temp_LPFb ;    
-    float cliff[4];
-    bool at_cliff[4];
     float voltage;
-    float current;
-    float current_charge;
-    float current_efuse;
-    float temp;
     volatile uint16_t adcResult[NUM_ADC_INPUTS] = {};         // ADC results buffer
     uint8_t mux_map[NUM_ADC_INPUTS];
     uint8_t adc_input_id;

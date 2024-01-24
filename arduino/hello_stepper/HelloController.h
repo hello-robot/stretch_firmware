@@ -28,6 +28,8 @@ extern void stepHelloCommutation();
 extern void stepHelloControllerRPC();
 extern void toggle_led(int rate_ms);
 extern void enableMotorDrivers();
+extern void enableMotorDecay();
+
 extern float debug;
 extern void setupMGInterrupts();
 extern void enableMGInterrupts();
@@ -52,5 +54,10 @@ extern void disableWDT();
 #define TC4_COUNT_PER_CYCLE (int)( round(48000000 / 2/ TC4_LOOP_RATE))  //24,000 at 1Khz, 2:1 prescalar TC4 is 32bit timer 
 #define US_PER_TC4_CYCLE 1000000/TC4_LOOP_RATE                          //1000 at 1KHz
 #define US_PER_TC4_TICK 1000000.0*2/48000000                            //41.6ns resolution
+
+#define STEPPER_LEFT_WHEEL 1
+#define STEPPER_RIGHT_WHEEL 2
+#define STEPPER_ARM 3
+#define STEPPER_LIFT 4
 
 #endif
