@@ -35,8 +35,8 @@
 // Version 0.6.1: analogRead on voltage pin omitted
 // Version 0.6.2: Enable acceleration limits for VEL_PID
 // Version 0.6.3: Enable Decay pin of DRV8842 for lift stepper board to operate correctly
-// Version 0.6.4: Storying stepper_type to flash, to allow for wheel stepper motors to turn off when runstopped, fixed voltage input reading
-#define FIRMWARE_VERSION_HR "Stepper.v0.6.4p5"
+// Version 0.7.0: Storying stepper_type to flash, to allow for wheel stepper motors to turn off when runstopped, fixed voltage input reading
+#define FIRMWARE_VERSION_HR "Stepper.v0.7.0p5"
 
 /////////////////////////////////////////////////////////////////
 
