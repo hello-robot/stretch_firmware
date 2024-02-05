@@ -18,5 +18,5 @@ For details, see the LICENSE.md file in the root directory. All materials within
 We thank people who have contributed to this work via open-source code and open hardware. We especially thank the [Mechaduino](https://tropical-labs.com/mechaduino/) project and [Tropical Labs](https://tropical-labs.com/). The motor controller firmware and hardware are derived from the excellent [firmware](https://github.com/jcchurch13/Mechaduino-Firmware) and [hardware](https://github.com/jcchurch13/Mechaduino-Hardware) created for the Mechaduino project by Tropical Labs.
 
 ------
-<div align="center"> All materials are Copyright 2022 by Hello Robot Inc. Hello Robot and Stretch are registered trademarks. The Stretch RE1 and RE2 robots are covered by U.S. Patent 11,230,000 and other patents pending.</div>
+<div align="center"> All materials are Copyright 2022-2024 by Hello Robot Inc. Hello Robot and Stretch are registered trademarks. The Stretch robots are covered by U.S. Patent 11,230,000 and other patents pending.</div>
 
