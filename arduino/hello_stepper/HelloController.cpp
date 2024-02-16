@@ -76,8 +76,8 @@ volatile bool diag_waiting_on_sync=0;
 int switch_to_menu_cnt=0;
 int board_reset_cnt=0;
 int guarded_event_cnt=0;
-//int guarded_eff_cnt=0;
-//#define GUARDED_EFF_THRESH 100
+int guarded_eff_cnt=0;
+#define GUARDED_EFF_THRESH 100 //Must be over effort for this long to trigger a contact event
 bool motion_limits_set=0;
 volatile int cmd_cnt_exec=0;
 volatile int cmd_cnt_rpc=0;
@@ -169,6 +169,31 @@ float k_e2c;
 float current_to_effort(float x)
 {
   return max(-255,min(255,x*k_c2e));
+}
+
+#define NOMINAL_BUS_VOLTAGE 12.5 //V of battery fully charged, no charger attached, nominal load
+#define RAW_TO_VOLTAGE 20.0/1024 //10bit adc, 0-20V per 0-3.3V reading
+float voltage_calibrated=0;
+float get_voltage_calibrated(float raw)
+{
+v = (raw*RAW_TO_VOLTAGE)-0.3; //0.3 is needed to account for leakage current of TVS
+ return v;
+}
+
+//This returns an effort value (-255 to 255) that is normalized by the bus voltage
+//such that as the bus voltage drops, the estimate of effort "force" applied to the outside world
+//goes down for a given current
+//Only works for VARIANT_3 and later boards
+
+float current_to_effort_v_norm(float x)
+{
+    float e=current_to_effort(x);
+   if (BOARD_VARIANT>=3 && voltage_calibrated!=0)
+   {
+    return max(-255,min(255,e*voltage_calibrated/NOMINAL_BUS_VOLTAGE));
+   }
+   else
+    return e;
 }
 
 float effort_to_current(float e)
@@ -529,6 +554,7 @@ void update_status()
   if (BOARD_VARIANT >= 3)
   {
     stat.voltage=analog_manager.voltage;
+    voltage_calibrated=get_voltage_calibrated(stat.voltage);
   }
   else
   {
@@ -890,8 +916,8 @@ void stepHelloController()
         cmd.stiffness=cmd_in.stiffness;
         cmd.i_contact_pos =cmd_in.i_contact_pos;
         cmd.i_contact_neg =cmd_in.i_contact_neg;
-        g_eff_pos=current_to_effort(abs(cmd.i_contact_pos));
-        g_eff_neg=current_to_effort(-1*abs(cmd.i_contact_neg));
+        g_eff_pos=current_to_effort_v_norm(abs(cmd.i_contact_pos));
+        g_eff_neg=current_to_effort_v_norm(-1*abs(cmd.i_contact_neg));
       
         //If mode has changed manage smooth switchover
         if (cmd.mode!=mode_last)
@@ -1267,29 +1293,37 @@ void stepHelloController()
    //stat.debug=g_eff_pos;//eff_max;//effort_to_current(eff_max);
     ///////////////////////////////
     //Guarded Mode
-      
+
      if (guarded_mode_enabled)
      {
-      if (eff>g_eff_pos || eff<g_eff_neg)
-      {
-        guarded_event_cnt++;
-
-        if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT || cmd.mode==MODE_POS_PID || cmd.mode==MODE_VEL_PID)) //Hit a new contact event, hold position
-        {
-          guarded_override=1;
-          hold_pos=yw;
-          //stat.debug=deg_to_rad(hold_pos);
-          if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
+          if (eff>g_eff_pos || eff<g_eff_neg)
           {
-            trajectory_manager.reset();
-          }
-          cmd.mode=MODE_SAFETY;
-        }
-     }}
+            guarded_eff_cnt++;
+            if (guarded_eff_cnt>GUARDED_EFF_THRESH)
+            {
+                guarded_event_cnt++;
+
+                if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT || cmd.mode==MODE_POS_PID || cmd.mode==MODE_VEL_PID)) //Hit a new contact event, hold position
+                {
+                  guarded_override=1;
+                  hold_pos=yw;
+                  //stat.debug=deg_to_rad(hold_pos);
+                  if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
+                  {
+                    trajectory_manager.reset();
+                  }
+                  cmd.mode=MODE_SAFETY;
+                }
+            }
+         }
+         else
+         guarded_eff_cnt=0;//reset
+     }
      else
      {
       guarded_override=0;
       guarded_event_cnt=0;
+      guarded_eff_cnt=0;
      }
       
   ////////////////////
