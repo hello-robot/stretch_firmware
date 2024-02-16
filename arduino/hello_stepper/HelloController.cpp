@@ -77,7 +77,7 @@ int switch_to_menu_cnt=0;
 int board_reset_cnt=0;
 int guarded_event_cnt=0;
 int guarded_eff_cnt=0;
-#define GUARDED_EFF_THRESH 100 //Must be over effort for this long to trigger a contact event
+#define GUARDED_EFF_THRESH 50 // (ms) Must be over effort for this long to trigger a contact event
 bool motion_limits_set=0;
 volatile int cmd_cnt_exec=0;
 volatile int cmd_cnt_rpc=0;
