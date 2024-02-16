@@ -76,6 +76,8 @@ volatile bool diag_waiting_on_sync=0;
 int switch_to_menu_cnt=0;
 int board_reset_cnt=0;
 int guarded_event_cnt=0;
+//int guarded_eff_cnt=0;
+//#define GUARDED_EFF_THRESH 100
 bool motion_limits_set=0;
 volatile int cmd_cnt_exec=0;
 volatile int cmd_cnt_rpc=0;
@@ -1271,7 +1273,7 @@ void stepHelloController()
       if (eff>g_eff_pos || eff<g_eff_neg)
       {
         guarded_event_cnt++;
-        
+
         if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT || cmd.mode==MODE_POS_PID || cmd.mode==MODE_VEL_PID)) //Hit a new contact event, hold position
         {
           guarded_override=1;
@@ -1283,8 +1285,7 @@ void stepHelloController()
           }
           cmd.mode=MODE_SAFETY;
         }
-      }
-     }
+     }}
      else
      {
       guarded_override=0;
