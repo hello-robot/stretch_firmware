@@ -176,8 +176,7 @@ float current_to_effort(float x)
 float voltage_calibrated=0;
 float get_voltage_calibrated(float raw)
 {
-v = (raw*RAW_TO_VOLTAGE)-0.3; //0.3 is needed to account for leakage current of TVS
- return v;
+ return (raw*RAW_TO_VOLTAGE)-0.3; //0.3 is needed to account for leakage current of TVS
 }
 
 //This returns an effort value (-255 to 255) that is normalized by the bus voltage
@@ -1302,7 +1301,6 @@ void stepHelloController()
             if (guarded_eff_cnt>GUARDED_EFF_THRESH)
             {
                 guarded_event_cnt++;
-
                 if (!guarded_override && (cmd.mode==MODE_POS_TRAJ ||cmd.mode==MODE_POS_TRAJ_INCR || cmd.mode==MODE_VEL_TRAJ || cmd.mode==MODE_POS_TRAJ_WAYPOINT || cmd.mode==MODE_POS_PID || cmd.mode==MODE_VEL_PID)) //Hit a new contact event, hold position
                 {
                   guarded_override=1;
