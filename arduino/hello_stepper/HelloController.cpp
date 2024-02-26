@@ -851,22 +851,10 @@ void stepHelloController()
      //Force to safety mode on runstop or velocity watchdog
      if (diag_runstop_on || (vel_watchdog==0 && (gains.config & CONFIG_ENABLE_VEL_WATCHDOG)))
      {
-        //stat.debug++;
-
-        //Checks stepper_type from flash mem to allow for disabling the motor drivers when runstoped only for the base wheels
-        if (motor_enabled_flag && (board_info.stepper_type == STEPPER_LEFT_WHEEL || board_info.stepper_type == STEPPER_RIGHT_WHEEL))
-        {
-          disableMotorDrivers();
-        }
         cmd_in.mode=MODE_SAFETY;
         cmd.mode=MODE_SAFETY;
         safety_override=true;
      }
-     else
-      if (!motor_enabled_flag && (board_info.stepper_type == STEPPER_LEFT_WHEEL || board_info.stepper_type == STEPPER_RIGHT_WHEEL))
-      {
-        enableMotorDrivers();
-      }
       safety_override=false;
 
     
@@ -1040,7 +1028,11 @@ void stepHelloController()
     diag_is_mg_moving=0;
 
       ////// Now run control cycle
-      
+
+      //Make sure drives are on (unless in safety freewheel)
+      if (cmd.mode!=MODE_SAFETY && !motor_enabled_flag)
+        enableMotorDrivers();
+
       switch (cmd.mode)
       {
         case MODE_FREEWHEEL:
@@ -1061,7 +1053,7 @@ void stepHelloController()
             diag_is_mg_moving=0;
             break;
         case MODE_SAFETY:
-          if (!(gains.config & CONFIG_SAFE_MODE_HOLD)) //Freewheel
+          if (!(gains.config & CONFIG_SAFE_MODE_HOLD)) //Safety Freewheel (base wheels and arm)
            {
             u=0;
             e=0;
@@ -1069,8 +1061,10 @@ void stepHelloController()
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=0;
             diag_is_mg_moving=0;
+            //This makes them easier to backdrive
+            disableMotorDrivers();
             break;
-           } //else do a safety hold
+           } //else do a safety float /hold
            else
            {
             e = (hold_pos - yw);
