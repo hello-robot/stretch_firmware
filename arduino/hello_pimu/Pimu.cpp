@@ -62,7 +62,9 @@ ChargerManager charger_manager;
 bool state_charger_connected = false;
 bool state_charger_is_charging = false;
 
-
+bool left_tilt_flag = false;
+bool right_tilt_flag = false;
+bool forward_tilt_flag = false;
 
 
 
@@ -493,15 +495,65 @@ void update_current_monitor()
 
 void update_tilt_monitor()
 {
-  if(isIMUOrientationValid() && (abs(stat.imu.pitch)>over_tilt_alert_deg || abs(stat.imu.roll)>over_tilt_alert_deg) && cfg.stop_at_tilt) //over tilt
-      {
-        state_over_tilt_alert=true;
-        runstop_manager.activate_runstop();
-      }
-      else
-      {
-        state_over_tilt_alert=false;
-      }
+  float left_tilt;
+  float right_tilt;
+  float forward_tilt;
+
+
+  left_tilt = analog_manager.cliff[3] - analog_manager.cliff[1];
+  right_tilt = analog_manager.cliff[2] - analog_manager.cliff[0];
+  forward_tilt = ((analog_manager.cliff[0] + analog_manager.cliff[1])/2) - ((analog_manager.cliff[2] + analog_manager.cliff[3])/2);
+
+  // Serial.println(forward_tilt);
+
+  if (isIMUOrientationValid())
+  {
+    /// Left Tilting Detection ////////////////////
+    if (left_tilt > 300 && stat.imu.ax > 1 && stat.imu.ax < 2.5 && left_tilt_flag == false)
+    {
+      left_tilt_flag = true;
+      runstop_manager.activate_runstop();
+    }
+    if (left_tilt < 50 && stat.imu.ax < 1 && left_tilt_flag == true)
+    {
+      left_tilt_flag = false;
+    }
+
+    /// Right Tilting Detection ////////////////////
+    if (right_tilt > 300 && stat.imu.ax > -2.5 && stat.imu.ax < -0.75 && right_tilt_flag == false)
+    {
+      right_tilt_flag = true;
+      runstop_manager.activate_runstop();
+    }
+    if (right_tilt < 50 && stat.imu.ax > -1 && right_tilt_flag == true)
+    {
+      right_tilt_flag = false;
+    }
+
+        /// Forward Tilting Detection ////////////////////
+    if (forward_tilt > 300 && stat.imu.ay > 1 && stat.imu.ay < 2.5 && forward_tilt_flag == false)
+    {
+      forward_tilt_flag = true;
+      runstop_manager.activate_runstop();
+    }
+    if (forward_tilt < 50 && stat.imu.ay < 1 && forward_tilt_flag == true)
+    {
+      forward_tilt_flag = false;
+    }
+
+
+    state_over_tilt_alert=(left_tilt_flag || right_tilt_flag || forward_tilt_flag);
+  }
+  // if(isIMUOrientationValid() && (abs(stat.imu.pitch)>over_tilt_alert_deg || abs(stat.imu.roll)>over_tilt_alert_deg) && cfg.stop_at_tilt) //over tilt
+  //     {
+  //       state_over_tilt_alert=true;
+  //       runstop_manager.activate_runstop();
+  //     }
+  //     else
+  //     {
+  //       state_over_tilt_alert=false;
+  //     }
+  
 }
 ////////////////////////////
 
