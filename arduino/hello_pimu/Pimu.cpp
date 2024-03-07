@@ -499,16 +499,13 @@ void update_tilt_monitor()
   float right_tilt;
   float forward_tilt;
 
-
   left_tilt = analog_manager.cliff[3] - analog_manager.cliff[1];
   right_tilt = analog_manager.cliff[2] - analog_manager.cliff[0];
   forward_tilt = ((analog_manager.cliff[0] + analog_manager.cliff[1])/2) - ((analog_manager.cliff[2] + analog_manager.cliff[3])/2);
 
-  // Serial.println(forward_tilt);
-
-  if (isIMUOrientationValid())
+  if (isIMUOrientationValid() && cfg.stop_at_tilt)
   {
-    /// Left Tilting Detection ////////////////////
+    ////////////// Left Tilting Detection ////////////////////
     if (left_tilt > 300 && stat.imu.ax > 1 && stat.imu.ax < 2.5 && left_tilt_flag == false)
     {
       left_tilt_flag = true;
@@ -519,7 +516,7 @@ void update_tilt_monitor()
       left_tilt_flag = false;
     }
 
-    /// Right Tilting Detection ////////////////////
+    /////////////////// Right Tilting Detection ////////////////////
     if (right_tilt > 300 && stat.imu.ax > -2.5 && stat.imu.ax < -0.75 && right_tilt_flag == false)
     {
       right_tilt_flag = true;
@@ -530,7 +527,7 @@ void update_tilt_monitor()
       right_tilt_flag = false;
     }
 
-        /// Forward Tilting Detection ////////////////////
+    //////// Forward Tilting Detection //////////////////////////////////
     if (forward_tilt > 300 && stat.imu.ay > 1 && stat.imu.ay < 2.5 && forward_tilt_flag == false)
     {
       forward_tilt_flag = true;
@@ -540,8 +537,6 @@ void update_tilt_monitor()
     {
       forward_tilt_flag = false;
     }
-
-
     state_over_tilt_alert=(left_tilt_flag || right_tilt_flag || forward_tilt_flag);
   }
   // if(isIMUOrientationValid() && (abs(stat.imu.pitch)>over_tilt_alert_deg || abs(stat.imu.roll)>over_tilt_alert_deg) && cfg.stop_at_tilt) //over tilt

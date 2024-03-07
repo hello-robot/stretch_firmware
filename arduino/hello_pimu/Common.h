@@ -35,7 +35,8 @@
 // Version 0.6.2: added interrupts for imu data, added writing to system orientation record for IMU orientation to match older robots
 // Version 0.6.3: incorporting charging detection class
 // Version 0.7.0: added is_charger_charging state to pimu status
-#define FIRMWARE_VERSION "Pimu.v0.7.0p5"
+// Version 0.7.1  added tilt detection feature using cliff sensor and IMU data
+#define FIRMWARE_VERSION "Pimu.v0.7.1p5"
 
 #define FS 100 //Loop rate in Hz for TC5
 
