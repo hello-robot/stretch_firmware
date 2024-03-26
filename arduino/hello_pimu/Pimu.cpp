@@ -65,6 +65,7 @@ bool state_charger_is_charging = false;
 bool left_tilt_flag = false;
 bool right_tilt_flag = false;
 bool forward_tilt_flag = false;
+uint8_t state_over_tilt_type = 0;
 
 
 
@@ -537,17 +538,10 @@ void update_tilt_monitor()
     {
       forward_tilt_flag = false;
     }
+
     state_over_tilt_alert=(left_tilt_flag || right_tilt_flag || forward_tilt_flag);
+    state_over_tilt_type = (left_tilt_flag ? 0x01 : 0 | right_tilt_flag ? 0x02 : 0 | forward_tilt_flag ? 0x03 :0);
   }
-  // if(isIMUOrientationValid() && (abs(stat.imu.pitch)>over_tilt_alert_deg || abs(stat.imu.roll)>over_tilt_alert_deg) && cfg.stop_at_tilt) //over tilt
-  //     {
-  //       state_over_tilt_alert=true;
-  //       runstop_manager.activate_runstop();
-  //     }
-  //     else
-  //     {
-  //       state_over_tilt_alert=false;
-  //     }
   
 }
 ////////////////////////////
@@ -611,6 +605,10 @@ void update_status()
   stat.state= state_over_tilt_alert ? stat.state|STATE_OVER_TILT_ALERT : stat.state;
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   stat.state= state_charger_is_charging ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
+
+  stat.over_tilt_type = state_over_tilt_type;
+
+
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
   if(TRACE_TYPE==TRACE_TYPE_DEBUG)
