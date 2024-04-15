@@ -362,6 +362,7 @@ void stepHelloControllerRPC()
     if (switch_to_menu_cnt==0)
     {
       hello_interface=0;
+      enableMotorDrivers();
     }
   }
 }
@@ -415,11 +416,12 @@ void handleNewRPC()
           num_byte_rpc_out=trace_manager.rpc_read(rpc_out);
           break; 
 
-    case RPC_SET_MENU_ON: 
+    case RPC_SET_MENU_ON:
           rpc_out[0]=RPC_REPLY_MENU_ON;
           num_byte_rpc_out=1;
           switch_to_menu_cnt=5; //allow 5 rpc cycles to pass before switch to menu mode, allows any RPC replies to go out
           disableWDT();
+          // enableMotorDrivers();
           break; 
     case RPC_SET_TRIGGER: 
           memcpy(&trg_in, rpc_in+1, sizeof(Trigger)); //copy in the config

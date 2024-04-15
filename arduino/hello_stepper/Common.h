@@ -40,7 +40,8 @@
 // Version 0.7.2: Bug fix with 0.7.1 (minor)
 // Version 0.7.3: Issue with tag system, trying version bump
 // Version 0.7.4: Put arm in drive-off mode when in runstop
-#define FIRMWARE_VERSION_HR "Stepper.v0.7.4p5"
+// Version 0.7.5: Bug fix with 0.7.4 not allowing motors to calibrate
+#define FIRMWARE_VERSION_HR "Stepper.v0.7.5p5"
 
 /////////////////////////////////////////////////////////////////
 
