@@ -504,13 +504,12 @@ void update_tilt_monitor()
   right_tilt = analog_manager.cliff[2] - analog_manager.cliff[0];
   forward_tilt = ((analog_manager.cliff[0] + analog_manager.cliff[1])/2) - ((analog_manager.cliff[2] + analog_manager.cliff[3])/2);
 
-  if (isIMUOrientationValid() && cfg.stop_at_tilt)
+  if (isIMUOrientationValid() && cfg.stop_at_tilt > 0)
   {
     ////////////// Left Tilting Detection ////////////////////
     if (left_tilt > 300 && stat.imu.ax > 1 && stat.imu.ax < 2.5 && left_tilt_flag == false)
     {
       left_tilt_flag = true;
-      runstop_manager.activate_runstop();
     }
     if (left_tilt < 50 && stat.imu.ax < 1 && left_tilt_flag == true)
     {
@@ -521,7 +520,6 @@ void update_tilt_monitor()
     if (right_tilt > 300 && stat.imu.ax > -2.5 && stat.imu.ax < -0.75 && right_tilt_flag == false)
     {
       right_tilt_flag = true;
-      runstop_manager.activate_runstop();
     }
     if (right_tilt < 50 && stat.imu.ax > -1 && right_tilt_flag == true)
     {
@@ -532,7 +530,6 @@ void update_tilt_monitor()
     if (forward_tilt > 300 && stat.imu.ay > 1 && stat.imu.ay < 2.5 && forward_tilt_flag == false)
     {
       forward_tilt_flag = true;
-      runstop_manager.activate_runstop();
     }
     if (forward_tilt < 50 && stat.imu.ay < 1 && forward_tilt_flag == true)
     {
@@ -540,6 +537,10 @@ void update_tilt_monitor()
     }
 
     state_over_tilt_alert=(left_tilt_flag || right_tilt_flag || forward_tilt_flag);
+    if (state_over_tilt_alert && cfg.stop_at_tilt == 1)
+    {
+      runstop_manager.activate_runstop();
+    }
     state_over_tilt_type = (left_tilt_flag ? 0x01 : 0 | right_tilt_flag ? 0x02 : 0 | forward_tilt_flag ? 0x03 :0);
   }
   
