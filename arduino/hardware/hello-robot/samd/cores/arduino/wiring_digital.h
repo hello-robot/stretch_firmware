@@ -25,6 +25,8 @@
 
 #include "WVariant.h"
 
+typedef int PinStatus;
+
 /**
  * \brief Configures the specified pin to behave either as an input or an output. See the description of digital pins for details.
  *

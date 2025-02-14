@@ -1,5 +1,6 @@
 /*
   Copyright (c) 2015 Arduino LLC.  All right reserved.
+  SAMD51 support added by Adafruit - Copyright (c) 2018 Dean Miller for Adafruit Industries
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -18,14 +19,30 @@
 
 #include "SAMD_AnalogCorrection.h"
 
+#ifdef USE_TINYUSB
+// For Serial when selecting TinyUSB
+#include <Adafruit_TinyUSB.h>
+#endif
+
 void analogReadCorrection (int offset, uint16_t gain)
 {
+  Adc *adc;
+#if defined (__SAMD51__)
+adc = ADC0;
+#else
+adc = ADC;
+#endif
   // Set correction values
-  ADC->OFFSETCORR.reg = ADC_OFFSETCORR_OFFSETCORR(offset);
-  ADC->GAINCORR.reg = ADC_GAINCORR_GAINCORR(gain);
+  adc->OFFSETCORR.reg = ADC_OFFSETCORR_OFFSETCORR(offset);
+  adc->GAINCORR.reg = ADC_GAINCORR_GAINCORR(gain);
 
   // Enable digital correction logic
-  ADC->CTRLB.bit.CORREN = 1;
-  while(ADC->STATUS.bit.SYNCBUSY);
+  adc->CTRLB.bit.CORREN = 1;
+
+#if defined (__SAMD51__)
+  while(adc->SYNCBUSY.bit.OFFSETCORR || adc->SYNCBUSY.bit.GAINCORR);
+#else
+  while(adc->STATUS.bit.SYNCBUSY);
+#endif
 }
 

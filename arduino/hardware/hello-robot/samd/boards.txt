@@ -1,3 +1,9 @@
+menu.cache=Cache
+menu.speed=CPU Speed
+menu.opt=Optimize
+menu.maxqspi=Max QSPI
+menu.usbstack=USB Stack
+menu.debug=Debug
 
 # Hello Pimu
 # ---------------------------------------
@@ -138,3 +144,174 @@ hello_stepper.build.vid=0x2341
 hello_stepper.build.pid=0x804d
 hello_stepper.bootloader.tool=openocd
 hello_stepper.bootloader.file=zero/samd21_sam_ba.bin
+
+
+
+# -----------------------------------
+# Hello-Robot Hello_Pimu2 (SAMD51)
+# -----------------------------------
+hello_robot_hello_pimu2.name=Hello-Robot Hello_Pimu2 (SAMD51)
+
+# VID/PID for Bootloader, Arduino & CircuitPython
+hello_robot_hello_pimu2.vid.0=0x239A
+hello_robot_hello_pimu2.pid.0=0x8022
+hello_robot_hello_pimu2.vid.1=0x239A
+hello_robot_hello_pimu2.pid.1=0x0022
+hello_robot_hello_pimu2.vid.2=0x239A
+hello_robot_hello_pimu2.pid.2=0x8026
+
+# Upload
+hello_robot_hello_pimu2.upload.tool=bossac18
+hello_robot_hello_pimu2.upload.protocol=sam-ba
+hello_robot_hello_pimu2.upload.maximum_size=507904
+hello_robot_hello_pimu2.upload.offset=0x4000
+hello_robot_hello_pimu2.upload.use_1200bps_touch=true
+hello_robot_hello_pimu2.upload.wait_for_upload_port=true
+hello_robot_hello_pimu2.upload.native_usb=true
+
+# Build
+hello_robot_hello_pimu2.build.mcu=cortex-m4
+hello_robot_hello_pimu2.build.f_cpu=120000000L
+hello_robot_hello_pimu2.build.usb_product="Hello_Pimu"
+hello_robot_hello_pimu2.build.usb_manufacturer="Hello-Robot"
+hello_robot_hello_pimu2.build.board=HELLO_PIMU
+hello_robot_hello_pimu2.build.core=arduino
+hello_robot_hello_pimu2.build.extra_flags=-D__SAMD51J19A__ -DHELLOROBOT_HELLO_PIMU -D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 {build.usb_flags}
+hello_robot_hello_pimu2.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
+hello_robot_hello_pimu2.build.openocdscript=scripts/openocd/daplink_samd51.cfg
+hello_robot_hello_pimu2.build.variant=hello_pimu
+hello_robot_hello_pimu2.build.variant_system_lib=
+hello_robot_hello_pimu2.build.vid=0x239A
+hello_robot_hello_pimu2.build.pid=0x8022
+hello_robot_hello_pimu2.bootloader.tool=openocd
+hello_robot_hello_pimu2.bootloader.file=/hello_pimu/bootloader-hello_pimu-v3.16.0-15-gaa52b22-dirty.bin
+hello_robot_hello_pimu2.compiler.arm.cmsis.ldflags="-L{runtime.tools.CMSIS-5.4.0.path}/CMSIS/Lib/GCC/" "-L{build.variant.path}" -larm_cortexM4lf_math -mfloat-abi=hard -mfpu=fpv4-sp-d16
+
+# Menu: Cache
+hello_robot_hello_pimu2.menu.cache.on=Enabled
+hello_robot_hello_pimu2.menu.cache.on.build.cache_flags=-DENABLE_CACHE
+hello_robot_hello_pimu2.menu.cache.off=Disabled
+hello_robot_hello_pimu2.menu.cache.off.build.cache_flags=
+
+# Menu: Speed
+hello_robot_hello_pimu2.menu.speed.120=120 MHz (standard)
+hello_robot_hello_pimu2.menu.speed.120.build.f_cpu=120000000L
+hello_robot_hello_pimu2.menu.speed.150=150 MHz (overclock)
+hello_robot_hello_pimu2.menu.speed.150.build.f_cpu=150000000L
+hello_robot_hello_pimu2.menu.speed.180=180 MHz (overclock)
+hello_robot_hello_pimu2.menu.speed.180.build.f_cpu=180000000L
+hello_robot_hello_pimu2.menu.speed.200=200 MHz (overclock)
+hello_robot_hello_pimu2.menu.speed.200.build.f_cpu=200000000L
+
+# Menu: Optimization
+hello_robot_hello_pimu2.menu.opt.small=Small (-Os) (standard)
+hello_robot_hello_pimu2.menu.opt.small.build.flags.optimize=-Os
+hello_robot_hello_pimu2.menu.opt.fast=Fast (-O2)
+hello_robot_hello_pimu2.menu.opt.fast.build.flags.optimize=-O2
+hello_robot_hello_pimu2.menu.opt.faster=Faster (-O3)
+hello_robot_hello_pimu2.menu.opt.faster.build.flags.optimize=-O3
+hello_robot_hello_pimu2.menu.opt.fastest=Fastest (-Ofast)
+hello_robot_hello_pimu2.menu.opt.fastest.build.flags.optimize=-Ofast
+hello_robot_hello_pimu2.menu.opt.dragons=Here be dragons (-Ofast -funroll-loops)
+hello_robot_hello_pimu2.menu.opt.dragons.build.flags.optimize=-Ofast -funroll-loops
+
+# Menu: QSPI Speed
+hello_robot_hello_pimu2.menu.maxqspi.50=50 MHz (standard)
+hello_robot_hello_pimu2.menu.maxqspi.50.build.flags.maxqspi=-DVARIANT_QSPI_BAUD_DEFAULT=50000000
+hello_robot_hello_pimu2.menu.maxqspi.fcpu=CPU Speed / 2
+hello_robot_hello_pimu2.menu.maxqspi.fcpu.build.flags.maxqspi=-DVARIANT_QSPI_BAUD_DEFAULT=({build.f_cpu})
+
+# Menu: USB Stack
+hello_robot_hello_pimu2.menu.usbstack.arduino=Arduino
+hello_robot_hello_pimu2.menu.usbstack.tinyusb=TinyUSB
+hello_robot_hello_pimu2.menu.usbstack.tinyusb.build.flags.usbstack=-DUSE_TINYUSB
+
+# Menu: Debug
+hello_robot_hello_pimu2.menu.debug.off=Off
+hello_robot_hello_pimu2.menu.debug.on=On
+hello_robot_hello_pimu2.menu.debug.on.build.flags.debug=-g
+
+
+# -----------------------------------
+# Hello-Robot Hello_Stepper2 (SAMD51)
+# -----------------------------------
+hello_robot_hello_stepper2.name=Hello-Robot Hello_Stepper2 (SAMD51)
+
+# VID/PID for Bootloader, Arduino & CircuitPython
+hello_robot_hello_stepper2.vid.0=0x239A
+hello_robot_hello_stepper2.pid.0=0x8022
+hello_robot_hello_stepper2.vid.1=0x239A
+hello_robot_hello_stepper2.pid.1=0x0022
+hello_robot_hello_stepper2.vid.2=0x239A
+hello_robot_hello_stepper2.pid.2=0x8026
+
+# Upload
+hello_robot_hello_stepper2.upload.tool=bossac18
+hello_robot_hello_stepper2.upload.protocol=sam-ba
+hello_robot_hello_stepper2.upload.maximum_size=507904
+hello_robot_hello_stepper2.upload.offset=0x4000
+hello_robot_hello_stepper2.upload.use_1200bps_touch=true
+hello_robot_hello_stepper2.upload.wait_for_upload_port=true
+hello_robot_hello_stepper2.upload.native_usb=true
+
+# Build
+hello_robot_hello_stepper2.build.mcu=cortex-m4
+hello_robot_hello_stepper2.build.f_cpu=120000000L
+hello_robot_hello_stepper2.build.usb_product="Hello_Stepper"
+hello_robot_hello_stepper2.build.usb_manufacturer="Hello-Robot"
+hello_robot_hello_stepper2.build.board=HELLO_STEPPER
+hello_robot_hello_stepper2.build.core=arduino
+hello_robot_hello_stepper2.build.extra_flags=-D__SAMD51J19A__ -DHELLOROBOT_HELLO_STEPPER -D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 {build.usb_flags}
+hello_robot_hello_stepper2.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
+hello_robot_hello_stepper2.build.openocdscript=scripts/openocd/daplink_samd51.cfg
+hello_robot_hello_stepper2.build.variant=hello_stepper
+hello_robot_hello_stepper2.build.variant_system_lib=
+hello_robot_hello_stepper2.build.vid=0x239A
+hello_robot_hello_stepper2.build.pid=0x8022
+hello_robot_hello_stepper2.bootloader.tool=openocd
+hello_robot_hello_stepper2.bootloader.file=/hello_stepper/bootloader-hello_stepper-v3.16.0-15-gaa52b22-dirty.bin
+hello_robot_hello_stepper2.compiler.arm.cmsis.ldflags="-L{runtime.tools.CMSIS-5.4.0.path}/CMSIS/Lib/GCC/" "-L{build.variant.path}" -larm_cortexM4lf_math -mfloat-abi=hard -mfpu=fpv4-sp-d16
+
+# Menu: Cache
+hello_robot_hello_stepper2.menu.cache.on=Enabled
+hello_robot_hello_stepper2.menu.cache.on.build.cache_flags=-DENABLE_CACHE
+hello_robot_hello_stepper2.menu.cache.off=Disabled
+hello_robot_hello_stepper2.menu.cache.off.build.cache_flags=
+
+# Menu: Speed
+hello_robot_hello_stepper2.menu.speed.120=120 MHz (standard)
+hello_robot_hello_stepper2.menu.speed.120.build.f_cpu=120000000L
+hello_robot_hello_stepper2.menu.speed.150=150 MHz (overclock)
+hello_robot_hello_stepper2.menu.speed.150.build.f_cpu=150000000L
+hello_robot_hello_stepper2.menu.speed.180=180 MHz (overclock)
+hello_robot_hello_stepper2.menu.speed.180.build.f_cpu=180000000L
+hello_robot_hello_stepper2.menu.speed.200=200 MHz (overclock)
+hello_robot_hello_stepper2.menu.speed.200.build.f_cpu=200000000L
+
+# Menu: Optimization
+hello_robot_hello_stepper2.menu.opt.small=Small (-Os) (standard)
+hello_robot_hello_stepper2.menu.opt.small.build.flags.optimize=-Os
+hello_robot_hello_stepper2.menu.opt.fast=Fast (-O2)
+hello_robot_hello_stepper2.menu.opt.fast.build.flags.optimize=-O2
+hello_robot_hello_stepper2.menu.opt.faster=Faster (-O3)
+hello_robot_hello_stepper2.menu.opt.faster.build.flags.optimize=-O3
+hello_robot_hello_stepper2.menu.opt.fastest=Fastest (-Ofast)
+hello_robot_hello_stepper2.menu.opt.fastest.build.flags.optimize=-Ofast
+hello_robot_hello_stepper2.menu.opt.dragons=Here be dragons (-Ofast -funroll-loops)
+hello_robot_hello_stepper2.menu.opt.dragons.build.flags.optimize=-Ofast -funroll-loops
+
+# Menu: QSPI Speed
+hello_robot_hello_stepper2.menu.maxqspi.50=50 MHz (standard)
+hello_robot_hello_stepper2.menu.maxqspi.50.build.flags.maxqspi=-DVARIANT_QSPI_BAUD_DEFAULT=50000000
+hello_robot_hello_stepper2.menu.maxqspi.fcpu=CPU Speed / 2
+hello_robot_hello_stepper2.menu.maxqspi.fcpu.build.flags.maxqspi=-DVARIANT_QSPI_BAUD_DEFAULT=({build.f_cpu})
+
+# Menu: USB Stack
+hello_robot_hello_stepper2.menu.usbstack.arduino=Arduino
+hello_robot_hello_stepper2.menu.usbstack.tinyusb=TinyUSB
+hello_robot_hello_stepper2.menu.usbstack.tinyusb.build.flags.usbstack=-DUSE_TINYUSB
+
+# Menu: Debug
+hello_robot_hello_stepper2.menu.debug.off=Off
+hello_robot_hello_stepper2.menu.debug.on=On
+hello_robot_hello_stepper2.menu.debug.on.build.flags.debug=-g

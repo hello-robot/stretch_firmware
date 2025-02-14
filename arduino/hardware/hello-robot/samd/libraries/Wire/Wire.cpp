@@ -24,6 +24,11 @@ extern "C" {
 #include <Arduino.h>
 #include <wiring_private.h>
 
+#ifdef USE_TINYUSB
+// For Serial when selecting TinyUSB
+#include <Adafruit_TinyUSB.h>
+#endif
+
 #include "Wire.h"
 
 TwoWire::TwoWire(SERCOM * s, uint8_t pinSDA, uint8_t pinSCL)
@@ -43,9 +48,9 @@ void TwoWire::begin(void) {
   pinPeripheral(_uc_pinSCL, g_APinDescription[_uc_pinSCL].ulPinType);
 }
 
-void TwoWire::begin(uint8_t address) {
+void TwoWire::begin(uint8_t address, bool enableGeneralCall) {
   //Slave mode
-  sercom->initSlaveWIRE(address);
+  sercom->initSlaveWIRE(address, enableGeneralCall);
   sercom->enableWIRE();
 
   pinPeripheral(_uc_pinSDA, g_APinDescription[_uc_pinSDA].ulPinType);
@@ -287,6 +292,13 @@ void TwoWire::onService(void)
   void WIRE_IT_HANDLER(void) {
     Wire.onService();
   }
+
+  #if defined(__SAMD51__)
+    void WIRE_IT_HANDLER_0(void) { Wire.onService(); }
+    void WIRE_IT_HANDLER_1(void) { Wire.onService(); }
+    void WIRE_IT_HANDLER_2(void) { Wire.onService(); }
+    void WIRE_IT_HANDLER_3(void) { Wire.onService(); }
+  #endif // __SAMD51__
 #endif
 
 #if WIRE_INTERFACES_COUNT > 1
@@ -295,6 +307,13 @@ void TwoWire::onService(void)
   void WIRE1_IT_HANDLER(void) {
     Wire1.onService();
   }
+
+  #if defined(__SAMD51__)
+    void WIRE1_IT_HANDLER_0(void) { Wire1.onService(); }
+    void WIRE1_IT_HANDLER_1(void) { Wire1.onService(); }
+    void WIRE1_IT_HANDLER_2(void) { Wire1.onService(); }
+    void WIRE1_IT_HANDLER_3(void) { Wire1.onService(); }
+  #endif // __SAMD51__
 #endif
 
 #if WIRE_INTERFACES_COUNT > 2
@@ -303,6 +322,13 @@ void TwoWire::onService(void)
   void WIRE2_IT_HANDLER(void) {
     Wire2.onService();
   }
+
+  #if defined(__SAMD51__)
+    void WIRE2_IT_HANDLER_0(void) { Wire2.onService(); }
+    void WIRE2_IT_HANDLER_1(void) { Wire2.onService(); }
+    void WIRE2_IT_HANDLER_2(void) { Wire2.onService(); }
+    void WIRE2_IT_HANDLER_3(void) { Wire2.onService(); }
+  #endif // __SAMD51__
 #endif
 
 #if WIRE_INTERFACES_COUNT > 3
@@ -311,6 +337,13 @@ void TwoWire::onService(void)
   void WIRE3_IT_HANDLER(void) {
     Wire3.onService();
   }
+
+  #if defined(__SAMD51__)
+    void WIRE3_IT_HANDLER_0(void) { Wire3.onService(); }
+    void WIRE3_IT_HANDLER_1(void) { Wire3.onService(); }
+    void WIRE3_IT_HANDLER_2(void) { Wire3.onService(); }
+    void WIRE3_IT_HANDLER_3(void) { Wire3.onService(); }
+  #endif // __SAMD51__
 #endif
 
 #if WIRE_INTERFACES_COUNT > 4
@@ -319,6 +352,13 @@ void TwoWire::onService(void)
   void WIRE4_IT_HANDLER(void) {
     Wire4.onService();
   }
+
+  #if defined(__SAMD51__)
+    void WIRE4_IT_HANDLER_0(void) { Wire4.onService(); }
+    void WIRE4_IT_HANDLER_1(void) { Wire4.onService(); }
+    void WIRE4_IT_HANDLER_2(void) { Wire4.onService(); }
+    void WIRE4_IT_HANDLER_3(void) { Wire4.onService(); }
+  #endif // __SAMD51__
 #endif
 
 #if WIRE_INTERFACES_COUNT > 5
@@ -327,5 +367,12 @@ void TwoWire::onService(void)
   void WIRE5_IT_HANDLER(void) {
     Wire5.onService();
   }
+
+  #if defined(__SAMD51__)
+    void WIRE5_IT_HANDLER_0(void) { Wire5.onService(); }
+    void WIRE5_IT_HANDLER_1(void) { Wire5.onService(); }
+    void WIRE5_IT_HANDLER_2(void) { Wire5.onService(); }
+    void WIRE5_IT_HANDLER_3(void) { Wire5.onService(); }
+  #endif // __SAMD51__
 #endif
 

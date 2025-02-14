@@ -90,6 +90,13 @@ void Uart::flush()
 
 void Uart::IrqHandler()
 {
+  if (sercom->isFrameErrorUART()) {
+    // frame error, next byte is invalid so read and discard it
+    sercom->readDataUART();
+
+    sercom->clearFrameErrorUART();
+  }
+
   if (sercom->availableDataUART()) {
     rxBuffer.store_char(sercom->readDataUART());
 
@@ -114,7 +121,6 @@ void Uart::IrqHandler()
   if (sercom->isUARTError()) {
     sercom->acknowledgeUARTError();
     // TODO: if (sercom->isBufferOverflowErrorUART()) ....
-    // TODO: if (sercom->isFrameErrorUART()) ....
     // TODO: if (sercom->isParityErrorUART()) ....
     sercom->clearStatusUART();
   }
@@ -154,7 +160,27 @@ size_t Uart::write(const uint8_t data)
   if (sercom->isDataRegisterEmptyUART() && txBuffer.available() == 0) {
     sercom->writeDataUART(data);
   } else {
-    while(txBuffer.isFull()); // spin lock until a spot opens up in the buffer
+    // spin lock until a spot opens up in the buffer
+    while(txBuffer.isFull()) {
+      uint8_t interruptsEnabled = ((__get_PRIMASK() & 0x1) == 0);
+
+      if (interruptsEnabled) {
+        uint32_t exceptionNumber = (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk);
+
+        if (exceptionNumber == 0 ||
+              NVIC_GetPriority((IRQn_Type)(exceptionNumber - 16)) > SERCOM_NVIC_PRIORITY) {
+          // no exception or called from an ISR with lower priority,
+          // wait for free buffer spot via IRQ
+          continue;
+        }
+      }
+
+      // interrupts are disabled or called from ISR with higher or equal priority than the SERCOM IRQ
+      // manually call the UART IRQ handler when the data register is empty
+      if (sercom->isDataRegisterEmptyUART()) {
+        IrqHandler();
+      }
+    }
 
     txBuffer.store_char(data);
 

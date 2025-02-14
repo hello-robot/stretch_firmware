@@ -1,5 +1,6 @@
 /*
   Copyright (c) 2015 Arduino LLC.  All right reserved.
+  SAMD51 support added by Adafruit - Copyright (c) 2018 Dean Miller for Adafruit Industries
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,12 +20,12 @@
 #ifndef _DELAY_
 #define _DELAY_
 
+#include <stdint.h>
+#include "variant.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdint.h>
-#include "variant.h"
 
 /**
  * \brief Returns the number of milliseconds since the Arduino board began running the current program.
@@ -60,6 +61,9 @@ extern void delay( unsigned long dwMs ) ;
  *
  * \param dwUs the number of microseconds to pause (uint32_t)
  */
+#if defined(__SAMD51__)
+extern void delayMicroseconds( unsigned int );
+#else
 static __inline__ void delayMicroseconds( unsigned int ) __attribute__((always_inline, unused)) ;
 static __inline__ void delayMicroseconds( unsigned int usec )
 {
@@ -67,7 +71,6 @@ static __inline__ void delayMicroseconds( unsigned int usec )
   {
     return ;
   }
-
   /*
    *  The following loop:
    *
@@ -85,6 +88,7 @@ static __inline__ void delayMicroseconds( unsigned int usec )
   // VARIANT_MCK / 1000000 == cycles needed to delay 1uS
   //                     3 == cycles used in a loop
   uint32_t n = usec * (VARIANT_MCK / 1000000) / 3;
+
   __asm__ __volatile__(
     "1:              \n"
     "   sub %0, #1   \n" // substract 1 from %0 (n)
@@ -96,6 +100,7 @@ static __inline__ void delayMicroseconds( unsigned int usec )
   // https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
   // https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html#Volatile
 }
+#endif
 
 #ifdef __cplusplus
 }

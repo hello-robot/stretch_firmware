@@ -21,7 +21,19 @@
 
 #include "sam.h"
 
-#define SERCOM_FREQ_REF 48000000
+// SAMD51 has configurable MAX_SPI, else use peripheral clock default.
+// Update: changing MAX_SPI via compiler flags is DEPRECATED, because
+// this affects ALL SPI peripherals including some that should NOT be
+// changed (e.g. anything using SD card). Instead, use setClockSource().
+// This is left here for compatibility w/interim MAX_SPI-dependent code:
+#if defined(MAX_SPI)
+  #define SERCOM_SPI_FREQ_REF (MAX_SPI * 2)
+#else
+  #define SERCOM_SPI_FREQ_REF 48000000ul
+#endif
+// Other SERCOM peripherals always use the 48 MHz clock
+#define SERCOM_FREQ_REF       48000000ul
+#define SERCOM_NVIC_PRIORITY  ((1<<__NVIC_PRIO_BITS) - 1)
 
 typedef enum
 {
@@ -79,23 +91,23 @@ typedef enum
 
 typedef enum
 {
-	UART_TX_PAD_0 = 0x0ul,	// Only for UART
+	UART_TX_PAD_0 = 0x0ul,  // Only for UART
 	UART_TX_PAD_2 = 0x1ul,  // Only for UART
 	UART_TX_RTS_CTS_PAD_0_2_3 = 0x2ul,  // Only for UART with TX on PAD0, RTS on PAD2 and CTS on PAD3
 } SercomUartTXPad;
 
 typedef enum
 {
-	SAMPLE_RATE_x16 = 0x1,	//Fractional
-	SAMPLE_RATE_x8 = 0x3,	//Fractional
+	SAMPLE_RATE_x16 = 0x1,  // Fractional
+	SAMPLE_RATE_x8  = 0x3,  // Fractional
 } SercomUartSampleRate;
 
 typedef enum
 {
-	SERCOM_SPI_MODE_0 = 0,	// CPOL : 0  | CPHA : 0
-	SERCOM_SPI_MODE_1,		// CPOL : 0  | CPHA : 1
-	SERCOM_SPI_MODE_2,		// CPOL : 1  | CPHA : 0
-	SERCOM_SPI_MODE_3		// CPOL : 1  | CPHA : 1
+	SERCOM_SPI_MODE_0 = 0, // CPOL : 0 | CPHA : 0
+	SERCOM_SPI_MODE_1,     // CPOL : 0 | CPHA : 1
+	SERCOM_SPI_MODE_2,     // CPOL : 1 | CPHA : 0
+	SERCOM_SPI_MODE_3      // CPOL : 1 | CPHA : 1
 } SercomSpiClockMode;
 
 typedef enum
@@ -140,6 +152,19 @@ typedef enum
 	WIRE_MASTER_NACK_ACTION
 } SercomMasterAckActionWire;
 
+// SERCOM clock source override is available only on SAMD51 (not 21)
+// but the enumeration is made regardless so user code doesn't need
+// ifdefs or lengthy comments explaining the different situations --
+// the clock-sourcing functions just compile to nothing on SAMD21.
+typedef enum {
+  SERCOM_CLOCK_SOURCE_FCPU,     // F_CPU clock (GCLK0)
+  SERCOM_CLOCK_SOURCE_48M,      // 48 MHz peripheral clock (GCLK1) (standard)
+  SERCOM_CLOCK_SOURCE_100M,     // 100 MHz peripheral clock (GCLK2)
+  SERCOM_CLOCK_SOURCE_32K,      // XOSC32K clock (GCLK3)
+  SERCOM_CLOCK_SOURCE_12M,      // 12 MHz peripheral clock (GCLK4)
+  SERCOM_CLOCK_SOURCE_NO_CHANGE // Leave clock source setting unchanged
+} SercomClockSource;
+
 class SERCOM
 {
 	public:
@@ -157,6 +182,7 @@ class SERCOM
 		bool availableDataUART( void ) ;
 		bool isBufferOverflowErrorUART( void ) ;
 		bool isFrameErrorUART( void ) ;
+		void clearFrameErrorUART( void ) ;
 		bool isParityErrorUART( void ) ;
 		bool isDataRegisterEmptyUART( void ) ;
 		uint8_t readDataUART( void ) ;
@@ -169,7 +195,6 @@ class SERCOM
 		/* ========== SPI ========== */
 		void initSPI(SercomSpiTXPad mosi, SercomRXPad miso, SercomSpiCharSize charSize, SercomDataOrder dataOrder) ;
 		void initSPIClock(SercomSpiClockMode clockMode, uint32_t baudrate) ;
-
 		void resetSPI( void ) ;
 		void enableSPI( void ) ;
 		void disableSPI( void ) ;
@@ -184,7 +209,7 @@ class SERCOM
 		bool isReceiveCompleteSPI( void ) ;
 
 		/* ========== WIRE ========== */
-		void initSlaveWIRE(uint8_t address) ;
+		void initSlaveWIRE(uint8_t address, bool enableGeneralCall = false) ;
 		void initMasterWIRE(uint32_t baudrate) ;
 
 		void resetWIRE( void ) ;
@@ -200,6 +225,9 @@ class SERCOM
 		bool isSlaveWIRE( void ) ;
 		bool isBusIdleWIRE( void ) ;
 		bool isBusOwnerWIRE( void ) ;
+		bool isBusUnknownWIRE( void ) ;
+		bool isArbLostWIRE( void );
+		bool isBusBusyWIRE( void );
 		bool isDataReadyWIRE( void ) ;
 		bool isStopDetectedWIRE( void ) ;
 		bool isRestartDetectedWIRE( void ) ;
@@ -208,10 +236,30 @@ class SERCOM
     bool isRXNackReceivedWIRE( void ) ;
 		int availableWIRE( void ) ;
 		uint8_t readDataWIRE( void ) ;
+		int8_t getSercomIndex(void);
+#if defined(__SAMD51__)
+		// SERCOM clock source override is only available on
+		// SAMD51 (not 21) ... but these functions are declared
+		// regardless so user code doesn't need ifdefs or lengthy
+		// comments explaining the different situations -- these
+		// just compile to nothing on SAMD21.
+		void setClockSource(int8_t idx, SercomClockSource src, bool core);
+		SercomClockSource getClockSource(void) { return clockSource; };
+		uint32_t getFreqRef(void) { return freqRef; };
+#else
+		// The equivalent SAMD21 dummy functions...
+		void setClockSource(int8_t idx, SercomClockSource src, bool core) { (void)idx; (void)src; (void)core; };
+		SercomClockSource getClockSource(void) { return SERCOM_CLOCK_SOURCE_FCPU; };
+		uint32_t getFreqRef(void) { return F_CPU; };
+#endif
 
 	private:
 		Sercom* sercom;
-		uint8_t calculateBaudrateSynchronous(uint32_t baudrate) ;
+#if defined(__SAMD51__)
+                SercomClockSource clockSource;
+                uint32_t freqRef; // Frequency corresponding to clockSource
+#endif
+		uint8_t calculateBaudrateSynchronous(uint32_t baudrate);
 		uint32_t division(uint32_t dividend, uint32_t divisor) ;
 		void initClockNVIC( void ) ;
 };

@@ -1,5 +1,6 @@
 /*
   Copyright (c) 2015 Arduino LLC.  All right reserved.
+  SAMD51 support added by Adafruit - Copyright (c) 2018 Dean Miller for Adafruit Industries
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -67,8 +68,19 @@ int pinPeripheral( uint32_t ulPin, EPioType ulPeripheral )
     case PIO_TIMER:
     case PIO_TIMER_ALT:
     case PIO_EXTINT:
+#if defined(__SAMD51__)
+    case PIO_TCC_PDEC:
+    case PIO_COM:
+    case PIO_SDHC:
+    case PIO_I2S:
+    case PIO_PCC:
+    case PIO_GMAC:
+    case PIO_AC_CLK:
+    case PIO_CCL:
+#else
     case PIO_COM:
     case PIO_AC_CLK:
+#endif
 #if 0
       // Is the pio pin in the lower 16 ones?
       // The WRCONFIG register allows update of only 16 pin max out of 32
@@ -95,7 +107,7 @@ int pinPeripheral( uint32_t ulPin, EPioType ulPeripheral )
         // Set new muxing
         PORT->Group[g_APinDescription[ulPin].ulPort].PMUX[g_APinDescription[ulPin].ulPin >> 1].reg = temp|PORT_PMUX_PMUXO( ulPeripheral ) ;
         // Enable port mux
-        PORT->Group[g_APinDescription[ulPin].ulPort].PINCFG[g_APinDescription[ulPin].ulPin].reg |= PORT_PINCFG_PMUXEN ;
+        PORT->Group[g_APinDescription[ulPin].ulPort].PINCFG[g_APinDescription[ulPin].ulPin].reg |= PORT_PINCFG_PMUXEN | PORT_PINCFG_DRVSTR;
       }
       else // even pin
       {
@@ -103,7 +115,7 @@ int pinPeripheral( uint32_t ulPin, EPioType ulPeripheral )
 
         temp = (PORT->Group[g_APinDescription[ulPin].ulPort].PMUX[g_APinDescription[ulPin].ulPin >> 1].reg) & PORT_PMUX_PMUXO( 0xF ) ;
         PORT->Group[g_APinDescription[ulPin].ulPort].PMUX[g_APinDescription[ulPin].ulPin >> 1].reg = temp|PORT_PMUX_PMUXE( ulPeripheral ) ;
-        PORT->Group[g_APinDescription[ulPin].ulPort].PINCFG[g_APinDescription[ulPin].ulPin].reg |= PORT_PINCFG_PMUXEN ; // Enable port mux
+        PORT->Group[g_APinDescription[ulPin].ulPort].PINCFG[g_APinDescription[ulPin].ulPin].reg |= PORT_PINCFG_PMUXEN | PORT_PINCFG_DRVSTR ; // Enable port mux
       }
 #endif
     break ;

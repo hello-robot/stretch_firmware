@@ -20,11 +20,28 @@
 #include <wiring_private.h>
 
 #include "utility/DMA.h"
+
+#if defined(__SAMD51__)
+
+#include "utility/SAMD51_I2SDevice.h"
+
+static I2SDevice_SAMD51 i2sd(*I2S);
+
+#else
+
 #include "utility/SAMD21_I2SDevice.h"
 
 static I2SDevice_SAMD21G18x i2sd(*I2S);
 
+#endif
+
 #include "I2S.h"
+
+#ifdef USE_TINYUSB
+// For Serial when selecting TinyUSB
+#include <Adafruit_TinyUSB.h>
+#endif
+
 
 int I2SClass::_beginCount = 0;
 
@@ -98,7 +115,11 @@ int I2SClass::begin(int mode, long sampleRate, int bitsPerSample, bool driveCloc
 
   if (_beginCount == 0) {
     // enable the I2S interface
+#if defined(__SAMD51__)
+    MCLK->APBDMASK.reg |= MCLK_APBDMASK_I2S;
+#else
     PM->APBCMASK.reg |= PM_APBCMASK_I2S;
+#endif
 
     // reset the device
     i2sd.reset();
@@ -176,7 +197,11 @@ void I2SClass::end()
     i2sd.disable();
 
     // disable the I2S interface
+#if defined(__SAMD51__)
+  MCLK->APBDMASK.reg &= ~(MCLK_APBDMASK_I2S);
+#else
     PM->APBCMASK.reg &= ~PM_APBCMASK_I2S;
+#endif
   }
 }
 
@@ -398,15 +423,24 @@ void I2SClass::onReceive(void(*function)(void))
 
 void I2SClass::enableClock(int divider)
 {
+  int div = SystemCoreClock / divider;
+  int src = GCLK_GENCTRL_SRC_DFLL48M_Val;
+
+  if (div > 255) {
+    // divider is too big, use 8 MHz oscillator instead
+    div = 8000000 / divider;
+    src = GCLK_GENCTRL_SRC_OSC8M_Val;
+  }
+
   // configure the clock divider
   while (GCLK->STATUS.bit.SYNCBUSY);
   GCLK->GENDIV.bit.ID = _clockGenerator;
-  GCLK->GENDIV.bit.DIV = SystemCoreClock / divider;
+  GCLK->GENDIV.bit.DIV = div;
 
   // use the DFLL as the source
   while (GCLK->STATUS.bit.SYNCBUSY);
   GCLK->GENCTRL.bit.ID = _clockGenerator;
-  GCLK->GENCTRL.bit.SRC = GCLK_GENCTRL_SRC_DFLL48M_Val;
+  GCLK->GENCTRL.bit.SRC = src;
   GCLK->GENCTRL.bit.IDC = 1;
   GCLK->GENCTRL.bit.GENEN = 1;
 

@@ -39,7 +39,10 @@ int main( void )
   initVariant();
 
   delay(1);
-#if defined(USBCON)
+
+#if defined(USE_TINYUSB)
+  TinyUSB_Device_Init(0);
+#elif defined(USBCON)
   USBDevice.init();
   USBDevice.attach();
 #endif
@@ -49,6 +52,8 @@ int main( void )
   for (;;)
   {
     loop();
+    yield(); // yield run usb background task
+
     if (serialEventRun) serialEventRun();
   }
 
