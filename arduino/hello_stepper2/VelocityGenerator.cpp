@@ -43,7 +43,7 @@ SOFTWARE.
  
 VelocityGenerator::VelocityGenerator()
 {
-    dt = 1.0/FsCtrl; 
+    dt = 1.0/CONTROL_RATE_HZ; 
 }
 
 void VelocityGenerator::setMaxAcceleration(float a)

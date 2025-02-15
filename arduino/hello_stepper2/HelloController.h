@@ -64,9 +64,9 @@ extern void disableWDT();
 #define US_PER_TC4_CYCLE 1000000/TC4_LOOP_RATE                                //1000 at 1KHz
 #define US_PER_TC4_TICK 1000000.0*2/CLOCK_RATE_HZ                            //41.6ns resolution
 
-#define TC5_LOOP_RATE 50000                                                   //Update rate of commutation loop Hz
+#define TC5_LOOP_RATE 10000                                                   //Update rate of commutation loop Hz
 #define CONTROL_RATE_HZ 5000
-#define CONTROL_LOOP_DIV TC5_LOOP_RATE/ CONTROL_RATE_HZ    //Downsample to control loop rate
+#define CONTROL_LOOP_DIV TC5_LOOP_RATE/ CONTROL_RATE_HZ     //Downsample to control loop rate
 
 #define TC5_COUNT_PER_CYCLE (int)( round(CLOCK_RATE_HZ / 1/ TC5_LOOP_RATE))   //960 at 50Khz, 1:1 prescalar TC5 is 32bit timer. Ideally no rounding/remainder in division.
 #define US_PER_TC5_CYCLE 1000000/TC5_LOOP_RATE                                //20 at 50KHz

@@ -257,19 +257,19 @@ hello_robot_hello_stepper2.upload.native_usb=true
 # Build
 hello_robot_hello_stepper2.build.mcu=cortex-m4
 hello_robot_hello_stepper2.build.f_cpu=120000000L
-hello_robot_hello_stepper2.build.usb_product="Hello_Stepper"
+hello_robot_hello_stepper2.build.usb_product="Hello_Stepper2"
 hello_robot_hello_stepper2.build.usb_manufacturer="Hello-Robot"
-hello_robot_hello_stepper2.build.board=HELLO_STEPPER
+hello_robot_hello_stepper2.build.board=HELLO_STEPPER2
 hello_robot_hello_stepper2.build.core=arduino
-hello_robot_hello_stepper2.build.extra_flags=-D__SAMD51J19A__ -DHELLOROBOT_HELLO_STEPPER -D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 {build.usb_flags}
+hello_robot_hello_stepper2.build.extra_flags=-D__SAMD51J19A__ -DHELLOROBOT_HELLO_STEPPER2 -D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 {build.usb_flags}
 hello_robot_hello_stepper2.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
 hello_robot_hello_stepper2.build.openocdscript=scripts/openocd/daplink_samd51.cfg
-hello_robot_hello_stepper2.build.variant=hello_stepper
+hello_robot_hello_stepper2.build.variant=hello_stepper2
 hello_robot_hello_stepper2.build.variant_system_lib=
 hello_robot_hello_stepper2.build.vid=0x239A
 hello_robot_hello_stepper2.build.pid=0x8022
 hello_robot_hello_stepper2.bootloader.tool=openocd
-hello_robot_hello_stepper2.bootloader.file=/hello_stepper/bootloader-hello_stepper-v3.16.0-15-gaa52b22-dirty.bin
+hello_robot_hello_stepper2.bootloader.file=/hello_stepper/bootloader-hello_stepper2-v3.16.0-15-gaa52b22-dirty.bin
 hello_robot_hello_stepper2.compiler.arm.cmsis.ldflags="-L{runtime.tools.CMSIS-5.4.0.path}/CMSIS/Lib/GCC/" "-L{build.variant.path}" -larm_cortexM4lf_math -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 # Menu: Cache

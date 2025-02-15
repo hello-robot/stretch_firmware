@@ -1349,8 +1349,8 @@ void stepHelloCommutation()
     interrupts();
     y = lookup[enc_raw];
     encoder_filter.stepFilter(y);
-    stat.debug=1000*(y-encoder_filter.filtered_value);
-    y=encoder_filter.filtered_value;
+    stat.debug=encoder_filter.velocity;
+    //y=encoder_filter.filtered_value;
     
     if (receiving_calibration)
     {

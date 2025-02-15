@@ -3,18 +3,18 @@
 The FlashStorage library aims to provide a convenient way to store and retrieve
 user's data using the non-volatile flash memory of microcontrollers.
 
-The flash memory, due to his properties, is generally used to store the firmware
+The flash memory, due to it's properties, is generally used to store the firmware
 code, but it can also be used to store user data.
 
 ## Supported hardware
 
-Currently, only ATSAMD21 cpu is supported (and consequently every board based
+Currently, ATSAMD21 and ATSAMD51 cpu are supported (and consequently every board based
 on this cpu like the Arduino Zero or Aduino MKR1000).
 
 ## Limited number of writes
 
-The flash memory has a limited amount of write cycles. Typical flash
-memories can perform about 10000 writes cycles to the same flash block
+Flash memory has a limited amount of write cycles. Typical flash
+memory can perform about 10000 writes cycles to the same flash block
 before starting to "wear out" and begin to lose the ability to retain data.
 
 So **BEWARE: IMPROPER USE OF THIS LIBRARY CAN QUICKLY AND PERMANENTLY
@@ -50,7 +50,7 @@ void readAndStoreUserAge() {
 }
 ```
 
-after a reset of the microcontroller to retrieve the stored age you can use:
+after a reset of the microcontroller you can retrieve the stored age by using:
 
 ```c++
 int user_age = age_storage.read();
@@ -64,7 +64,7 @@ See [EmulateEEPROM](https://github.com/cmaglie/FlashStorage/tree/master/examples
 The API is very similar to the well known Arduino EEPROM.h API but with two additional functions:
 
 * `EEPROM.isValid()` returns `true` if data in the EEPROM is valid or, in other words, if the data has been written at least once, otherwise EEPROM data is "undefined" and the function returns `false`.
-* `EEPROM.commit()` store the EEPROM data in flash. Use this with care: Every call writes the complete EEPROM data to flash. This will reduce the remainig flash-write-cycles. Don't call this method in a loop or [you will kill your flash soon](https://github.com/cmaglie/FlashStorage#limited-number-of-writes).
+* `EEPROM.commit()` store the EEPROM data in flash. Use this with care: Every call writes the complete EEPROM data to flash. This will reduce the remaining flash-write-cycles. Don't call this method in a loop or [you will kill your flash soon](https://github.com/cmaglie/FlashStorage#limited-number-of-writes).
 
 ## License
 
@@ -80,7 +80,8 @@ sketch for an example on how to do it.
 
 ### The content of the FlashStorage is erased each time a new sketch is uploaded?
 
-Yes, every time you upload a new sketch, the previous content of the FlashStorage is erased.
+Yes, every time you upload a new sketch, the previous content of the FlashStorage is erased and filled with 0's. The FlashStorage library does not allow to set another default value.
+
 
 ### Do you recommend to use FLASH instead of EEPROM?
 
@@ -89,5 +90,5 @@ it's a kind of memory designed with the specific purpose to store user data (it 
 longer lifetime, number of write cycles, etc...).
 
 In the absence of an EEPROM you can use this library to use a piece of the flash memory
-as an alternative to EEPROM but you must always keep in mind his limits.
+as an alternative to EEPROM. However, you must always keep in mind of it's limits.
 

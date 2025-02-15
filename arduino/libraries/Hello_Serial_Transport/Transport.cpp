@@ -59,7 +59,11 @@ bool in_transaction=false;
 #define COBBS_FRAME_SIZE_V0 64
 
 //////////////////////////////  Shared Defines ///////////////////////////////////////////////////
+#ifdef __SAMD51J19A__
+#define RPC_DATA_MAX_BYTES  8194
+#else
 #define RPC_DATA_MAX_BYTES  1024
+#endif
 #define RPC_MAX_FRAME_SIZE 64 //Arduino and Linux USB Uart has a 64 byte buffer. When frame is >64 have seen issues.
 
 uint8_t rx_buffer[RPC_MAX_FRAME_SIZE];
@@ -96,6 +100,7 @@ bool ready_rpc_state()
     num_byte_rpc_out=0;
     byte_out_cnt=0;
     in_transaction=false;
+    return 0;
 }
 
 void setupTransport() {

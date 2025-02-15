@@ -42,62 +42,10 @@ SOFTWARE.
 #include "HelloController.h"
 
 
-#define FLOAT_SCALE_MS 1000
-#define FLOAT_SCALE_US 1000000
-#define FLOAT_SCALE_NS 1000000000
-
-//Convert a float to 64 bit int
-//Float has 6-7 digits of precision
-//Drop digits beyond this and scale by 10^9
-int64_t float_to_scaled_int64(float x)
-{
-  int64_t xx = (int64_t)(FLOAT_SCALE_US*x+0.4999999);
-  return xx*1000;
-}
-
-//Convert radians to nano-radians
-int64_t rad_TO_nano_rad(float x)
-{
-  int64_t nano_rad = float_to_scaled_int64(x);
-  return nano_rad;
-}
-
-
-
-
-//Convert a radians/sec^2 to nano-radians/ms^2
-int64_t convert_accel(float x)
-{
-  int64_t nano_rad_per_s2 = rad_TO_nano_rad(x);
-  int64_t nano_rad_per_ms2 = nano_rad_per_s2/FLOAT_SCALE_US;
-  return nano_rad_per_ms2;
-}
-
-//Convert radians/s to nano-radians/ms
-int64_t convert_vel(float x)
-{
-  int64_t nano_rad_per_s = rad_TO_nano_rad(x);
-  int64_t nano_rad_per_ms=nano_rad_per_s/FLOAT_SCALE_MS;
-  return nano_rad_per_ms;
-}
-
-int64_t convert_pos(float x)
-{
-  return rad_TO_nano_rad(x);
-}
-
-float convert_pos_back(int64_t x)
-{
-  float f = (float)(x/FLOAT_SCALE_MS);
-  return f/FLOAT_SCALE_US;
-}
-
-
-
  
 MotionGenerator::MotionGenerator()
 {
-  dt=1; //1/FsCtrl; (1ms at 1Khz update)
+  dt=1.0/CONTROL_RATE_HZ; //1/FsCtrl; (1ms at 1Khz update)
   maxVel=0;
   maxAcc=0;
 
@@ -130,12 +78,12 @@ MotionGenerator::MotionGenerator()
 
 
 void MotionGenerator::setMaxVelocity(float aMaxVel) {
-  maxVel = abs(convert_vel(aMaxVel));
+  maxVel = abs(aMaxVel);
   force_recalc=true;
 }
 
 void MotionGenerator::setMaxAcceleration(float aMaxAcc) {
-  maxAcc = abs(convert_accel(aMaxAcc));
+  maxAcc = abs(aMaxAcc);
   force_recalc=true;
 }
 
@@ -152,21 +100,21 @@ short int MotionGenerator::sign(float aVal) {
 
 void  MotionGenerator::safe_switch_on(float x,float v)
 {
-  vel = convert_vel(v);
-  pos = convert_pos(x);
+  vel = v;
+  pos = x;
   oldPosRef = 0;
   force_recalc=true;
 }
 
 void  MotionGenerator::follow(float x,float v)
 {
-  vel = convert_vel(v);
-  pos = convert_pos(x);
+  vel = v;
+  pos = x;
   oldPosRef = pos;
 }
 
 float MotionGenerator::update(float posRef) {
-    int64_t PRS=convert_pos(posRef);
+    float PRS=posRef;
 	if (oldPosRef != PRS || force_recalc)  // reference changed
 	{
 		isFinished = false;
@@ -238,7 +186,7 @@ float MotionGenerator::update(float posRef) {
 	t = t+dt;
 	calculateTrapezoidalProfile(PRS);
 
-	return convert_pos_back(pos);
+	return pos;
 }
 
 bool MotionGenerator::isAccelerating(){
@@ -248,7 +196,7 @@ bool MotionGenerator::isMoving(){
   return vel!=0;
 }
 
-void MotionGenerator::calculateTrapezoidalProfile(int64_t posRef) {
+void MotionGenerator::calculateTrapezoidalProfile(float posRef) {
 	
 	if (shape)   // trapezoidal shape
 	{
