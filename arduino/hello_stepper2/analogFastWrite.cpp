@@ -117,6 +117,65 @@ void analogFastWrite(uint32_t pin, uint32_t value)
   syncTCC(TCCx);
 }
 
+void config_dac_outputs()
+{
+  pinPeripheral(PIN_DAC0, PIO_ANALOG); //VREF 2 position
+  pinPeripheral(PIN_DAC1, PIO_ANALOG); //VREF 1 position
+
+  //DAC uses 12 MHz Clock 
+  GCLK->PCHCTRL[DAC_GCLK_ID].reg = GCLK_PCHCTRL_GEN_GCLK4 | GCLK_PCHCTRL_CHEN;
+  while (GCLK->PCHCTRL[DAC_GCLK_ID].bit.CHEN == 0);
+
+  while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+  DAC->CTRLA.bit.ENABLE = 0;
+
+  //Using VREF A which is connected to RC filter from 3.3V rail
+  DAC->CTRLB.bit.REFSEL = DAC_CTRLB_REFSEL_VDDANA;
+
+  //Oversampling set to 0
+  while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+  DAC->DACCTRL[0].bit.OSR = 0;
+  while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+  DAC->DACCTRL[1].bit.OSR = 0;
+
+  //Setting external filter use to 0 sets the filter to be intergated to DAC output (only really useful when oversampling)
+  while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+  DAC->DACCTRL[0].bit.FEXT = 0;
+  while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+  DAC->DACCTRL[1].bit.FEXT = 0;
+
+  //Enable DAC0 channel
+  while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+  DAC->DACCTRL[0].bit.ENABLE = 1;
+
+  //Enable DAC1 Channel
+  while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+  DAC->DACCTRL[1].bit.ENABLE = 1;
+  
+  //Enable DAC Controller
+  while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
+  DAC->CTRLA.bit.ENABLE = 1;
+}
+
+void set_vref_2(uint8_t val)
+{
+  uint16_t dac_val = (val * 4095) / 255; //Conversion for 8 bit to 12 bit
+  if (dac_val > 4095) dac_val = 4095;
+  while (!DAC->STATUS.bit.READY0 );
+  // while (DAC->SYNCBUSY.bit.DATA0);
+  DAC->DATA[0].reg = dac_val;
+}
+
+void set_vref_1(uint8_t val)
+{
+  uint16_t dac_val = (val * 4095) / 255; //Conversion for 8 bit to 12 bit
+  if (dac_val > 4095) dac_val = 4095;
+  while (!DAC->STATUS.bit.READY1 );
+  // while (DAC->SYNCBUSY.bit.DATA0);
+  DAC->DATA[1].reg = dac_val;
+}
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -215,27 +215,24 @@ void setupBoardVariants()
   pinMode(PIN_BOARD_ID1, INPUT);
   pinMode(PIN_BOARD_ID2, INPUT);
 
+
   BOARD_VARIANT=(digitalRead(PIN_BOARD_ID2)<<2)|(digitalRead(PIN_BOARD_ID1)<<1)|digitalRead(PIN_BOARD_ID0);
   BOARD_VARIANT = 5;
   if (BOARD_VARIANT>=0)
   {
-    //The board uses two DRV8842 motor drivers. These are capable of 5.0A peak currents / 3.5A RMS
-    // An iMax of 4.35A results in a uMax of 252. By default set at 8-bit pwm. 
-    iMAX =4.35;        // Be careful adjusting this.  
-    rSense = 0.15;   //Ohms per Franco board
-    uMAX = (255/3.3)*(iMAX*5*rSense);   
-    k_c2e =(255/3.3)*5*rSense;
+    //S4 Stepper V1 uses DRV8262 Motor Driver Full Scale Peak Current 7.78A 
+    iMAX =7.78;        
+    uMAX = (255/3.3)*(iMAX*0.424);   
+    k_c2e =(255/3.3)*0.424;
     
     BOARD_VARIANT_DRV8842=1;
     BOARD_VARIANT_PIN_RUNSTOP=PIN_MCU_RUNSTOP;
     pinMode(PIN_MCU_SYNC, INPUT);
-    pinMode(DRV8842_NSLEEP_A, OUTPUT);
-    pinMode(DRV8842_NSLEEP_B, OUTPUT);
-    pinMode(DRV8842_FAULT_A, INPUT);
-    pinMode(DRV8842_FAULT_B, INPUT);
-    pinMode(DRV8842_DECAY,OUTPUT);
-    pinMode(PIN_MCU_BREAK, OUTPUT); //Set high to enable direct control for SLEEP and DECAY pins to motor driver
-    digitalWrite(PIN_MCU_BREAK, HIGH);
+    pinMode(DRV_SLEEP, OUTPUT);
+    pinMode(DRV_TOFF, OUTPUT);
+    pinMode(DRV_FAULT, INPUT);
+    pinMode(DRV_DECAY, OUTPUT);
+    pinMode(DRV_TOFF_SELECT,OUTPUT);
     pinMode(PIN_DECAY_SELECT, OUTPUT);
     analog_manager.setupADC();
   }
@@ -275,8 +272,10 @@ void setupHelloController()
   fg=flash_gains.read();
   memcpy(&gains_in, &fg, sizeof(Gains));
   dirty_gains=1; //force load of gains
-  analogFastWrite(VREF_2, 0);     //set phase currents to zero
-  analogFastWrite(VREF_1, 0);
+  set_vref_1(4);
+  set_vref_2(4);
+  digitalWrite(PIN_BOOT, HIGH);
+  
 
   
 }
@@ -284,15 +283,13 @@ void setupHelloController()
 void enableMotorDrivers()
 {
 
-  digitalWrite(DRV8842_NSLEEP_A, HIGH); //Logic high enables driver
-  digitalWrite(DRV8842_NSLEEP_B, HIGH); //Logic high enables driver
+  digitalWrite(DRV_SLEEP, HIGH); //Logic high enables driver
   motor_enabled_flag = true;
 
 }
 void disableMotorDrivers()
 {
-  digitalWrite(DRV8842_NSLEEP_A, LOW); //Logic high enables driver
-  digitalWrite(DRV8842_NSLEEP_B, LOW); //Logic high enables driver
+  digitalWrite(DRV_SLEEP, LOW); //Logic high enables driver
   motor_enabled_flag = false;
 }
 
@@ -302,20 +299,20 @@ void setMotorDecay(uint8_t decay)
   //0 selectes slow decay (BRAKE)
   if (decay == 0)
   {
-    digitalWrite(DRV8842_DECAY, LOW);
+    digitalWrite(DRV_DECAY, LOW);
     digitalWrite(PIN_DECAY_SELECT, LOW);
   }
   //1 selects Fast Decay
   if (decay == 1)
   {
-    digitalWrite(DRV8842_DECAY, HIGH);
+    digitalWrite(DRV_DECAY, HIGH);
     digitalWrite(PIN_DECAY_SELECT, LOW);
   }
   //other selects mixed decay, DRV8842 can either be low or high
   else
   {
     digitalWrite(PIN_DECAY_SELECT, HIGH);
-    digitalWrite(DRV8842_DECAY, HIGH);
+    digitalWrite(DRV_DECAY, HIGH);
   }
 }
 ///////////////////////// RPC ///////////////////////////
@@ -640,6 +637,7 @@ void stepHelloController()
   stat.timestamp=time_manager.current_time_us();
   float yy = y;//lookup[readEncoder()];
   //interrupts();
+  
   
   sync_manager.step();
   trajectory_manager.step();
@@ -1328,6 +1326,7 @@ void stepHelloController()
   update_trace();
   ctrl_cycle_cnt++;
   //ctrl_loop_time_max_us=ctrl_loop_time_max_us,time_manager.current_time_us()-stat.timestamp);
+  
   
 }
 

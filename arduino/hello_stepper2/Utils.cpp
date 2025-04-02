@@ -30,8 +30,6 @@
 #endif
 
 void setupPins() {
-  pinMode(VREF_2, OUTPUT);
-  pinMode(VREF_1, OUTPUT);
   pinMode(IN_4, OUTPUT);
   pinMode(IN_3, OUTPUT);
   pinMode(IN_2, OUTPUT);
@@ -41,16 +39,19 @@ void setupPins() {
   pinMode(ledPin, OUTPUT); //
 
   //Setting VREF_1 and 2 to be used as PWM pins on TCC0
-  setup_pwm_pin(VREF_1);
-  setup_pwm_pin(VREF_2);
+  config_dac_outputs();
+
+  //DRV8262 current can not be set to a value of 0 min value is 50mV at 8bit resolution this is a dac value of 4
+  set_vref_1(4);
+  set_vref_2(4);
 
 #ifndef HELLO
   analogFastWrite(VREF_2, 0.33 * uMAX);
   analogFastWrite(VREF_1, 0.33 * uMAX);
 #endif
-  IN_4_HIGH();   //  digitalWrite(IN_4, HIGH);
+  IN_4_LOW();   //  digitalWrite(IN_4, HIGH);
   IN_3_LOW();    //  digitalWrite(IN_3, LOW);
-  IN_2_HIGH();   //  digitalWrite(IN_2, HIGH);
+  IN_2_LOW();   //  digitalWrite(IN_2, HIGH);
   IN_1_LOW();    //  digitalWrite(IN_1, LOW);
 
 }
@@ -95,15 +96,18 @@ void output(float theta, int effort) {
   //sin_coil_A  = sin(angle_1*0.017453292519943295);//deg_to_rad(angle_1));
   //sin_coil_B =  sin(angle_2*0.017453292519943295);
 
-  //v_coil_A = (effort * sin_coil_A) ;
-  //v_coil_B = (effort * sin_coil_B) ;
-  
+
   sin_coil_A  = sin_1[angle_1];
 
   sin_coil_B = sin_1[angle_2];
 
   v_coil_A = ((effort * sin_coil_A) / 1024);
   v_coil_B = ((effort * sin_coil_B) / 1024);
+
+
+  //DRV8262 Vref needs to be set above 50mV 
+  set_vref_1(max(abs(v_coil_A), 5));
+  set_vref_2(max(abs(v_coil_B), 5));
 
 
   
@@ -113,8 +117,6 @@ void output(float theta, int effort) {
      SerialUSB.print(",");
      SerialUSB.println(v_coil_B);
 */
-  analogFastWrite(VREF_1, abs(v_coil_A));
-  analogFastWrite(VREF_2, abs(v_coil_B));
 
   if (v_coil_A >= 0)  {
     IN_2_HIGH();  //REG_PORT_OUTSET0 = PORT_PA21;     //write IN_2 HIGH
@@ -486,8 +488,8 @@ void serialCheck() {        //Monitors serial for commands.  Must be called in r
 
       case 'n':
         disableTCInterrupts();      //disable closed loop
-        analogFastWrite(VREF_2, 0);     //set phase currents to zero
-        analogFastWrite(VREF_1, 0);                       
+        set_vref_1(4);
+        set_vref_2(4);                     
         break;
 
       case 'r':             //new setpoint

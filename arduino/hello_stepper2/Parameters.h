@@ -70,8 +70,8 @@ extern const int sin_1[];
 
 //Defines for pins:
 
-#define IN_4    PIN_INB_2
-#define IN_3    PIN_INB_1
+#define IN_4    PIN_INA_4
+#define IN_3    PIN_INA_3
 #define VREF_2  PIN_VREF_B
 #define VREF_1  PIN_VREF_A
 #define IN_2    PIN_INA_2
@@ -79,13 +79,12 @@ extern const int sin_1[];
 
 #ifdef HELLO
 #define ledPin  PIN_STS_LED
-//Pins for DRV8842
-#define DRV8842_FAULT_A   PIN_FAULT_A 
-#define DRV8842_FAULT_B   PIN_FAULT_B 
-#define DRV8842_NSLEEP_A  PIN_MCU_SLEEP_A
-#define DRV8842_NSLEEP_B  PIN_MCU_SLEEP_B
-#define MOTOR_SHUNT 
-#define DRV8842_DECAY     PIN_MCU_DECAY
+//Pins for DRV8262
+#define DRV_FAULT         PIN_DRV_FAULT
+#define DRV_TOFF          PIN_MCU_TOFF 
+#define DRV_SLEEP         PIN_DRV_SLEEP
+#define DRV_TOFF_SELECT   PIN_TOFF_SELECT
+#define DRV_DECAY         PIN_MCU_DECAY
 #endif
 
 #define chipSelectPin PIN_SPI_SS //output to chip select
