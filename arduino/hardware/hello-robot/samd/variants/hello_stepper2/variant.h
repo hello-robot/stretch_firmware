@@ -86,47 +86,56 @@ extern "C"
 
 #define PIN_VBAT_VOLT         (0ul)
 #define PIN_TEMP              (PIN_ANA_VBATT + 1)
+#define PIN_COIL1_IMON        (PIN_ANA_VBATT + 2)
+#define PIN_COIL2_IMON        (PIN_ANA_VBATT + 3)
 
 //declration needed for dependicies
 static const uint8_t A0  = PIN_VBAT_VOLT;
 
+
+#define PIN_DAC0 (4ul)
+#define PIN_DAC1 (PIN_DAC0 + 1)
+
+static const uint8_t DAC0 = PIN_DAC0;
+static const uint8_t DAC1 = PIN_DAC1;
+
 /*
 * Digital Input Pins
 */
-#define PIN_BOARD_ID0   (2ul)
-#define PIN_BOARD_ID1   (PIN_BOARD_ID0 + 1)
-#define PIN_BOARD_ID2   (PIN_BOARD_ID0 + 2)
-#define PIN_FAULT_A     (PIN_BOARD_ID0 + 3)
-#define PIN_FAULT_B     (PIN_BOARD_ID0 + 4)
-#define PIN_MCU_RUNSTOP (PIN_BOARD_ID0 + 5)
-#define PIN_MCU_SYNC    (PIN_BOARD_ID0 + 6)
+#define PIN_BOARD_ID0     (6ul)
+#define PIN_BOARD_ID1     (PIN_BOARD_ID0 + 1)
+#define PIN_BOARD_ID2     (PIN_BOARD_ID0 + 2)
+#define PIN_DRV_FAULT     (PIN_BOARD_ID0 + 3)
+#define PIN_MCU_RUNSTOP   (PIN_BOARD_ID0 + 5)
+#define PIN_MCU_SYNC      (PIN_BOARD_ID0 + 6)
 
 /*
 * Digital Output Pins
 */
-#define PIN_VREF_A       (9ul)
-#define PIN_VREF_B       (PIN_VREF_A + 1)
-#define PIN_INA_1        (PIN_VREF_A + 2)
-#define PIN_INA_2        (PIN_VREF_A + 3)
-#define PIN_INB_1        (PIN_VREF_A + 4)
-#define PIN_INB_2        (PIN_VREF_A + 5)
-#define PIN_STS_LED      (PIN_VREF_A + 6)
-#define PIN_MCU_SLEEP_A  (PIN_VREF_A + 7)
-#define PIN_MCU_SLEEP_B  (PIN_VREF_A + 8)
-#define PIN_MCU_DECAY    (PIN_VREF_A + 9)
-#define PIN_MCU_BREAK    (PIN_VREF_A + 10)
-#define PIN_DECAY_SELECT (PIN_VREF_A + 11)
-
+#define PIN_VREF_A        (12ul)
+#define PIN_VREF_B        (PIN_VREF_A + 1)
+#define PIN_INA_1         (PIN_VREF_A + 2)
+#define PIN_INA_2         (PIN_VREF_A + 3)
+#define PIN_INA_4         (PIN_VREF_A + 4)
+#define PIN_INA_3         (PIN_VREF_A + 5)
+#define PIN_STS_LED       (PIN_VREF_A + 6)
+#define PIN_DRV_SLEEP     (PIN_VREF_A + 7)
+#define PIN_MCU_TOFF      (PIN_VREF_A + 8)
+#define PIN_TOFF_SELECT   (PIN_VREF_A + 9)
+#define PIN_MCU_DECAY     (PIN_VREF_A + 10)
+#define PIN_DECAY_SELECT  (PIN_VREF_A + 11)
+#define PIN_DRV_OCPM      (PIN_VREF_A + 12)
+#define PIN_BOOT          (PIN_VREF_A + 13)
 
 /*
 * SPI Interface
 */
 
 #define SPI_INTERFACES_COUNT 1
-#define PIN_SPI_SS   (21ul) 
-#define PIN_SPI_MOSI (22ul)
-#define PIN_SPI_SCK  (23ul) 
-#define PIN_SPI_MISO (24ul) 
+#define PIN_SPI_SS   (26ul) 
+#define PIN_SPI_MOSI (PIN_SPI_SS + 1)
+#define PIN_SPI_SCK  (PIN_SPI_SS + 2) 
+#define PIN_SPI_MISO (PIN_SPI_SS + 3) 
 
 #define PERIPH_SPI  sercom4
 #define PAD_SPI_TX  SPI_PAD_0_SCK_1
@@ -138,21 +147,22 @@ static const uint8_t MOSI  = PIN_SPI_MOSI;
 /*
  * USB
  */
-#define PIN_USB_DM          (25ul)
-#define PIN_USB_DP          (26ul)
+#define PIN_USB_DM          (30ul)
+#define PIN_USB_DP          (PIN_USB_DM + 1)
 
 /*
  * Test Pins for profiling and other uses
  */
 #define PIN_TEST            (32ul)
 
+
 /*
  * Wire Interfaces not used needed for compiler
  */
 #define WIRE_INTERFACES_COUNT 1
 
-#define PIN_WIRE_SDA         (30uL) //See pin array these are defined as not a pin
-#define PIN_WIRE_SCL         (31uL) //See pin array these are defined as not a pin
+#define PIN_WIRE_SDA         (33uL) //See pin array these are defined as not a pin
+#define PIN_WIRE_SCL         (34uL) //See pin array these are defined as not a pin
 #define PERIPH_WIRE          sercom2
 #define WIRE_IT_HANDLER      SERCOM2_Handler
 
@@ -161,13 +171,8 @@ static const uint8_t SDA = PIN_WIRE_SDA;
 static const uint8_t SCL = PIN_WIRE_SCL;
 
 //Not used pins needed for other dependcies
-#define PIN_DAC0 (27ul)
-#define PIN_DAC1 (28ul)
-#define PIN_USB_HOST_ENABLE (29ul)
 
-static const uint8_t DAC0 = PIN_DAC0;
-static const uint8_t DAC1 = PIN_DAC1;
-
+#define PIN_USB_HOST_ENABLE (32ul)
 
 
 #if !defined(VARIANT_QSPI_BAUD_DEFAULT)
