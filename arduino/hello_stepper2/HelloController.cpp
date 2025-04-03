@@ -235,11 +235,9 @@ void setupBoardVariants()
     pinMode(DRV_TOFF_SELECT,OUTPUT);
     pinMode(PIN_DECAY_SELECT, OUTPUT);
     pinMode(PIN_DRV_OCPM, OUTPUT);
+    pinMode(PIN_BOOT, OUTPUT);
 
-    digitalWrite(DRV_TOFF, HIGH);
-    digitalWrite(DRV_TOFF_SELECT, HIGH);
-
-    pinMode(PIN_DRV_OCPM, HIGH);
+    digitalWrite(PIN_DRV_OCPM, HIGH);
     analog_manager.setupADC();
   }
 
@@ -321,6 +319,30 @@ void setMotorDecay(uint8_t decay)
     digitalWrite(DRV_DECAY, HIGH);
   }
 }
+
+//Toff selection for pwm off time
+void setTOFF(uint8_t toff)
+{
+  //7us pwm off time
+  if (toff == 0)
+  {
+    digitalWrite(DRV_TOFF, LOW);
+    digitalWrite(DRV_TOFF_SELECT, LOW);
+  }
+  //16us pwm off time
+  if (toff == 1)
+  {
+    digitalWrite(DRV_TOFF, HIGH);
+    digitalWrite(DRV_TOFF_SELECT, LOW);
+  }
+  //other selects 32us pwm off time
+  if (toff == 2)
+  {
+    digitalWrite(DRV_TOFF, HIGH);
+    digitalWrite(DRV_TOFF_SELECT, HIGH);
+  }
+}
+
 ///////////////////////// RPC ///////////////////////////
 
 void handleNewRPC();

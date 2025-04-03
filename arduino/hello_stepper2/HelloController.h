@@ -29,6 +29,7 @@ extern void stepHelloControllerRPC();
 extern void toggle_led(int rate_ms);
 extern void enableMotorDrivers();
 extern void setMotorDecay(uint8_t decay);
+extern void setTOFF(uint8_t toff);
 
 extern float debug;
 
