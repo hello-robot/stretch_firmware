@@ -72,7 +72,6 @@ setupWDT(WDT_TIMEOUT_PERIOD);
 
 void loop()                 // main loop
 {
-
 #ifdef HELLO
 // Flash LED fast when in menu mode, slow in RPC mode
 if (hello_interface)
@@ -90,6 +89,5 @@ else
   disableWDT();
   serialCheck();              //must have this execute in loop for serial commands to function
 #endif
-
 
 }

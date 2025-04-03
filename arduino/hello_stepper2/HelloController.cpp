@@ -170,7 +170,7 @@ float k_e2c;
 
 float current_to_effort(float x)
 {
-  return max(-255,min(255,x*k_c2e));
+  return max(-1024,min(1024,x*k_c2e));
 }
 
 #define NOMINAL_BUS_VOLTAGE 12.5 //V of battery fully charged, no charger attached, nominal load
@@ -221,9 +221,9 @@ void setupBoardVariants()
   if (BOARD_VARIANT>=0)
   {
     //S4 Stepper V1 uses DRV8262 Motor Driver Full Scale Peak Current 7.78A 
-    iMAX =7.78;        
-    uMAX = (255/3.3)*(iMAX*0.424);   
-    k_c2e =(255/3.3)*0.424;
+    iMAX =7.7;        
+    uMAX = (1024/3.3)*(iMAX*0.424);   
+    k_c2e =(1024/3.3)*0.424;
     
     BOARD_VARIANT_DRV8842=1;
     BOARD_VARIANT_PIN_RUNSTOP=PIN_MCU_RUNSTOP;
@@ -234,6 +234,9 @@ void setupBoardVariants()
     pinMode(DRV_DECAY, OUTPUT);
     pinMode(DRV_TOFF_SELECT,OUTPUT);
     pinMode(PIN_DECAY_SELECT, OUTPUT);
+
+    digitalWrite(DRV_TOFF, HIGH);
+    digitalWrite(DRV_TOFF_SELECT, HIGH);
     analog_manager.setupADC();
   }
 
@@ -272,8 +275,8 @@ void setupHelloController()
   fg=flash_gains.read();
   memcpy(&gains_in, &fg, sizeof(Gains));
   dirty_gains=1; //force load of gains
-  set_vref_1(4);
-  set_vref_2(4);
+  set_vref_1(2);
+  set_vref_2(2);
   digitalWrite(PIN_BOOT, HIGH);
   
 
@@ -302,7 +305,7 @@ void setMotorDecay(uint8_t decay)
     digitalWrite(DRV_DECAY, LOW);
     digitalWrite(PIN_DECAY_SELECT, LOW);
   }
-  //1 selects Fast Decay
+  //1 selects Smart Tune ripple
   if (decay == 1)
   {
     digitalWrite(DRV_DECAY, HIGH);
@@ -1353,9 +1356,8 @@ void stepHelloCommutation()
     
     if (receiving_calibration)
     {
-      
-      analogFastWrite(VREF_2, 0);     //set phase currents to zero
-      analogFastWrite(VREF_1, 0); 
+      set_vref_1(2);
+      set_vref_2(2);
     }
     else
       output(-(y+PAY), round(U));
