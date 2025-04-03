@@ -130,7 +130,8 @@ void config_dac_outputs()
   DAC->CTRLA.bit.ENABLE = 0;
 
   //Using VREF A which is connected to RC filter from 3.3V rail
-  DAC->CTRLB.bit.REFSEL = DAC_CTRLB_REFSEL_VDDANA;
+  // DAC->CTRLB.bit.REFSEL = DAC_CTRLB_REFSEL_VREFPB;
+    DAC->CTRLB.bit.REFSEL = DAC_CTRLB_REFSEL_VDDANA;
 
   //Oversampling set to 0
   while (DAC->SYNCBUSY.bit.ENABLE || DAC->SYNCBUSY.bit.SWRST);
@@ -157,9 +158,9 @@ void config_dac_outputs()
   DAC->CTRLA.bit.ENABLE = 1;
 }
 
-void set_vref_2(uint8_t val)
+void set_vref_2(uint16_t val)
 {
-  uint16_t dac_val = (val * 4095) / 255; //Conversion for 8 bit to 12 bit
+  uint16_t dac_val = (val * 4095) / 1024; //Conversion for 8 bit to 12 bit
   if (dac_val > 4095) dac_val = 4095;
   while (!DAC->STATUS.bit.READY0 );
   // while (DAC->SYNCBUSY.bit.DATA0);
@@ -168,7 +169,7 @@ void set_vref_2(uint8_t val)
 
 void set_vref_1(uint8_t val)
 {
-  uint16_t dac_val = (val * 4095) / 255; //Conversion for 8 bit to 12 bit
+  uint16_t dac_val = (val * 4095) / 1024; //Conversion for 8 bit to 12 bit
   if (dac_val > 4095) dac_val = 4095;
   while (!DAC->STATUS.bit.READY1 );
   // while (DAC->SYNCBUSY.bit.DATA0);

@@ -128,12 +128,12 @@ void output(float theta, int effort) {
   }
 
   if (v_coil_B >= 0)  {
-    IN_4_HIGH();  //REG_PORT_OUTSET0 = PORT_PA20;     //write IN_4 HIGH
-    IN_3_LOW();   //REG_PORT_OUTCLR0 = PORT_PA15;     //write IN_3 LOW
+    IN_4_LOW();  //REG_PORT_OUTSET0 = PORT_PA20;     //write IN_4 HIGH
+    IN_3_HIGH();   //REG_PORT_OUTCLR0 = PORT_PA15;     //write IN_3 LOW
   }
   else  {
-    IN_4_LOW();     //REG_PORT_OUTCLR0 = PORT_PA20;     //write IN_4 LOW
-    IN_3_HIGH();    //REG_PORT_OUTSET0 = PORT_PA15;     //write IN_3 HIGH
+    IN_4_HIGH();     //REG_PORT_OUTCLR0 = PORT_PA20;     //write IN_4 LOW
+    IN_3_LOW();    //REG_PORT_OUTSET0 = PORT_PA15;     //write IN_3 HIGH
   }
 
 }

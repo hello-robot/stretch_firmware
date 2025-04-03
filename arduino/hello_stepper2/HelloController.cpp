@@ -234,9 +234,12 @@ void setupBoardVariants()
     pinMode(DRV_DECAY, OUTPUT);
     pinMode(DRV_TOFF_SELECT,OUTPUT);
     pinMode(PIN_DECAY_SELECT, OUTPUT);
+    pinMode(PIN_DRV_OCPM, OUTPUT);
 
     digitalWrite(DRV_TOFF, HIGH);
     digitalWrite(DRV_TOFF_SELECT, HIGH);
+
+    pinMode(PIN_DRV_OCPM, HIGH);
     analog_manager.setupADC();
   }
 
