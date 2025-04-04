@@ -81,49 +81,48 @@ extern "C"
 // #define digitalPinToTimer(P)
 
 /*
- * Analog pins
+ * Analog pins 0 to 3
  */
 
-#define PIN_ANA_VBATT         (0ul)
-#define PIN_ANA_CLIFF_2       (PIN_ANA_VBATT + 1)
-#define PIN_ANA_CLIFF_3       (PIN_ANA_VBATT + 2)
-#define PIN_ANA_TMP           (PIN_ANA_VBATT + 3)
-#define PIN_ANA_CURRENT       (PIN_ANA_VBATT + 4)
-#define PIN_ANA_CHARG_CURRENT (PIN_ANA_VBATT + 5)
-#define PIN_ANA_EFUSE_IMON    (PIN_ANA_VBATT + 6)
-#define PIN_ANA_CLIFF_0       (PIN_ANA_VBATT + 7)
-#define PIN_ANA_CLIFF_1       (PIN_ANA_VBATT + 8)
+#define PIN_SYS_VOLT          (0ul)
+#define PIN_SYS_IMON          (PIN_SYS_VOLT + 1)
+#define PIN_VTEMP             (PIN_SYS_VOLT + 2)
+#define PIN_CHARGER_CURRENT   (PIN_SYS_VOLT + 3)
+
 
 //declration needed for dependicies
-static const uint8_t A0  = PIN_ANA_VBATT;
+static const uint8_t A0  = PIN_SYS_VOLT;
 
 /*
-* Digital Input Pins
+* Digital Output Pins 4 to 15
 */
-#define PIN_PAUSE_SW  (9ul)
-#define PIN_IMU_INT   (PIN_PAUSE_SW + 1)
-#define PIN_BOARD_ID0 (PIN_PAUSE_SW + 2)
-#define PIN_BOARD_ID1 (PIN_PAUSE_SW + 3)
-#define PIN_BOARD_ID2 (PIN_PAUSE_SW + 4)
-#define PIN_CHRG_STS  (PIN_PAUSE_SW + 5)
+#define PIN_ARM_EN            (4ul)
+#define PIN_LW_EN             (PIN_ARM_EN + 1)
+#define PIN_RW_EN             (PIN_ARM_EN + 2)
+#define PIN_CW_EN             (PIN_ARM_EN + 3)
+#define PIN_EOA_EN            (PIN_ARM_EN + 4)
+#define PIN_LIFT_EN           (PIN_ARM_EN + 5)
+#define PIN_MOTORS_SYNC       (PIN_ARM_EN + 6)
+#define PIN_MOTORS_RUNSTOP    (PIN_ARM_EN + 7)
+#define PIN_RUNSTOP_LED       (PIN_ARM_EN + 8)
+#define PIN_STS_LED           (PIN_ARM_EN + 9)
+#define PIN_LATCH_CTRL        (PIN_ARM_EN + 10)
+#define PIN_FAN_EN            (PIN_ARM_EN + 11)
 
 /*
-* Digital Output Pins
+* Digital Input Pins 16 to 17
 */
-#define PIN_MCU_RUNSTOP   (15ul)
-#define PIN_MOTORS_SYNC   (PIN_MCU_RUNSTOP + 1)
-#define PIN_PAUSE_LED     (PIN_MCU_RUNSTOP + 2)
-#define PIN_FAN           (PIN_MCU_RUNSTOP + 3)
-#define PIN_BUZZER        (PIN_MCU_RUNSTOP + 4)
-#define PIN_IMU_RESET     (PIN_MCU_RUNSTOP + 5)
-#define PIN_STATUS_LED    (PIN_MCU_RUNSTOP + 6)
+#define PIN_CHARGER_CONNECT  (16ul)
+#define PIN_RUNSTOP_IN       (PIN_CHARGER_CONNECT + 1)
+
+
+
 /*
  * Wire Interfaces
  */
 #define WIRE_INTERFACES_COUNT 1
-
-#define PIN_WIRE_SDA         (22u)
-#define PIN_WIRE_SCL         (23u)
+#define PIN_WIRE_SDA         (26u)
+#define PIN_WIRE_SCL         (27u)
 #define PERIPH_WIRE          sercom2
 #define WIRE_IT_HANDLER      SERCOM2_Handler
 
@@ -134,29 +133,33 @@ static const uint8_t SCL = PIN_WIRE_SCL;
 /*
  * USB
  */
-#define PIN_USB_DM          (24ul)
-#define PIN_USB_DP          (25ul)
+#define PIN_USB_DM          (19ul)
+#define PIN_USB_DP          (20ul)
 
 /*
 * Neopixel SPI DMA Access
 */
 
 #define SPI_INTERFACES_COUNT 1
-#define PIN_SPI_MOSI (26ul)
-#define PIN_SPI_SCK  (30ul) //See pin array these are defined as not a pin
-#define PIN_SPI_MISO (31ul) //See pin array these are defined as not a pin
-#define PERIPH_SPI  sercom3
-#define PAD_SPI_TX  SPI_PAD_0_SCK_1
+#define PIN_SPI_MOSI (18ul) //NeoPixel Output
+#define PIN_SPI_SCK  (24ul) //See pin array these are defined as not a pin
+#define PIN_SPI_MISO (25ul) //See pin array these are defined as not a pin
+#define PERIPH_SPI  sercom0
+#define PAD_SPI_TX  SPI_PAD_3_SCK_1
 #define PAD_SPI_RX  SERCOM_RX_PAD_2 
 static const uint8_t MISO = PIN_SPI_MISO;
 static const uint8_t SCK  = PIN_SPI_SCK;
 static const uint8_t MOSI  = PIN_SPI_MOSI;
 
 //Not used pins needed for other dependcies
-#define PIN_DAC0 (27ul)
-#define PIN_DAC1 (28ul)
-#define PIN_USB_HOST_ENABLE (29ul)
+#define PIN_DAC0 (21ul)
+#define PIN_DAC1 (22ul)
+#define PIN_USB_HOST_ENABLE (23ul)
 
+//Pimu firmware unused pins, just used for compling
+#define PIN_IMU_RESET (28ul)
+#define PIN_IMU_INT   (29ul)
+#define PIN_BUZZER    (30ul)
 
 static const uint8_t DAC0 = PIN_DAC0;
 static const uint8_t DAC1 = PIN_DAC1;
@@ -215,4 +218,3 @@ extern SERCOM sercom5;
 // #define SERIAL_PORT_HARDWARE_OPEN   Serial1
 
 #endif /* _VARIANT_FEATHER_M4_ */
-

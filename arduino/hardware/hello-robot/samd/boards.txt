@@ -172,19 +172,19 @@ hello_robot_hello_pimu2.upload.native_usb=true
 # Build
 hello_robot_hello_pimu2.build.mcu=cortex-m4
 hello_robot_hello_pimu2.build.f_cpu=120000000L
-hello_robot_hello_pimu2.build.usb_product="Hello_Pimu"
+hello_robot_hello_pimu2.build.usb_product="Hello_Pimu2"
 hello_robot_hello_pimu2.build.usb_manufacturer="Hello-Robot"
-hello_robot_hello_pimu2.build.board=HELLO_PIMU
+hello_robot_hello_pimu2.build.board=HELLO_PIMU2
 hello_robot_hello_pimu2.build.core=arduino
 hello_robot_hello_pimu2.build.extra_flags=-D__SAMD51J19A__ -DHELLOROBOT_HELLO_PIMU -D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 {build.usb_flags}
 hello_robot_hello_pimu2.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
 hello_robot_hello_pimu2.build.openocdscript=scripts/openocd/daplink_samd51.cfg
-hello_robot_hello_pimu2.build.variant=hello_pimu
+hello_robot_hello_pimu2.build.variant=hello_pimu2
 hello_robot_hello_pimu2.build.variant_system_lib=
 hello_robot_hello_pimu2.build.vid=0x239A
 hello_robot_hello_pimu2.build.pid=0x8022
 hello_robot_hello_pimu2.bootloader.tool=openocd
-hello_robot_hello_pimu2.bootloader.file=/hello_pimu/bootloader-hello_pimu-v3.16.0-15-gaa52b22-dirty.bin
+hello_robot_hello_pimu2.bootloader.file=/hello_pimu2/bootloader-hello_pimu-v3.16.0-15-gaa52b22-dirty.bin
 hello_robot_hello_pimu2.compiler.arm.cmsis.ldflags="-L{runtime.tools.CMSIS-5.4.0.path}/CMSIS/Lib/GCC/" "-L{build.variant.path}" -larm_cortexM4lf_math -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 # Menu: Cache

@@ -36,11 +36,11 @@ private:
     char anglesComputed;
     void computeAngles();
 
-//-------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------`-----------------------
 // Function declarations
 public:
     Madgwick(void);
-    float set_beta(float x){beta=x;}//Hello Robot Inc: Allow user to modify beta (how fast converges. 1.0 works for 60hz filter
+    void set_beta(float x){beta=x;}//Hello Robot Inc: Allow user to modify beta (how fast converges. 1.0 works for 60hz filter
     void begin(float sampleFrequency) { invSampleFreq = 1.0f / sampleFrequency; }
     void update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
     void updateIMU(float gx, float gy, float gz, float ax, float ay, float az);
