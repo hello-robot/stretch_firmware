@@ -117,7 +117,8 @@ void update_status();
 void toggle_led(int rate_ms);
 void rpc_actuator_control(uint8_t actuator, uint8_t enable);
 void fast_actuator_control(bool en);
-
+void enableTCInterrupts();
+void disableTCInterrupts();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -383,7 +384,11 @@ void handle_trigger()
     if (trg.data & TRIGGER_FAN_OFF)
     {
         state_fan_on=false;
-        digitalWrite(FAN_FET, LOW);
+        digitalWrite(SYNC_OUT, HIGH);
+        delay(500);
+        digitalWrite(SYNC_OUT, LOW);
+        delay(500);
+        
     }
     if (trg.data & TRIGGER_IMU_RESET)
     {

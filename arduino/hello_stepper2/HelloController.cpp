@@ -278,7 +278,7 @@ void setupHelloController()
   dirty_gains=1; //force load of gains
   set_vref_1(2);
   set_vref_2(2);
-  digitalWrite(PIN_BOOT, HIGH);
+  digitalWrite(PIN_BOOT, LOW);
   
 
   
