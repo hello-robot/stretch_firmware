@@ -107,8 +107,8 @@ void output(float theta, int effort) {
 
 
   //DRV8262 Vref needs to be set above 50mV 
-  set_vref_1(max(abs(v_coil_A), 16));
-  set_vref_2(max(abs(v_coil_B), 16));
+  set_vref_1(max(abs(v_coil_A), 2));
+  set_vref_2(max(abs(v_coil_B), 2));
 
 
   
