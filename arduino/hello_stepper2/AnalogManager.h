@@ -24,10 +24,6 @@ class AnalogManager {
     void step();
     void setupADC();
 
-    float voltage_LPFa; 
-    float voltage_LPFb;
-    float temp_LPFa; 
-    float temp_LPFb;    
     float voltage;
     float temp;
 

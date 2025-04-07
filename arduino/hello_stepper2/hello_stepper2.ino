@@ -56,8 +56,8 @@ void setup()        // This code runs once at startup
     setupHelloController();
     enableTCInterrupts();  //Always be running the loop
     enableMGInterrupts();
-    setMotorDecay(1); //Sets motor decay to mixed decay
-    setTOFF(1);
+    setMotorDecay(0); //Sets motor decay to mixed decay
+    setTOFF(0);
     enableMotorDrivers(); //Turn on now that gains are loaded
 #endif
 setupWDT(WDT_TIMEOUT_PERIOD);

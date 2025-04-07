@@ -42,13 +42,14 @@ void setupPins() {
   config_dac_outputs();
 
   //DRV8262 current can not be set to a value of 0 min value is 50mV at 8bit resolution this is a dac value of 4
-  set_vref_1(2);
-  set_vref_2(2);
+  set_vref_1(16);
+  set_vref_2(16);
 
 #ifndef HELLO
   analogFastWrite(VREF_2, 0.33 * uMAX);
   analogFastWrite(VREF_1, 0.33 * uMAX);
 #endif
+  //DRV8262 when all inputs are low, the motor is in high impedance state
   IN_4_LOW();   //  digitalWrite(IN_4, HIGH);
   IN_3_LOW();    //  digitalWrite(IN_3, LOW);
   IN_2_LOW();   //  digitalWrite(IN_2, HIGH);
@@ -488,8 +489,8 @@ void serialCheck() {        //Monitors serial for commands.  Must be called in r
 
       case 'n':
         disableTCInterrupts();      //disable closed loop
-        set_vref_1(4);
-        set_vref_2(4);                     
+        set_vref_1(16);
+        set_vref_2(16);                     
         break;
 
       case 'r':             //new setpoint

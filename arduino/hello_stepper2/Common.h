@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Protocol 0: Initial production release for S4
-#define FIRMWARE_VERSION_HR "Stepper.v0.7.6p5"
+#define FIRMWARE_VERSION_HR "Stepper.v0.0.1p6"
 
 /////////////////////////////////////////////////////////////////
 
@@ -149,7 +149,9 @@ struct __attribute__ ((packed)) Gains{
   // float vpK1;
   // float vpK2;
   // float vpK3;
-  float voltage_LPF; //Low pass filter roll-off for voltage (Hz)
+  // float voltage_LPF; //Low pass filter roll-off for voltage (Hz)
+  uint8_t toff_setting;
+  uint8_t decay_setting;
 
 };
 
@@ -176,6 +178,7 @@ struct __attribute__ ((packed)) Status{
   float traj_setpoint;          //Target of waypoint trajectory
   uint16_t traj_id;             //Id of active trajectory segment
   float voltage;
+  float temp;
 };
 
 struct __attribute__ ((packed)) StatusAux{

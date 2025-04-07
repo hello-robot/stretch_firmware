@@ -27,10 +27,7 @@ AnalogManager analog_manager;
 
 AnalogManager::AnalogManager()
 {
-    voltage_LPFa = 1.0; 
-    voltage_LPFb = 0.0;
-    temp_LPFa = 1.0; 
-    temp_LPFb = 0.0;
+
     first_filter=1;
 
     adc_0_id = 0;
@@ -46,11 +43,6 @@ AnalogManager::AnalogManager()
 
 void AnalogManager::update_config(Gains * cfg_new, Gains * cfg_old)
 {
-    if (cfg_new->voltage_LPF!=cfg_old->voltage_LPF) 
-    {
-    voltage_LPFa = exp(cfg_new->voltage_LPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
-    voltage_LPFb = (1.0-voltage_LPFa);
-    }
 
     if (first_config)
     {
@@ -103,7 +95,6 @@ void ADC0_1_Handler()
 {
   if (ADC0->INTFLAG.bit.RESRDY)                       // Check if the result ready (RESRDY) flag has been set
   {
-    // digitalWrite(IMU_RESET, HIGH);
     ADC0->INTFLAG.bit.RESRDY = 1;                     // Clear the RESRDY flag
     while(ADC0->SYNCBUSY.bit.INPUTCTRL);                 // Wait for read synchronization
     analog_manager.adc_0_Result[analog_manager.adc_0_id] = ADC0->RESULT.reg;          // Read the result;
@@ -112,7 +103,6 @@ void ADC0_1_Handler()
     {
       analog_manager.adc_0_id=0;
       analog_manager.adc_0_resultsReady=true;
-      // digitalWrite(IMU_RESET, LOW);
     }
     ADC0->CTRLA.bit.ENABLE = 0;                     // Disable the ADC
     while(ADC0->SYNCBUSY.bit.ENABLE);                // Wait for synchronization

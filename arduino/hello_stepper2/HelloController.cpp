@@ -217,7 +217,7 @@ void setupBoardVariants()
 
 
   BOARD_VARIANT=(digitalRead(PIN_BOARD_ID2)<<2)|(digitalRead(PIN_BOARD_ID1)<<1)|digitalRead(PIN_BOARD_ID0);
-  BOARD_VARIANT = 5;
+  BOARD_VARIANT = 6;
   if (BOARD_VARIANT>=0)
   {
     //S4 Stepper V1 uses DRV8262 Motor Driver Full Scale Peak Current 7.78A 
@@ -276,9 +276,11 @@ void setupHelloController()
   fg=flash_gains.read();
   memcpy(&gains_in, &fg, sizeof(Gains));
   dirty_gains=1; //force load of gains
-  set_vref_1(2);
-  set_vref_2(2);
-  digitalWrite(PIN_BOOT, LOW);
+
+  //DRV8262 current can not be set below vref value of 50mV
+  set_vref_1(16);
+  set_vref_2(16);
+  digitalWrite(PIN_BOOT, HIGH);
   
 
   
@@ -300,11 +302,12 @@ void disableMotorDrivers()
 //Needed for lift brake circuit to run correctly 
 void setMotorDecay(uint8_t decay)
 {
-  //0 selectes slow decay (BRAKE)
+  //0 selectes default decay (mixed mode)
   if (decay == 0)
   {
-    digitalWrite(DRV_DECAY, LOW);
-    digitalWrite(PIN_DECAY_SELECT, LOW);
+    digitalWrite(PIN_DECAY_SELECT, HIGH);
+    digitalWrite(DRV_DECAY, HIGH);
+
   }
   //1 selects Smart Tune ripple
   if (decay == 1)
@@ -313,21 +316,22 @@ void setMotorDecay(uint8_t decay)
     digitalWrite(PIN_DECAY_SELECT, LOW);
   }
   //other selects mixed decay, DRV8842 can either be low or high
-  else
+  if (decay == 2)
   {
-    digitalWrite(PIN_DECAY_SELECT, HIGH);
-    digitalWrite(DRV_DECAY, HIGH);
+    digitalWrite(DRV_DECAY, LOW);
+    digitalWrite(PIN_DECAY_SELECT, LOW);
   }
 }
 
 //Toff selection for pwm off time
 void setTOFF(uint8_t toff)
 {
-  //7us pwm off time
+  //32us pwm off time
   if (toff == 0)
   {
-    digitalWrite(DRV_TOFF, LOW);
-    digitalWrite(DRV_TOFF_SELECT, LOW);
+    digitalWrite(DRV_TOFF, HIGH);
+    digitalWrite(DRV_TOFF_SELECT, HIGH);
+
   }
   //16us pwm off time
   if (toff == 1)
@@ -335,11 +339,11 @@ void setTOFF(uint8_t toff)
     digitalWrite(DRV_TOFF, HIGH);
     digitalWrite(DRV_TOFF_SELECT, LOW);
   }
-  //other selects 32us pwm off time
+  //other selects 7us pwm off time
   if (toff == 2)
   {
-    digitalWrite(DRV_TOFF, HIGH);
-    digitalWrite(DRV_TOFF_SELECT, HIGH);
+    digitalWrite(DRV_TOFF, LOW);
+    digitalWrite(DRV_TOFF_SELECT, LOW);
   }
 }
 
@@ -547,11 +551,10 @@ void update_status()
   stat.err=deg_to_rad(e);               //controller error (inner loop)
   stat.mode=cmd.mode; 
   stat.guarded_event = guarded_event_cnt;
-  if (BOARD_VARIANT >= 3)
+  if (BOARD_VARIANT >= 6)
   {
     stat.voltage=analog_manager.voltage;
-    // stat.voltage = 0;
-    // voltage_calibrated=get_voltage_calibrated(stat.voltage);
+    stat.temp = analog_manager.temp;
   }
   else
   {
@@ -750,17 +753,21 @@ void stepHelloController()
       guarded_mode_enabled = gains.config & CONFIG_ENABLE_GUARDED_MODE;
       flip_encoder_polarity = gains.config & CONFIG_FLIP_ENCODER_POLARITY;
       flip_effort_polarity = gains.config & CONFIG_FLIP_EFFORT_POLARITY;
-
+   
 
       uMAX_P = current_to_effort(gains.iMax_pos);
       uMAX_N = current_to_effort(gains.iMax_neg);
       uMAX=uMAX_P; //This is only needed for mecahduino_menu mode...
       PA = max(0,min(3.6,gains.phase_advance_d)); //Keep within 2 steps
-      
+
+      //Setting Toff time and decay mode of DRV8262 based on yaml params
+      setTOFF(gains.toff_setting);
+      setMotorDecay(gains.decay_setting);
+
       dirty_gains=0;
       first_step_safety=10; //recapture hold position in case encoder polarity has flipped
     }
-
+   
     
       ////// Compute sensor data
 
@@ -1353,6 +1360,8 @@ void stepHelloController()
   update_status();
   update_trace();
   ctrl_cycle_cnt++;
+
+
   //ctrl_loop_time_max_us=ctrl_loop_time_max_us,time_manager.current_time_us()-stat.timestamp);
   
   
