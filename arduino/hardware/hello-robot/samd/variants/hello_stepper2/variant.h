@@ -106,8 +106,8 @@ static const uint8_t DAC1 = PIN_DAC1;
 #define PIN_BOARD_ID1     (PIN_BOARD_ID0 + 1)
 #define PIN_BOARD_ID2     (PIN_BOARD_ID0 + 2)
 #define PIN_DRV_FAULT     (PIN_BOARD_ID0 + 3)
-#define PIN_MCU_RUNSTOP   (PIN_BOARD_ID0 + 5)
-#define PIN_MCU_SYNC      (PIN_BOARD_ID0 + 6)
+#define PIN_MCU_RUNSTOP   (PIN_BOARD_ID0 + 4)
+#define PIN_MCU_SYNC      (PIN_BOARD_ID0 + 5)
 
 /*
 * Digital Output Pins

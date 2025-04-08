@@ -30,6 +30,8 @@
 #endif
 
 void setupPins() {
+  pinMode(VREF_1, OUTPUT);
+  pinMode(VREF_2, OUTPUT);
   pinMode(IN_4, OUTPUT);
   pinMode(IN_3, OUTPUT);
   pinMode(IN_2, OUTPUT);
@@ -39,11 +41,14 @@ void setupPins() {
   pinMode(ledPin, OUTPUT); //
 
   //Setting VREF_1 and 2 to be used as PWM pins on TCC0
-  config_dac_outputs();
-
+  // config_dac_outputs();
+  setup_pwm_pin(VREF_1);
+  setup_pwm_pin(VREF_2);
   //DRV8262 current can not be set to a value of 0 min value is 50mV at 8bit resolution this is a dac value of 4
-  set_vref_1(16);
-  set_vref_2(16);
+  // set_vref_1(16);
+  // set_vref_2(16);
+  analogFastWrite(VREF_1, 2);
+  analogFastWrite(VREF_2, 2);
 
 #ifndef HELLO
   analogFastWrite(VREF_2, 0.33 * uMAX);
@@ -107,8 +112,11 @@ void output(float theta, int effort) {
 
 
   //DRV8262 Vref needs to be set above 50mV 
-  set_vref_1(max(abs(v_coil_A), 2));
-  set_vref_2(max(abs(v_coil_B), 2));
+  // set_vref_1(max(abs(v_coil_A), 2));
+  // set_vref_2(max(abs(v_coil_B), 2));
+
+  analogFastWrite(VREF_1, max(abs(v_coil_A), 2));
+  analogFastWrite(VREF_2, max(abs(v_coil_B), 2));
 
 
   
@@ -489,8 +497,10 @@ void serialCheck() {        //Monitors serial for commands.  Must be called in r
 
       case 'n':
         disableTCInterrupts();      //disable closed loop
-        set_vref_1(16);
-        set_vref_2(16);                     
+        // set_vref_1(16);
+        // set_vref_2(16);                
+        analogFastWrite(VREF_1, 2);
+        analogFastWrite(VREF_2, 2);     
         break;
 
       case 'r':             //new setpoint
