@@ -42,8 +42,8 @@ void setupPins() {
   config_dac_outputs();
 
   //DRV8262 current can not be set to a value of 0 min value is 50mV at 8bit resolution this is a dac value of 4
-  set_vref_1(16);
-  set_vref_2(16);
+  set_vref_1(2);
+  set_vref_2(2);
 
 #ifndef HELLO
   analogFastWrite(VREF_2, 0.33 * uMAX);
@@ -489,8 +489,8 @@ void serialCheck() {        //Monitors serial for commands.  Must be called in r
 
       case 'n':
         disableTCInterrupts();      //disable closed loop
-        set_vref_1(16);
-        set_vref_2(16);                     
+        set_vref_1(2);
+        set_vref_2(2);                     
         break;
 
       case 'r':             //new setpoint
