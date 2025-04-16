@@ -160,20 +160,18 @@ void config_dac_outputs()
 
 void set_vref_2(uint16_t val)
 {
-  uint16_t dac_val = (val * 4095) / 1024; //Conversion for 8 bit to 12 bit
-  if (dac_val > 4095) dac_val = 4095;
+  if (val > 4096) val = 4096;
   while (!DAC->STATUS.bit.READY0 );
   // while (DAC->SYNCBUSY.bit.DATA0);
-  DAC->DATA[0].reg = dac_val;
+  DAC->DATA[0].reg = val;
 }
 
-void set_vref_1(uint8_t val)
+void set_vref_1(uint16_t val)
 {
-  uint16_t dac_val = (val * 4095) / 1024; //Conversion for 8 bit to 12 bit
-  if (dac_val > 4095) dac_val = 4095;
+  if (val > 4096) val = 4096;
   while (!DAC->STATUS.bit.READY1 );
   // while (DAC->SYNCBUSY.bit.DATA0);
-  DAC->DATA[1].reg = dac_val;
+  DAC->DATA[1].reg = val;
 }
 
 

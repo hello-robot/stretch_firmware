@@ -30,8 +30,8 @@ extern "C" {
  extern void analogFastWrite( uint32_t ulPin, uint32_t ulValue );
  extern void setup_pwm_pin(uint32_t ulpin);
  extern void config_dac_outputs();
- extern void set_vref_1(uint8_t val);
- extern void set_vref_2(uint8_t val);
+ extern void set_vref_1(uint16_t val);
+ extern void set_vref_2(uint16_t val);
 #ifdef __cplusplus
 }
 #endif

@@ -170,7 +170,7 @@ float k_e2c;
 
 float current_to_effort(float x)
 {
-  return max(-1024,min(1024,x*k_c2e));
+  return max(-VREF_RES,min(VREF_RES,x*k_c2e));
 }
 
 #define NOMINAL_BUS_VOLTAGE 12.5 //V of battery fully charged, no charger attached, nominal load
@@ -222,8 +222,8 @@ void setupBoardVariants()
   {
     //S4 Stepper V1 uses DRV8262 Motor Driver Full Scale Peak Current 7.78A 
     iMAX =7.7;        
-    uMAX = (1024/3.3)*(iMAX*0.424);   
-    k_c2e =(1024/3.3)*0.424;
+    uMAX = (VREF_RES/3.3)*(iMAX*0.424);   
+    k_c2e =(VREF_RES/3.3)*0.424;
     
     BOARD_VARIANT_DRV8842=1;
     BOARD_VARIANT_PIN_RUNSTOP=PIN_MCU_RUNSTOP;
@@ -278,8 +278,8 @@ void setupHelloController()
   dirty_gains=1; //force load of gains
 
   //DRV8262 current can not be set below vref value of 50mV
-  set_vref_1(16);
-  set_vref_2(16);
+  set_vref_1(DRV8262_MIN_VREF);
+  set_vref_2(DRV8262_MIN_VREF);
   digitalWrite(PIN_BOOT, HIGH);
   
 
@@ -1390,8 +1390,8 @@ void stepHelloCommutation()
     
     if (receiving_calibration)
     {
-      set_vref_1(16);
-      set_vref_2(16);
+      set_vref_1(DRV8262_MIN_VREF);
+      set_vref_2(DRV8262_MIN_VREF);
     }
     else
       output(-(y+PAY), round(U));

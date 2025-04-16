@@ -42,8 +42,8 @@ void setupPins() {
   config_dac_outputs();
 
   //DRV8262 current can not be set to a value of 0 min value is 50mV at 8bit resolution this is a dac value of 4
-  set_vref_1(16);
-  set_vref_2(16);
+  set_vref_1(DRV8262_MIN_VREF);
+  set_vref_2(DRV8262_MIN_VREF);
 
 #ifndef HELLO
   analogFastWrite(VREF_2, 0.33 * uMAX);
@@ -102,13 +102,13 @@ void output(float theta, int effort) {
 
   sin_coil_B = sin_1[angle_2];
 
-  v_coil_A = ((effort * sin_coil_A) / 1024);
-  v_coil_B = ((effort * sin_coil_B) / 1024);
+  v_coil_A = ((effort * sin_coil_A) / 4096);
+  v_coil_B = ((effort * sin_coil_B) / 4096);
 
 
   //DRV8262 Vref needs to be set above 50mV 
-  set_vref_1(max(abs(v_coil_A), 16));
-  set_vref_2(max(abs(v_coil_B), 16));
+  set_vref_1(max(abs(v_coil_A), DRV8262_MIN_VREF));
+  set_vref_2(max(abs(v_coil_B), DRV8262_MIN_VREF));
 
 
   
@@ -489,8 +489,8 @@ void serialCheck() {        //Monitors serial for commands.  Must be called in r
 
       case 'n':
         disableTCInterrupts();      //disable closed loop
-        set_vref_1(16);
-        set_vref_2(16);                     
+        set_vref_1(DRV8262_MIN_VREF);
+        set_vref_2(DRV8262_MIN_VREF);                     
         break;
 
       case 'r':             //new setpoint
@@ -624,7 +624,7 @@ void oneStep() {           /////////////////////////////////   oneStep    //////
 
   //output(1.8 * stepNumber, 64); //updata 1.8 to aps..., second number is control effort
 #ifdef HELLO
-  output(aps * stepNumber, (int)(0.33 * uMAX));
+  output(aps * stepNumber, (int)(0.2 * uMAX));
 #else
   output(aps * stepNumber, (int)(0.33 * uMAX));
 #endif
