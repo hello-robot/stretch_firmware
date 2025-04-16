@@ -42,8 +42,8 @@ void setupPins() {
   config_dac_outputs();
 
   //DRV8262 current can not be set to a value of 0 min value is 50mV at 8bit resolution this is a dac value of 4
-  set_vref_1(2);
-  set_vref_2(2);
+  set_vref_1(16);
+  set_vref_2(16);
 
 #ifndef HELLO
   analogFastWrite(VREF_2, 0.33 * uMAX);
@@ -107,8 +107,8 @@ void output(float theta, int effort) {
 
 
   //DRV8262 Vref needs to be set above 50mV 
-  set_vref_1(max(abs(v_coil_A), 2));
-  set_vref_2(max(abs(v_coil_B), 2));
+  set_vref_1(max(abs(v_coil_A), 16));
+  set_vref_2(max(abs(v_coil_B), 16));
 
 
   
@@ -144,7 +144,7 @@ static const unsigned block_size = 8192; // actual size is 64?
 static unsigned block_count;
 static const unsigned floats_per_block = block_size / sizeof(float);
 static float block[floats_per_block];
-static const void * blockptr;
+static const uint8_t* blockptr;
 
 static void write_page()
 {
@@ -489,8 +489,8 @@ void serialCheck() {        //Monitors serial for commands.  Must be called in r
 
       case 'n':
         disableTCInterrupts();      //disable closed loop
-        set_vref_1(2);
-        set_vref_2(2);                     
+        set_vref_1(16);
+        set_vref_2(16);                     
         break;
 
       case 'r':             //new setpoint

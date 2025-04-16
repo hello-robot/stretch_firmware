@@ -1390,8 +1390,8 @@ void stepHelloCommutation()
     
     if (receiving_calibration)
     {
-      set_vref_1(2);
-      set_vref_2(2);
+      set_vref_1(16);
+      set_vref_2(16);
     }
     else
       output(-(y+PAY), round(U));
