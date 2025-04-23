@@ -77,17 +77,21 @@ volatile bool diag_waiting_on_sync=0;
 
 int switch_to_menu_cnt=0;
 int board_reset_cnt=0;
+
 int guarded_event_cnt=0;
 int guarded_eff_cnt=0;
-#define GUARDED_EFF_THRESH 50 // (ms) Must be over effort for this long to trigger a contact event
+#define GUARDED_EFF_THRESH 50*CONTROL_TICKS_PER_MS // (ms) Must be over effort for this long to trigger a contact event
+
+
 bool motion_limits_set=0;
 volatile int cmd_cnt_exec=0;
 volatile int cmd_cnt_rpc=0;
 volatile int cmd_rpc_overflow=0;
 
-#define N_POS_HISTORY 250 //With TC4_LOOP_RATE 1000, log 0.25s of past motions
+/*
+#define N_POS_HISTORY 1250 //With Control rate of 5Khz, log 0.25s of past motions
 float pos_history[N_POS_HISTORY];
-int pos_history_idx=0;
+int pos_history_idx=0;*/
 
 
 //By default boot with hello_interface on
@@ -135,7 +139,7 @@ float g_eff_neg=0;
 double ywd=0;
 float PAY = 0;
 
-float FsCtrl = CONTROL_RATE_HZ;
+
 bool receiving_calibration=false;
 bool flip_encoder_polarity = false;
 bool flip_effort_polarity = false;
@@ -173,7 +177,7 @@ float current_to_effort(float x)
   return max(-VREF_RES,min(VREF_RES,x*k_c2e));
 }
 
-#define NOMINAL_BUS_VOLTAGE 12.5 //V of battery fully charged, no charger attached, nominal load
+
 #define RAW_TO_VOLTAGE 20.0/1024 //10bit adc, 0-20V per 0-3.3V reading
 float voltage_calibrated=0;
 float get_voltage_calibrated(float raw)
@@ -258,7 +262,7 @@ void setupHelloController()
   memset(&stat_out, 0, sizeof(Status));
   memset(&stat_aux, 0, sizeof(StatusAux));
   memset(&motion_limits, 0, sizeof(MotionLimits));
-  memset(&pos_history, 0, N_POS_HISTORY*sizeof(float));
+  //memset(&pos_history, 0, N_POS_HISTORY*sizeof(float));
 
   sprintf(board_info.board_variant, "Stepper.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
@@ -507,7 +511,7 @@ void handleNewRPC()
           memcpy(rpc_out + 1, (uint8_t *) (&traj_seg_reply), sizeof(TrajectorySegmentReply)); 
           num_byte_rpc_out=sizeof(TrajectorySegmentReply)+1;
      interrupts();
-          //stat.debug=trajectory_manager.dirty_seg_in;
+
           break;
     case RPC_RESET_TRAJECTORY: 
           rpc_out[0]=RPC_REPLY_RESET_TRAJECTORY;
@@ -542,7 +546,6 @@ void handleNewRPC()
 void update_status()
 {
 
-//stat.debug=cmd_rpc_overflow;
   //noInterrupts();
   //stat.timestamp=time_manager.get_encoder_timestamp();
   stat.effort= eff;
@@ -583,7 +586,7 @@ void update_status()
   stat.traj_id=trajectory_manager.get_id_current_segment();
 
 
-  //stat.debug = sync_manager.runstop_trigger_cnt;
+
   noInterrupts();
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
@@ -633,7 +636,7 @@ float xdes=0;
 void update_trace()
 {
 
-  //stat.debug=mg.dt;
+
    if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
     trace_manager.debug_msg.f_1= xdes;
@@ -720,23 +723,23 @@ void stepHelloController()
       //B = 1-A
       if (gains_in.pLPF!=gains.pLPF) //PID Pos D term filter
       {
-        pLPFa = exp(gains_in.pLPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
+        pLPFa = exp(gains_in.pLPF*-2*3.14159/CONTROL_RATE_HZ); // z = e^st pole mapping
         pLPFb = (1.0-pLPFa);
       }
       if (gains_in.effort_LPF!=gains.effort_LPF) //Effort filter
       {
-        efLPFa = exp(gains_in.effort_LPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
+        efLPFa = exp(gains_in.effort_LPF*-2*3.14159/CONTROL_RATE_HZ); // z = e^st pole mapping
         efLPFb = (1.0-efLPFa);
       }
       if (gains_in.vLPF!=gains.vLPF) //PID Vel 
       {
-        vLPFa = exp(gains_in.vLPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
-        vLPFb = (1.0-vLPFa)* FsCtrl;
+        vLPFa = exp(gains_in.vLPF*-2*3.14159/CONTROL_RATE_HZ); // z = e^st pole mapping
+        vLPFb = (1.0-vLPFa)* CONTROL_RATE_HZ;
       }
       if (gains_in.vel_status_LPF!=gains.vel_status_LPF) //Status vel
       {
-        vsLPFa = exp(gains_in.vel_status_LPF*-2*3.14159/FsCtrl); // z = e^st pole mapping
-        vsLPFb = (1.0-vsLPFa)* FsCtrl;
+        vsLPFa = exp(gains_in.vel_status_LPF*-2*3.14159/CONTROL_RATE_HZ); // z = e^st pole mapping
+        vsLPFb = (1.0-vsLPFa)* CONTROL_RATE_HZ;
       }
       if (BOARD_VARIANT >= 3)
       {
@@ -853,7 +856,7 @@ void stepHelloController()
      }
      
      diag_runstop_on=(sync_manager.runstop_active && runstop_enabled);
-     //stat.debug=diag_runstop_on;//sync_manager.runstop_active;
+
      //Force to safety mode on runstop or velocity watchdog
      if (diag_runstop_on || (vel_watchdog==0 && (gains.config & CONFIG_ENABLE_VEL_WATCHDOG)))
      {
@@ -898,7 +901,7 @@ void stepHelloController()
         {
           x_des_incr = yw + rad_to_deg(cmd_in.x_des);
           //x_des_incr = xdes+ rad_to_deg(cmd_in.x_des);//Use xdes instead of yw so we don't add in steady state error
-          //stat.debug=yw;
+
           
         }
         else
@@ -1079,10 +1082,9 @@ void stepHelloController()
             else if (ITerm < -gains.pKi_limit) ITerm = -gains.pKi_limit;          
             DTerm = pLPFa*DTerm -  pLPFb*gains.pKd*(yw-yw_1);
             u = (gains.pKp * e) + ITerm + DTerm;
-            //stat.debug=current_to_effort(gains.i_safety_feedforward);
+
             u=u*gains.safety_stiffness+current_to_effort(gains.i_safety_feedforward);
             
-            //stat.debug=u;//current_to_effort(gains.i_safety_feedforward);//gains.i_safety_feedforward;//current_to_effort(gains.i_safety_feedforward);
             diag_near_pos_setpoint=abs(e)<gains.pos_near_setpoint_d;
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=0;
@@ -1175,7 +1177,7 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((x_des_incr -yw))<gains.pos_near_setpoint_d;
-            //stat.debug=abs((x_des_incr -yw));
+
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
@@ -1192,7 +1194,7 @@ void stepHelloController()
               if (motion_limits_set)
               {
                 cmd.x_des=min(max(cmd.x_des, motion_limits.pos_min), motion_limits.pos_max);
-                //stat.debug=motion_limits.pos_min;
+
               }
               xdes=mg.update(rad_to_deg(cmd.x_des)); //get target position
             }
@@ -1204,7 +1206,7 @@ void stepHelloController()
             u = (gains.pKp * e) + ITerm + DTerm;
             u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=abs((rad_to_deg(cmd.x_des) -yw))<gains.pos_near_setpoint_d;
-            //stat.debug=abs((rad_to_deg(cmd.x_des) -yw));
+
             diag_near_vel_setpoint=0;
             diag_is_mg_accelerating=mg.isAccelerating();
             diag_is_mg_moving=mg.isMoving();
@@ -1224,7 +1226,7 @@ void stepHelloController()
                 else
                   xdes=mg.update(rad_to_deg(trajectory_manager.q)); //get target position
                 traj_hold_pos=yw;
-                //stat.debug++;
+
               }
               else
                   xdes=traj_hold_pos;
@@ -1289,7 +1291,7 @@ void stepHelloController()
    eff = efLPFa*eff +  efLPFb*(u);
 
    //eff_max=max(eff_max,abs(eff));
-   //stat.debug=g_eff_pos;//eff_max;//effort_to_current(eff_max);
+
     ///////////////////////////////
     //Guarded Mode
 
@@ -1305,7 +1307,7 @@ void stepHelloController()
                 {
                   guarded_override=1;
                   hold_pos=yw;
-                  //stat.debug=deg_to_rad(hold_pos);
+
                   if (cmd.mode==MODE_POS_TRAJ_WAYPOINT)
                   {
                     trajectory_manager.reset();
@@ -1341,13 +1343,14 @@ void stepHelloController()
   
 
   ////////// Handle is_moving
-  float vel_is_moving = (float)(abs(ywd- pos_history[pos_history_idx]))*4;//4 as 250ms of history, convert to deg/s
-  diag_is_moving = vel_is_moving>gains.vel_near_setpoint_d;
-  //stat.debug= vel_is_moving;
-  pos_history[pos_history_idx]=ywd;
-  pos_history_idx++;
-  if (pos_history_idx>=N_POS_HISTORY)
-    pos_history_idx=0;
+  //float vel_is_moving = (float)(abs(ywd- pos_history[pos_history_idx]))*4;//4 as 250ms of history, convert to deg/s
+  
+  diag_is_moving = abs(encoder_filter.velocity)>gains.vel_near_setpoint_d;//vel_is_moving>gains.vel_near_setpoint_d;
+
+  //pos_history[pos_history_idx]=ywd;
+  //pos_history_idx++;
+  //if (pos_history_idx>=N_POS_HISTORY)
+  //  pos_history_idx=0;
     
       
   //Cleanup
@@ -1371,49 +1374,66 @@ void stepHelloController()
 
 
 
-//Called every control cycle via interrupt (6.5Khz, sync)
+//Called every control cycle via interrupt
 //The desired effort (U) and Phase Advance (PAY) is updated in the control loop at a lower rate
-//This loop updates raw encoder position (y) asynchronously from the control loop
-int enc_raw;
 
-void stepHelloCommutation()
-{
+int enc_raw;
+int tc5_cnt=0;
+int ms_loop_cnt=0;
+
+void TC5_Handler() {                // gets called with FPID frequency
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
-    noInterrupts();
-    enc_raw=readEncoder();
-    interrupts();
-    y = lookup[enc_raw];
-    encoder_filter.stepFilter(y);
-    stat.debug=encoder_filter.velocity;
-    //y=encoder_filter.filtered_value;
+     if (hello_interface)
+     {
+        ///////////// Handle encoder read ////////////////
+        noInterrupts();
+        enc_raw=readEncoder();
+        interrupts();
+        y = lookup[enc_raw];
+        encoder_filter.stepFilter(y);
     
-    if (receiving_calibration)
-    {
-      set_vref_1(DRV8262_MIN_VREF);
-      set_vref_2(DRV8262_MIN_VREF);
-    }
-    else
-      output(-(y+PAY), round(U));
-    TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
+        //y=encoder_filter.filtered_value;
+    
+        ///////////// Compute controllers ////////////////
+        tc5_cnt++;
+    
+        if (tc5_cnt==CONTROL_LOOP_DIV)
+        {
+          stepHelloController();
+          tc5_cnt=0;
+        }
+    
+        ///////////// Handle 1MS functions ////////////////
+         ms_loop_cnt++;
+         if (ms_loop_cnt==MS_LOOP_RATE)
+        {
+          time_manager.ts_base++;
+          toggle_led(500);
+          ms_loop_cnt=0;
+        }
+        
+         ///////////// Send control commands to commutation driver ////////////////
+        if (receiving_calibration)
+        {
+          set_vref_1(DRV8262_MIN_VREF);
+          set_vref_2(DRV8262_MIN_VREF);
+        }
+        else
+        {
+          stat.debug=round(U);
+          output(-(y+PAY), round(U));
+        }
+        
+     }
+     else
+     {
+      Mechaduino_TC5_Handler();
+     }
+     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
+
 }
-
-/*
-int tc5_cnt=0;
-void TC5_Handler() {                // gets called with FPID frequency
-
- if (hello_interface)
- {
-    stepHelloCommutation();
-    //if(tc5_cnt++==10)
-    //  stepHelloController();
- }
- else
-  Mechaduino_TC5_Handler();
- 
-}*/
-
 ///////////////////////// Control Loop ///////////////////////////
 
 
@@ -1438,7 +1458,7 @@ void setupTCInterrupts() {  // configure the controller interrupt
   TC5->COUNT16.INTENSET.bit.OVF = 1;          // enable overfollow
   TC5->COUNT16.INTENSET.bit.MC0 = 1;         // enable compare match to CC0
 
-  NVIC_SetPriority(TC5_IRQn, 1);              //Set interrupt priority
+  NVIC_SetPriority(TC5_IRQn, 0);              //Set interrupt priority, 0 is highest
 
   // Enable InterruptVector
   NVIC_EnableIRQ(TC5_IRQn);
@@ -1456,86 +1476,7 @@ void disableTCInterrupts() {  //disables the controller interrupt ("closed loop 
 }
 
 
-int tc5_cnt=0;
-void TC5_Handler() {                // gets called with FPID frequency
- if (hello_interface)
- {
-    tc5_cnt++;
-    if (tc5_cnt==CONTROL_LOOP_DIV)
-    {
-      stepHelloController();
-      tc5_cnt=0;
-    }
-    stepHelloCommutation();
- }
- else
-  Mechaduino_TC5_Handler();
 
-}
-void TC4_Handler() {                // gets called with FsMg frequency
-
-  if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
-      TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
-      time_manager.ts_base++;
-    
-      toggle_led(500);
-      //if (hello_interface)
-        //stepHelloController();
-  
-  }
-}
-
-
-void setupMGInterrupts() {  // configure the controller interrupt
-
- ////////////////////////// Counter 4 ///////////////////////////
- //GCLK FOR TC4 is set in setupTCInterrupts() function in Utils.cppp
-
-  TC4->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TCx
-  while(TC4->COUNT16.SYNCBUSY.bit.ENABLE);
-
-  TC4->COUNT16.CTRLA.reg |=  TC_CTRLA_MODE_COUNT16;   // Set Timer counter Mode to 16 bits
-  TC4->COUNT16.WAVE.reg |=  TC_WAVE_WAVEGEN_MFRQ; // Set TC as normal Normal Frq
-  TC4->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV2;   // Set perscaler
-
-  TC4->COUNT16.CC[0].reg = TC4_COUNT_PER_CYCLE; //Value to count up to
-  while(TC4->COUNT16.SYNCBUSY.bit.CC0);
-
-
-  TC4->COUNT16.INTENSET.reg = 0;              // disable all interrupts
-  TC4->COUNT16.INTENSET.bit.OVF = 1;          // enable overfollow
-  TC4->COUNT16.INTENSET.bit.MC0 = 1;         // enable compare match to CC0
-
-
-   ////////////////////////// Setup Interrupts ///////////////////////////
-
-//Set interrupt priority so Controller (TC4) preempts Commutation (TC5) (Inverted numbering scheme)
-//This ensures stable time base for controller filters
-//Jitter on commutation seems to be OK for performance
-
-
-  //OLD NVIC_SetPriority(TC4_IRQn, 0);      //0        see https://github.com/arduino/ArduinoCore-samd/blob/master/cores/arduino/cortex_handlers.c#L84
-  //OLD NVIC_SetPriority(TC5_IRQn, 1);      //1        
-
-
-  NVIC_SetPriority(TC4_IRQn, 1);      //0        see https://github.com/arduino/ArduinoCore-samd/blob/master/cores/arduino/cortex_handlers.c#L84
-  NVIC_SetPriority(TC5_IRQn, 0);      //1   
-  
-  // Enable InterruptVector
-  NVIC_EnableIRQ(TC4_IRQn);
-
-}
-
-
-void enableMGInterrupts() {   //enables the controller interrupt ("closed loop mode")
-  TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC4
-  while(TC4->COUNT16.SYNCBUSY.bit.ENABLE);
-}
-
-void disableMGInterrupts() {  //disables the controller interrupt ("closed loop mode")
-  TC4->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC5
-  while(TC4->COUNT16.SYNCBUSY.bit.ENABLE);
-}
 
 /////////////////////// Watchdog //////////////////////////////////////
 void resetWDT() {

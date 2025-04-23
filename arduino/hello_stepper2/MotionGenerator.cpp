@@ -45,7 +45,7 @@ SOFTWARE.
  
 MotionGenerator::MotionGenerator()
 {
-  dt=1.0/CONTROL_RATE_HZ; //1/FsCtrl; (1ms at 1Khz update)
+  dt=1.0/CONTROL_RATE_HZ;
   maxVel=0;
   maxAcc=0;
 

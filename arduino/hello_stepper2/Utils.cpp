@@ -77,6 +77,24 @@ void stepInterrupt() {
 }
 
 void output(float theta, int effort) {
+
+
+  /*
+   * theta is the commanded angle in the commutation angle (deg)
+   * effort is 10 bit from controller
+   * spr is 200 (steps per revolution)
+   * phase_multiplier: 500
+   * angle_1: 0-3600, index into sine table
+   
+Step size is 1.8 deg, so 
+const int spr = 200;                // 200 steps per revolution 
+const float aps = 360.0/ spr;       // angle per step = 1.8
+int cpr = 16384;                    // counts per rev : 14 bit encoder
+const float stepangle = aps/32.0;   // for step/dir interrupt: aps/32 is the equivalent of 1/32 microsteps
+
+*/
+
+
    int angle_1;
    int angle_2;
    int v_coil_A;
@@ -84,14 +102,14 @@ void output(float theta, int effort) {
 
    int sin_coil_A;
    int sin_coil_B;
-   int phase_multiplier = 10 * spr / 4;
+   int phase_multiplier = 100 * spr / 4;
 
    
 
   //REG_PORT_OUTCLR0 = PORT_PA09; for debugging/timing
 
-  angle_1 = mod((phase_multiplier * theta) , 3600);   //
-  angle_2 = mod((phase_multiplier * theta)+900 , 3600);
+  angle_1 = mod((phase_multiplier * theta) , 36000);   //
+  angle_2 = mod((phase_multiplier * theta)+9000 , 36000);
   //angle_1=angle_1/10;
   //angle_2=angle_2/10;
   //sin_coil_A  = sin(angle_1*0.017453292519943295);//deg_to_rad(angle_1));
@@ -102,8 +120,8 @@ void output(float theta, int effort) {
 
   sin_coil_B = sin_1[angle_2];
 
-  v_coil_A = ((effort * sin_coil_A) / 4096);
-  v_coil_B = ((effort * sin_coil_B) / 4096);
+  v_coil_A = ((effort * sin_coil_A) / VREF_RES);
+  v_coil_B = ((effort * sin_coil_B) / VREF_RES);
 
 
   //DRV8262 Vref needs to be set above 50mV 
@@ -603,7 +621,7 @@ void parameterQuery() {         //print current parameters in a format that can 
   
   SerialUSB.println("const float __attribute__((__aligned__(256))) lookup[16384] = {");
   for (int i = 0; i < 16384; i++) {
-    SerialUSB.print(lookup[i]);
+    SerialUSB.print(lookup[i],4);
     SerialUSB.print(", ");
   }
   SerialUSB.println("");
@@ -624,7 +642,7 @@ void oneStep() {           /////////////////////////////////   oneStep    //////
 
   //output(1.8 * stepNumber, 64); //updata 1.8 to aps..., second number is control effort
 #ifdef HELLO
-  output(aps * stepNumber, (int)(0.2 * uMAX));
+  output(aps * stepNumber, (int)(0.5 * uMAX)); //Command constant effort one step angle away
 #else
   output(aps * stepNumber, (int)(0.33 * uMAX));
 #endif

@@ -164,6 +164,7 @@ void set_vref_2(uint16_t val)
   while (!DAC->STATUS.bit.READY0 );
   // while (DAC->SYNCBUSY.bit.DATA0);
   DAC->DATA[0].reg = val;
+
 }
 
 void set_vref_1(uint16_t val)
@@ -173,6 +174,7 @@ void set_vref_1(uint16_t val)
   // while (DAC->SYNCBUSY.bit.DATA0);
   DAC->DATA[1].reg = val;
 }
+
 
 
 #ifdef __cplusplus

@@ -18,7 +18,7 @@
 #include "Common.h"
 
 #define ENCODER_CPR 16384
-
+#define PLL_FILTER_HZ 400 //Hardcode for now
 class EncoderFilter {
    public: 
     EncoderFilter();

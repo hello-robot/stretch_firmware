@@ -46,11 +46,11 @@ void EncoderFilter::setupEncoderFilter()
     filtered_value=0;
     first_update = true;
     k2Pi=6.283185307179586;
-    source_rate_hz=TC5_LOOP_RATE; //Fs
+    source_rate_hz=COMMUTATION_RATE_HZ; 
     dt=1/source_rate_hz;
     cpr=360.0; //ENCODER_CPR;
     float max_pll_hz = source_rate_hz / 10.0;
-    pll_filter_hz=400;
+    pll_filter_hz=PLL_FILTER_HZ;
     pll_filter_hz =min(pll_filter_hz, max_pll_hz);
     float w_3db = pll_filter_hz * k2Pi;
     kp = 2.0 * w_3db;

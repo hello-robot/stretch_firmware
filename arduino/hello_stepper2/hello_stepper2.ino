@@ -45,7 +45,6 @@ void setup()        // This code runs once at startup
   serialMenu();     // Prints menu to serial monitor
 #else
   setupBoardVariants();  
-  setupMGInterrupts();
 #endif
  
   setupSPI();                       // Sets up SPI for communicating with encoder
@@ -55,7 +54,6 @@ void setup()        // This code runs once at startup
     setupTransport();
     setupHelloController();
     enableTCInterrupts();  //Always be running the loop
-    enableMGInterrupts();
     setMotorDecay(0); //Sets motor decay to mixed decay
     setTOFF(0);
     enableMotorDrivers(); //Turn on now that gains are loaded
