@@ -621,7 +621,7 @@ void parameterQuery() {         //print current parameters in a format that can 
   
   SerialUSB.println("const float __attribute__((__aligned__(256))) lookup[16384] = {");
   for (int i = 0; i < 16384; i++) {
-    SerialUSB.print(lookup[i],4);
+    SerialUSB.print(lookup[i]);
     SerialUSB.print(", ");
   }
   SerialUSB.println("");

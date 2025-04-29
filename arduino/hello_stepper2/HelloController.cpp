@@ -676,13 +676,13 @@ void stepHelloController()
   sync_manager.step();
   trajectory_manager.step();
   
-    if (!diag_calibration_rcvd)
-    {
-      if (lookup[0]!=0 && lookup[16383]!=0)
-        diag_calibration_rcvd=1;
-      //else
-      //  disableMotorDrivers();
-    }
+  if (!diag_calibration_rcvd)
+  {
+    if (lookup[0]!=0 && lookup[16383]!=0)
+      diag_calibration_rcvd=1;
+    //else
+    //  disableMotorDrivers();
+  }
   
 
     if (dirty_trigger)
