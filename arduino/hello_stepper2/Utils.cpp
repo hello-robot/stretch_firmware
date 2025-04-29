@@ -615,17 +615,21 @@ void parameterQuery() {         //print current parameters in a format that can 
   SerialUSB.print(vLPF, DEC);
   SerialUSB.println(";");
 
+  disableTCInterrupts();
   SerialUSB.println("");
   SerialUSB.println("//This is the encoder lookup table (created by calibration routine)");
   SerialUSB.println("");
   
   SerialUSB.println("const float __attribute__((__aligned__(256))) lookup[16384] = {");
   for (int i = 0; i < 16384; i++) {
-    SerialUSB.print(lookup[i]);
+    SerialUSB.print(lookup[i],3);
     SerialUSB.print(", ");
+    if (i%10==0)
+      delay(1);//Avoids buffer overrun
   }
   SerialUSB.println("");
   SerialUSB.println("};");
+  enableTCInterrupts();
 
 }
 
