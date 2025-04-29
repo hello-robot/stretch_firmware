@@ -68,7 +68,7 @@ volatile bool diag_runstop_on=0;
 volatile bool diag_near_pos_setpoint=0;
 volatile bool diag_near_vel_setpoint=0;
 volatile bool diag_is_moving=0;
-volatile bool diag_at_current_limit=0;
+volatile bool diag_in_drv_fault=0;
 volatile bool diag_is_mg_accelerating=0;
 volatile bool diag_is_mg_moving=0;
 volatile bool diag_calibration_rcvd=0;
@@ -558,6 +558,7 @@ void update_status()
   {
     stat.voltage=analog_manager.voltage;
     stat.temp = analog_manager.temp;
+    diag_in_drv_fault = diag_in_drv_fault && digitalRead(PIN_DRV_FAULT);//latch
   }
   else
   {
@@ -570,7 +571,7 @@ void update_status()
   stat.diag= diag_near_pos_setpoint ?   stat.diag|DIAG_NEAR_POS_SETPOINT : stat.diag;
   stat.diag= diag_near_vel_setpoint ?   stat.diag|DIAG_NEAR_VEL_SETPOINT : stat.diag;
   stat.diag= diag_is_moving ?           stat.diag|DIAG_IS_MOVING : stat.diag;
-  stat.diag= diag_at_current_limit ?    stat.diag|DIAG_AT_CURRENT_LIMIT : stat.diag;
+  stat.diag= diag_in_drv_fault ?        stat.diag|DIAG_IN_DRV_FAULT : stat.diag;
   stat.diag= diag_is_mg_accelerating ?  stat.diag|DIAG_IS_MG_ACCELERATING : stat.diag;
   stat.diag= diag_is_mg_moving ?        stat.diag|DIAG_IS_MG_MOVING : stat.diag;
   stat.diag= diag_calibration_rcvd ?    stat.diag|DIAG_CALIBRATION_RCVD : stat.diag;
@@ -701,6 +702,11 @@ void stepHelloController()
         if (trg.data & TRIGGER_DISABLE_TRACE)
         {
           trace_manager.disable_trace();
+        }
+
+        if (trg.data & TRIGGER_RESET_DRV_FAULT)
+        {
+          diag_in_drv_fault=0;
         }
         
     }
@@ -858,7 +864,7 @@ void stepHelloController()
      diag_runstop_on=(sync_manager.runstop_active && runstop_enabled);
 
      //Force to safety mode on runstop or velocity watchdog
-     if (diag_runstop_on || (vel_watchdog==0 && (gains.config & CONFIG_ENABLE_VEL_WATCHDOG)))
+     if (diag_runstop_on || diag_in_drv_fault || (vel_watchdog==0 && (gains.config & CONFIG_ENABLE_VEL_WATCHDOG)))
      {
         cmd_in.mode=MODE_SAFETY;
         cmd.mode=MODE_SAFETY;
@@ -1261,13 +1267,13 @@ void stepHelloController()
   }
               
   
-    diag_at_current_limit = 0;  
+
     if (u > 0)          //Depending on direction we want to apply torque, add or subtract a phase angle of PA for max effective torque.  PA should be equal to one full step angle: if the excitation angle is the same as the current position, we would not move!  
       {                 //You can experiment with "Phase Advance" by increasing PA when operating at high speeds
           if (u > uMAX_PF)     // limit control effort
           {
             u = uMAX_PF;       //saturation limits max current command
-            diag_at_current_limit = 1;
+            //diag_at_current_limit = 1;
           }
        
         PAY=PA;
@@ -1277,7 +1283,7 @@ void stepHelloController()
         if (u < uMAX_NF)    // limit control effort
         {
           u = uMAX_NF;      //saturation limits max current command
-          diag_at_current_limit = 1;
+          //diag_at_current_limit = 1;
         }
         PAY=-PA;
       }
