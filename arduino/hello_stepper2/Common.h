@@ -79,7 +79,7 @@
 #define DIAG_NEAR_POS_SETPOINT 4      //Is pos controller within gains.pAs_d of setpoint
 #define DIAG_NEAR_VEL_SETPOINT 8     //Is vel controller within gains.vAs_d of setpoint
 #define DIAG_IS_MOVING 16             //Is measured velocity greater than gains.vAs_d
-#define DIAG_AT_CURRENT_LIMIT 32      //Is controller current saturated
+#define DIAG_IN_DRV_FAULT  32      //(Was DIAG_AT_CURRENT_LIMIT) Did driver through a fault.
 #define DIAG_IS_MG_ACCELERATING 64   //Is controler motion generator acceleration non-zero
 #define DIAG_IS_MG_MOVING 128         //Is controller motion generator velocity non-zero
 #define DIAG_CALIBRATION_RCVD 256      //Is the calibration table in flash
@@ -101,6 +101,7 @@
 #define TRIGGER_MARK_POS_ON_CONTACT 64
 #define TRIGGER_ENABLE_TRACE 128
 #define TRIGGER_DISABLE_TRACE 256
+#define TRIGGER_RESET_DRV_FAULT  512
 
 #define CONFIG_SAFE_MODE_HOLD 1
 #define CONFIG_ENABLE_RUNSTOP 2
