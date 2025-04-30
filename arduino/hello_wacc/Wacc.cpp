@@ -16,6 +16,8 @@
 #include "Accel.h"
 #include "TimeManager.h"
 #include "TraceManager.h"
+#include "Optical_Flow_Sensor.h"
+
 
 #define WDT_TIMEOUT_PERIOD 11 //ms range 0-11ms
 //////////////////////////////////////
@@ -36,11 +38,16 @@ bool dirty_command=false;
 
 /////////////////////////////////////////
 void setupTimer4_and_5();
-float FS_CTRL = 70; //Run Acceleromter read Controller at 70hz
+float FS_CTRL = 10; //Run Acceleromter read Controller at 70hz
 void toggle_led(int rate_ms);
 void resetWDT();
 void setupWDT(uint8_t period);
 
+Optical_Flow_Sensor flow(HEADER_SPI_SS, PAA5100);
+int16_t deltaX,deltaY;
+
+bool flow_valid=false;
+  
 void setupWacc() {  
   memset(&cfg, 0, sizeof(Wacc_Config));
   memset(&cfg_in, 0, sizeof(Wacc_Config));
@@ -53,6 +60,8 @@ void setupWacc() {
   setupTimer4_and_5();
   time_manager.clock_zero();
   setupWDT(WDT_TIMEOUT_PERIOD);
+
+  flow_valid=flow.begin();
 }
 
 uint8_t    BOARD_VARIANT;
@@ -206,8 +215,8 @@ if (dirty_command)
   else
     digitalWrite(D3, LOW);
 
-  stat.ax=accel_gravity_scale*(stat.ax * accel_LPFa + accel_LPFb*ax);
-  stat.ay=accel_gravity_scale*(stat.ay * accel_LPFa + accel_LPFb*ay);
+  //stat.ax=accel_gravity_scale*(stat.ax * accel_LPFa + accel_LPFb*ax);
+  //stat.ay=accel_gravity_scale*(stat.ay * accel_LPFa + accel_LPFb*ay);
   stat.az=accel_gravity_scale*(stat.az * accel_LPFa + accel_LPFb*az);
   stat.a0 = stat.a0 * ana_LPFa +  ana_LPFb* analogRead(A0);
   stat.d0=digitalRead(D0);
@@ -252,7 +261,18 @@ if (dirty_command)
 
 void stepWaccController_70Hz()
 {
-    stepAccel();
+    //stepAccel();
+    if (flow_valid)
+    {
+      flow.readMotionCount(&deltaX, &deltaY);
+      stat.ax=(float)deltaX;
+      stat.ay=(float)deltaY;
+    }
+    else
+    {
+        stat.ax=7;
+        stat.ay=2;
+    }
 }
 //////////////////////////////////////////////////////
 bool led_on=false;

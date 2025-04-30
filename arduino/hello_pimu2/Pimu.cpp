@@ -550,15 +550,15 @@ void rpc_actuator_control(uint8_t actuator, uint8_t enable)
     digitalWrite(ARM_EN, enable);
     break;
 
-  case LW_MOTOR:
+  case OMNI_0_MOTOR:
     digitalWrite(LW_EN, enable);
     break;
 
-  case RW_MOTOR:
+  case OMNI_1_MOTOR:
     digitalWrite(RW_EN, enable);
     break;
 
-  case CW_MOTOR:
+  case OMNI_2_MOTOR:
     digitalWrite(CW_EN, enable);
     break;
 

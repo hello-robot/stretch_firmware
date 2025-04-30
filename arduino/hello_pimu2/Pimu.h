@@ -16,9 +16,9 @@
 #include "Common.h"
 
 #define LIFT_MOTOR 1
-#define LW_MOTOR 2
-#define RW_MOTOR 3
-#define CW_MOTOR 4
+#define OMNI_0_MOTOR 2
+#define OMNI_1_MOTOR 3
+#define OMNI_2_MOTOR 4
 #define ARM_MOTOR 5
 #define EOA_MOTOR 6
 

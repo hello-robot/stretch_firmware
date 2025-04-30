@@ -16,10 +16,11 @@
 #include "Accel.h"
 
 
+
 void setup()        // This code runs once at startup
 {     
   setupBoardVariants();
-  setupAccel();
+  //setupAccel();
   SerialUSB.begin(2000000);
   setupWacc();          
   setupTransport();
