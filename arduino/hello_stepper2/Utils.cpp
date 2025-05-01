@@ -84,7 +84,7 @@ void output(float theta, int effort) {
    * effort is 10 bit from controller
    * spr is 200 (steps per revolution)
    * phase_multiplier: 500
-   * angle_1: 0-3600, index into sine table
+   * angle_1: 0-36000, index into sine table
    
 Step size is 1.8 deg, so 
 const int spr = 200;                // 200 steps per revolution 
@@ -125,9 +125,11 @@ const float stepangle = aps/32.0;   // for step/dir interrupt: aps/32 is the equ
 
 
   //DRV8262 Vref needs to be set above 50mV 
-  set_vref_1(max(abs(v_coil_A), DRV8262_MIN_VREF));
-  set_vref_2(max(abs(v_coil_B), DRV8262_MIN_VREF));
-
+  //NOTE: Setting a min VREF can cause instability around zero-crossing in the sine table
+  //Turning off this clamp 
+  set_vref_1(max(abs(v_coil_A), 0));//DRV8262_MIN_VREF));
+  set_vref_2(max(abs(v_coil_B), 0));//DRV8262_MIN_VREF));
+  stat.debug=sin_coil_A;
 
   
 

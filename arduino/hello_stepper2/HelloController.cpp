@@ -1427,7 +1427,9 @@ void TC5_Handler() {                // gets called with FPID frequency
         }
         else
         {
-          stat.debug=round(U);
+          U=max(20,U);
+          //stat.debug=round(U);
+  
           output(-(y+PAY), round(U));
         }
         
