@@ -115,7 +115,7 @@ void Mechaduino_TC5_Handler() {                // gets called with FPID frequenc
       else ledPin_LOW();                  //digitalWrite(ledPin, LOW);
 #endif
 
-      output(-y, round(U));    // update phase currents
+      output(-y, round(U),0);    // update phase currents
     }
     
    // e_3 = e_2;    //copy current values to previous values for next control cycle

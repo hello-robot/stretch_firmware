@@ -76,10 +76,12 @@ void stepInterrupt() {
   else r -= stepangle;
 }
 
-void output(float theta, int effort) {
+void output(float theta, int effort, int v_ref_min ) {
 
 
   /*
+   * v_ref_min: minimum voltage to coil
+   * 
    * theta is the commanded angle in the commutation angle (deg)
    * effort is 10 bit from controller
    * spr is 200 (steps per revolution)
@@ -127,8 +129,8 @@ const float stepangle = aps/32.0;   // for step/dir interrupt: aps/32 is the equ
   //DRV8262 Vref needs to be set above 50mV 
   //NOTE: Setting a min VREF can cause instability around zero-crossing in the sine table
   //Turning off this clamp 
-  set_vref_1(max(abs(v_coil_A), 0));//DRV8262_MIN_VREF));
-  set_vref_2(max(abs(v_coil_B), 0));//DRV8262_MIN_VREF));
+  set_vref_1(max(abs(v_coil_A), v_ref_min));
+  set_vref_2(max(abs(v_coil_B), v_ref_min));
   stat.debug=sin_coil_A;
 
   
@@ -647,10 +649,11 @@ void oneStep() {           /////////////////////////////////   oneStep    //////
   }
 
   //output(1.8 * stepNumber, 64); //updata 1.8 to aps..., second number is control effort
+  //Use DRV8262_MIN_VREF during calibration
 #ifdef HELLO
-  output(aps * stepNumber, (int)(0.5 * uMAX)); //Command constant effort one step angle away
+  output(aps * stepNumber, (int)(0.5 * uMAX),DRV8262_MIN_VREF); //Command constant effort one step angle away
 #else
-  output(aps * stepNumber, (int)(0.33 * uMAX));
+  output(aps * stepNumber, (int)(0.33 * uMAX),DRV8262_MIN_VREF);
 #endif
   
   delay(10);
@@ -1103,7 +1106,7 @@ void hybridControl() {        //still under development
     missed_steps += 1;
   }
 
-  output(0.1125 * (-(r - missed_steps)), (255 / 3.3) * (iLevel * 10 * rSense));
+  output(0.1125 * (-(r - missed_steps)), (255 / 3.3) * (iLevel * 10 * rSense),0);
 
 }
 

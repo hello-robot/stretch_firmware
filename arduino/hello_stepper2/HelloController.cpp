@@ -1427,10 +1427,16 @@ void TC5_Handler() {                // gets called with FPID frequency
         }
         else
         {
-          U=max(20,U);
+          //U=max(20,U);
           //stat.debug=round(U);
-  
-          output(-(y+PAY), round(U));
+          if (gains.decay_setting==0)
+          {
+            output(-(y+PAY), round(U),0);
+          }
+          else
+          {
+            output(-(y+PAY), round(U),DRV8262_MIN_VREF);
+          }
         }
         
      }

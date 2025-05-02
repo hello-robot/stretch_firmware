@@ -35,7 +35,7 @@
 
   void enableInterrupt();           //enable pin interrupt handler
 
-	void output(float theta, int effort);	  //calculates phase currents (commutation) and outputs to Vref pins
+	void output(float theta, int effort, int v_ref_min);	  //calculates phase currents (commutation) and outputs to Vref pins
 
 	void calibrate();	                //calibration routine
 		
