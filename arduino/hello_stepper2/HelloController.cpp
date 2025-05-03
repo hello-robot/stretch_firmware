@@ -670,7 +670,7 @@ void stepHelloController()
  
   //noInterrupts();
   stat.timestamp=time_manager.current_time_us();
-  float yy = y;//lookup[readEncoder()];
+  float yy = y;//encoder_filter.filtered_value;//y;//lookup[readEncoder()];
   //interrupts();
   
   
@@ -851,6 +851,7 @@ void stepHelloController()
     vs = vsLPFa*vs +  vsLPFb*(yw-yw_1);     //compute velocity status msg
 
 
+ 
     /////////// Safety Logic ////////////
     
     //May override commanded control mode.
@@ -1350,7 +1351,7 @@ void stepHelloController()
 
   ////////// Handle is_moving
   //float vel_is_moving = (float)(abs(ywd- pos_history[pos_history_idx]))*4;//4 as 250ms of history, convert to deg/s
-  
+ 
   diag_is_moving = abs(encoder_filter.velocity)>gains.vel_near_setpoint_d;//vel_is_moving>gains.vel_near_setpoint_d;
 
   //pos_history[pos_history_idx]=ywd;

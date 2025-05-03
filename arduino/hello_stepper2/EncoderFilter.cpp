@@ -59,6 +59,7 @@ void EncoderFilter::setupEncoderFilter()
     pll_filter_hz=0;
 }
 
+//NOTE: This seems to be broken! Rollover bug and bad vel values. It worked at one point...
 void EncoderFilter::stepFilter(float x)  //Pass in encoder reading
 {
 

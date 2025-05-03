@@ -131,7 +131,7 @@ const float stepangle = aps/32.0;   // for step/dir interrupt: aps/32 is the equ
   //Turning off this clamp 
   set_vref_1(max(abs(v_coil_A), v_ref_min));
   set_vref_2(max(abs(v_coil_B), v_ref_min));
-  stat.debug=sin_coil_A;
+  //stat.debug=sin_coil_A;
 
   
 
