@@ -65,27 +65,46 @@
 
 /////////////////Map Pins////////////////////////////////////////////////
 //From hello_pimu/variants.h
-#define RUNSTOP_SW          PIN_RUNSTOP_IN
-#define LED                 PIN_STS_LED
-#define RUNSTOP_LED         PIN_RUNSTOP_LED
-#define FAN_FET             PIN_FAN_EN
-#define BUZZER              PIN_BUZZER
 
-#define IMU_RESET           PIN_IMU_RESET
-#define IMU_INT             PIN_IMU_INT
-
-#define RUNSTOP_OUT         PIN_MOTORS_RUNSTOP
-#define SYNC_OUT            PIN_MOTORS_SYNC
-#define NEOPIXEL            PIN_SPI_MOSI
-#define CHARGER_CONNECTED   PIN_CHARGER_CONNECT
-
-#define LIFT_EN             PIN_LIFT_EN
+//Outputs
 #define ARM_EN              PIN_ARM_EN
-#define LW_EN               PIN_LW_EN
-#define RW_EN               PIN_RW_EN
-#define CW_EN               PIN_CW_EN
+#define OMNI_0_EN           PIN_OMNI_0_EN
+#define OMNI_1_EN           PIN_OMNI_1_EN
+#define OMNI_2_EN           PIN_OMNI_2_EN
 #define EOA_EN              PIN_EOA_EN
+#define LIFT_EN             PIN_LIFT_EN
+#define SYNC_OUT            PIN_MOTORS_SYNC
+#define RUNSTOP_OUT         PIN_MOTORS_RUNSTOP
+#define RUNSTOP_LED         PIN_RUNSTOP_LED
+#define LED                 PIN_STS_LED
 #define LATCH_CTRL          PIN_LATCH_CTRL
+#define FAN_FET             PIN_FAN_EN
+#define BUZZER              PIN_BUZZER_EN
+#define ESP_RESET           PIN_ESP_RESET
+#define ESP_BOOT            PIN_ESP_BOOT
+#define DISABLE_20V0        PIN_20V_DISABLE
+#define CHARGER_DISABLE     PIN_CHARGER_DISABLE
+#define DISABLE_5V0         PIN_5V_DISABLE
+#define BTN_RED             PIN_BTN_RED
+#define BTN_GREEN           PIN_BTN_GREEN
+#define IMU_RESET           PIN_IMU_RESET
+
+//Inputs
+#define PWR_EN              PIN_PWR_EN
+#define SLEEP_EN            PIN_SLEEP_EN
+#define CHARGER_STATE       PIN_CHRG_STATE
+#define CHARGER_CONNECTED   PIN_CHRG_CONNECT
+#define IMU_INT             PIN_IMU_INT
+#define ROBOT_ACTIVE        PIN_ROBOT_ACTIVE
+#define EOA_FAULT           PIN_EOA_FAULT
+#define RUNSTOP_SW          PIN_RUNSTOP_IN
+#define SYS_OC              PIN_SYS_OC
+
+
+#define NEOPIXEL            PIN_SPI_MOSI
+
+
+
 
 /////////////////////////////////////////////////////////////////
 #define NUM_CLIFF 4

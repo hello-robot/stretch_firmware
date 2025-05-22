@@ -120,10 +120,10 @@ void IMU_BNO085::setupIMU()
   digitalWrite(IMU_RESET, HIGH);
 
   Wire.begin();
-  imu_valid=device.begin(0x4A, Wire, IMU_INT);
+  imu_valid=device.begin(0x4A, Wire1, IMU_INT);
   if (imu_valid)  
   {
-      Wire.setClock(400000); //Increase I2C data rate to 400kHz
+      Wire1.setClock(400000); //Increase I2C data rate to 400kHz
       
       __enable_irq();
       attachInterrupt(digitalPinToInterrupt(IMU_INT), interrupt_handler, FALLING);

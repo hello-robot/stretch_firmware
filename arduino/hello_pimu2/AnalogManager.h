@@ -16,7 +16,7 @@
 #include "Common.h"
 
 #define ADC_0_INPUTS 3
-#define ADC_1_INPUTS 1
+#define ADC_1_INPUTS 4
 
 class AnalogManager {    
   public: 
@@ -36,11 +36,19 @@ class AnalogManager {
     float temp_LPFb ;    
     float cliff[4];
     bool at_cliff[4];
-    float voltage;
-    float current;
-    float current_charge;
-    float current_efuse;
+
+
+    float voltage_5v0;
+    float voltage_36v0;
+    float voltage_20v0;
+
+    float current_charger;
+    float current_cpu;
+    float current_rpi;
+    
     float temp;
+    float current_efuse;
+
     
     volatile uint16_t adc_0_Result[ADC_0_INPUTS] = {};  
     volatile uint16_t adc_1_Result[ADC_1_INPUTS] = {};

@@ -229,7 +229,7 @@ void LightBarManager::ColoredScanUpdate(uint32_t color_bg,uint32_t color_fg,floa
 
 void LightBarManager::setupLightBarManager()
 {
-   lightBar_init = pixels.begin(&sercom0, SERCOM0, SERCOM0_DMAC_ID_TX, NEOPIXEL, SPI_PAD_3_SCK_1, PIO_SERCOM);
+   lightBar_init = pixels.begin(&sercom2, SERCOM2, SERCOM2_DMAC_ID_TX, NEOPIXEL, SPI_PAD_3_SCK_1, PIO_SERCOM);
 }
 
 float test_voltage=0.0;

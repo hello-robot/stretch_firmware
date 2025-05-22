@@ -26,6 +26,7 @@
 #include "IMU_BNO085.h"
 #include "ChargerManager.h"
 #include <FlashStorage.h>
+#include "BatteryManager.h"
 
 
 #define V_TO_RAW(v) (int)v/(3.3*11/4095)  //per circuit
@@ -55,6 +56,8 @@ SyncManager sync_manager(&runstop_manager);
 LightBarManager light_bar_manager;
 
 ChargerManager charger_manager;
+BatteryManager battery_manager;
+
 
 bool state_charger_connected = false;
 bool state_charger_is_charging = false;
@@ -143,6 +146,10 @@ void setupBoardVariants()
   pinMode(BUZZER, OUTPUT);
   pinMode(FAN_FET, OUTPUT);
   pinMode(RUNSTOP_SW, INPUT);
+  pinMode(BTN_GREEN,OUTPUT);
+  pinMode(BTN_RED, OUTPUT);
+  digitalWrite(BTN_GREEN, HIGH);
+  digitalWrite(BTN_RED, LOW);
 
   digitalWrite(RUNSTOP_LED, LOW);
   digitalWrite(LED, LOW);
@@ -161,9 +168,9 @@ void setupBoardVariants()
   digitalWrite(LATCH_CTRL, HIGH);
   pinMode(LIFT_EN, OUTPUT);
   pinMode(ARM_EN, OUTPUT);
-  pinMode(LW_EN, OUTPUT);
-  pinMode(RW_EN, OUTPUT);
-  pinMode(CW_EN, OUTPUT);
+  pinMode(OMNI_0_EN, OUTPUT);
+  pinMode(OMNI_1_EN, OUTPUT);
+  pinMode(OMNI_2_EN, OUTPUT);
   pinMode(EOA_EN, OUTPUT);
   digitalWrite(LATCH_CTRL,LOW);
 
@@ -185,11 +192,12 @@ void setupPimu() {
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
   analog_manager.factory_config();
+  battery_manager.init();
+  
+  fast_actuator_control(true);
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
-  fast_actuator_control(true);
-  
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void stepPimuController()
@@ -199,9 +207,10 @@ void stepPimuController()
   toggle_led(500);
 
   runstop_manager.step(&cfg);
-  beep_manager.step();
+  // beep_manager.step();
   analog_manager.step(&stat, &cfg);
-  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_is_charging, state_low_voltage_alert, runstop_manager.runstop_led_on, RAW_TO_V(analog_manager.voltage));  
+  battery_manager.step();
+  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_is_charging, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.voltage);  
   update_fan();
   update_imu();
   update_board_reset();
@@ -209,8 +218,8 @@ void stepPimuController()
   startup_cnt=max(0,startup_cnt-1);
   if(startup_cnt==0)
   {
-    update_voltage_monitor();
-    update_current_monitor();
+    // update_voltage_monitor();
+    // update_current_monitor();
     update_tilt_monitor();
     update_cliff_monitor();
   }
@@ -453,41 +462,41 @@ void update_imu()
 }
 
 ////////////////////////////
-void update_voltage_monitor()
-{
-  if (BOARD_VARIANT >= 1)
-  {
-    state_charger_is_charging = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
-    state_charger_connected = charger_manager.charger_plugged_in_flag;
+// void update_voltage_monitor()
+// {
+//   if (BOARD_VARIANT >= 1)
+//   {
+//     state_charger_is_charging = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
+//     state_charger_connected = charger_manager.charger_plugged_in_flag;
     
     
-    if(analog_manager.voltage<low_voltage_alert) //dropped below
-      {
-        state_low_voltage_alert=true;
-        if (cfg.stop_at_low_voltage)
-          runstop_manager.activate_runstop();
-      }
-      else
-      {
-        state_low_voltage_alert=false;
-      }
-  }
+//     if(analog_manager.voltage<low_voltage_alert) //dropped below
+//       {
+//         state_low_voltage_alert=true;
+//         if (cfg.stop_at_low_voltage)
+//           runstop_manager.activate_runstop();
+//       }
+//       else
+//       {
+//         state_low_voltage_alert=false;
+//       }
+//   }
 
-}
+// }
 ////////////////////////////
 
-void update_current_monitor()
-{
-  if(analog_manager.current>high_current_alert && cfg.stop_at_high_current) //dropped below
-    {
-      state_high_current_alert=true;
-      runstop_manager.activate_runstop();
-    }
-    else
-    {
-      state_high_current_alert=false;
-    }
-}
+// void update_current_monitor()
+// {
+//   if(analog_manager.current>high_current_alert && cfg.stop_at_high_current) //dropped below
+//     {
+//       state_high_current_alert=true;
+//       runstop_manager.activate_runstop();
+//     }
+//     else
+//     {
+//       state_high_current_alert=false;
+//     }
+// }
 ////////////////////////////
 
 void update_tilt_monitor()
@@ -530,9 +539,9 @@ void fast_actuator_control(bool en)
   digitalWrite(LATCH_CTRL, HIGH);
   digitalWrite(LIFT_EN, en);
   digitalWrite(ARM_EN, en);
-  digitalWrite(LW_EN, en);
-  digitalWrite(RW_EN, en);
-  digitalWrite(CW_EN, en);
+  digitalWrite(OMNI_0_EN, en);
+  digitalWrite(OMNI_1_EN, en);
+  digitalWrite(OMNI_2_EN, en);
   digitalWrite(EOA_EN, en);
 }
 
@@ -551,15 +560,15 @@ void rpc_actuator_control(uint8_t actuator, uint8_t enable)
     break;
 
   case OMNI_0_MOTOR:
-    digitalWrite(LW_EN, enable);
+    digitalWrite(OMNI_0_EN, enable);
     break;
 
   case OMNI_1_MOTOR:
-    digitalWrite(RW_EN, enable);
+    digitalWrite(OMNI_1_EN, enable);
     break;
 
   case OMNI_2_MOTOR:
-    digitalWrite(CW_EN, enable);
+    digitalWrite(OMNI_2_EN, enable);
     break;
 
   case EOA_MOTOR:
@@ -583,9 +592,9 @@ void update_status()
   if(stat.imu.bump>cfg.bump_thresh) //Use the FW tap detector
       stat.bump_event_cnt++;
 
-  stat.voltage=analog_manager.voltage;
-  stat.current_charge=analog_manager.current_charge;
-  stat.current=analog_manager.current;
+  stat.voltage=battery_manager.voltage;
+  stat.current_charge=analog_manager.current_charger;
+  stat.current=battery_manager.sys_current;
   stat.temp=analog_manager.temp;
   stat.state=0;
   stat.state = analog_manager.at_cliff[0] ? stat.state|STATE_AT_CLIFF_0 : stat.state;

@@ -21,12 +21,15 @@ AnalogManager analog_manager;
 
 
 // //ADC0 Declrations
-#define IDX_SYS_VOLT 0          //ADC0, AIN13 MUXPOS 0x0D
-#define IDX_SYS_IMON 1         //ADC0, AIN7 MUXPOS 0x07 A4 on M4
-#define IDX_CHARGER_CURRENT 2 //ADC0 AIN4 MUXPOS 0x04 A1 on M4
+#define IDX_5V0_VOLT 0          //ADC0, AIN4 MUXPOS 0x04 
+#define IDX_36V0_VOLT 1         //ADC0, AIN0 MUXPOS 0x00 
+#define IDX_VTEMP 2             //ADC0 AIN3 MUXPOS 0x03 
 
 //ADC1 Declrations
-#define IDX_VTEMP 0 //ADC1 AIN0 MUXPOS 0x09
+#define IDX_CHARGER_IMON 0 //ADC1 AIN7 MUXPOS 0x07
+#define IDX_20V0_VOLT 1 //ADC1 AIN8 MUXPOS 0x08
+#define IDX_CPU_IMON 2 //ADC1 AIN9 MUXPOS 0x09
+#define IDX_RPI_IMON 3 //ADC1 AIN0 MUXPOS 0x00
 
 
 //Default LPF Values
@@ -57,12 +60,15 @@ AnalogManager::AnalogManager(){
 
 
 	//ADC0 PIN MUX MAP//
-	adc_0_mux[IDX_SYS_VOLT] = 0x0D;
-	adc_0_mux[IDX_SYS_IMON] = 0x07;
-	adc_0_mux[IDX_CHARGER_CURRENT] = 0x04;
+	adc_0_mux[IDX_5V0_VOLT] = 0x04;
+	adc_0_mux[IDX_36V0_VOLT] = 0x00;
+	adc_0_mux[IDX_VTEMP] = 0x03;
 
 	//ADC1 PIN MUX MAP//
-	adc_1_mux[IDX_VTEMP] = 0x09;
+	adc_1_mux[IDX_CHARGER_IMON] = 0x07;
+  adc_1_mux[IDX_20V0_VOLT] = 0x08;
+  adc_1_mux[IDX_CPU_IMON] = 0x09;
+  adc_1_mux[IDX_RPI_IMON] = 0x00;
 
   }
   
@@ -103,10 +109,15 @@ void AnalogManager::update_config(Pimu_Config * cfg_new, Pimu_Config * cfg_old)
   }
   if (first_config)
   {
-    voltage = adc_0_Result[IDX_SYS_VOLT];
-    current = adc_0_Result[IDX_SYS_IMON];
-    current_charge = adc_0_Result[IDX_CHARGER_CURRENT];
-    temp = adc_1_Result[IDX_VTEMP];
+  voltage_5v0 = (3.414f*(adc_0_Result[IDX_5V0_VOLT])/4095);
+  voltage_36v0 = (3.414f*(adc_0_Result[IDX_36V0_VOLT])/4095);
+  voltage_20v0 = (3.414f*(adc_1_Result[IDX_20V0_VOLT])/4095);
+
+  current_charger = (3.414f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
+  current_cpu = (3.414f*(adc_1_Result[IDX_CPU_IMON])/4095);
+  current_rpi = (3.414f*adc_1_Result[IDX_RPI_IMON])/4095;
+  temp = (3.414f*(adc_0_Result[IDX_VTEMP])/4095);
+
     cliff[0] = 0;
     cliff[1] = 0;
     cliff[2] = 0;
@@ -123,20 +134,55 @@ void AnalogManager::step(Pimu_Status * stat, Pimu_Config * cfg)
 
   if (first_filter)
   {
-    voltage = adc_0_Result[IDX_SYS_VOLT];
-    current = adc_0_Result[IDX_SYS_IMON];
-    current_charge = adc_0_Result[IDX_CHARGER_CURRENT];
-    temp =    adc_1_Result[IDX_VTEMP];
+  voltage_5v0 = (3.414f*(adc_0_Result[IDX_5V0_VOLT])/4095);
+  voltage_36v0 = (3.414f*(adc_0_Result[IDX_36V0_VOLT])/4095);
+  voltage_20v0 = (3.414f*(adc_1_Result[IDX_20V0_VOLT])/4095);
+
+  current_charger = (3.414f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
+  current_cpu = (3.414f*(adc_1_Result[IDX_CPU_IMON])/4095);
+  current_rpi = (3.414f*adc_1_Result[IDX_RPI_IMON])/4095;
+  temp = (3.414f*(adc_0_Result[IDX_VTEMP])/4095);
+
     cliff[0] = 0;
     cliff[1] = 0;
     cliff[2] = 0;
     cliff[3] = 0;
     first_filter=false;
   }
-  voltage = voltage*voltage_LPFa+voltage_LPFb*adc_0_Result[IDX_SYS_VOLT];
-  current = current*current_LPFa+current_LPFb*adc_0_Result[IDX_SYS_IMON];
-  current_charge = current_charge *current_LPFa +current_LPFb*adc_0_Result[IDX_CHARGER_CURRENT];
-  temp =temp *temp_LPFa +temp_LPFb*adc_1_Result[IDX_VTEMP];
+  // voltage_5v0 = (3.3f*(adc_0_Result[IDX_5V0_VOLT])/4095)*2.61f;
+  // voltage_36v0 = (3.3f*(adc_0_Result[IDX_36V0_VOLT])/4095)*35.84f;
+  // voltage_20v0 = (3.3f*(adc_1_Result[IDX_20V0_VOLT])/4095)*11;
+
+  // current_charger = (5.5f*adc_0_Result[IDX_CHARGER_IMON]/4095);
+  // current_cpu = (1.81f*adc_1_Result[IDX_CPU_IMON]/4095);
+  // current_rpi = (1.81f*adc_1_Result[IDX_RPI_IMON]/4095);
+  // temp = ((3.3f*(adc_1_Result[IDX_VTEMP]/4095))-0.5f)/0.01f;
+
+  voltage_5v0 = (3.414f*(adc_0_Result[IDX_5V0_VOLT])/4095);
+  voltage_36v0 = (3.414f*(adc_0_Result[IDX_36V0_VOLT])/4095);
+  voltage_20v0 = (3.414f*(adc_1_Result[IDX_20V0_VOLT])/4095);
+
+  current_charger = (3.414f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
+  current_cpu = (3.414f*(adc_1_Result[IDX_CPU_IMON])/4095);
+  current_rpi = (3.414f*adc_1_Result[IDX_RPI_IMON])/4095;
+  temp = (3.414f*(adc_0_Result[IDX_VTEMP])/4095);
+  
+  // Serial.print("V5V0: ");
+  // Serial.print(voltage_5v0);
+  // Serial.print(" V36V0: ");
+  // Serial.print(voltage_36v0);
+  // Serial.print(" V20V0: ");
+  // Serial.print(voltage_20v0);
+  // Serial.print(" ICharger: ");
+  // Serial.print(current_charger);
+  // Serial.print(" ICpu: ");
+  // Serial.print(current_cpu);
+  // Serial.print(" IRpi: ");
+  // Serial.print(current_rpi);
+  // Serial.print(" VTemp: ");
+  // Serial.println(temp);
+
+  
   cliff[0]= 0;
   cliff[1]= 0;
   cliff[2]=0;
