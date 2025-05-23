@@ -109,14 +109,14 @@ void AnalogManager::update_config(Pimu_Config * cfg_new, Pimu_Config * cfg_old)
   }
   if (first_config)
   {
-  voltage_5v0 = (3.414f*(adc_0_Result[IDX_5V0_VOLT])/4095);
-  voltage_36v0 = (3.414f*(adc_0_Result[IDX_36V0_VOLT])/4095);
-  voltage_20v0 = (3.414f*(adc_1_Result[IDX_20V0_VOLT])/4095);
+  voltage_5v0 = 2.6f*(3.4f*(adc_0_Result[IDX_5V0_VOLT])/4095);
+  voltage_36v0 = (31.8f*(3.4f*(adc_0_Result[IDX_36V0_VOLT])/4095))+0.5f;
+  voltage_20v0 = 11.0f*(3.4f*(adc_1_Result[IDX_20V0_VOLT])/4095);
 
-  current_charger = (3.414f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
-  current_cpu = (3.414f*(adc_1_Result[IDX_CPU_IMON])/4095);
-  current_rpi = (3.414f*adc_1_Result[IDX_RPI_IMON])/4095;
-  temp = (3.414f*(adc_0_Result[IDX_VTEMP])/4095);
+  current_charger = 5.5f*(3.4f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
+  current_cpu = 2.0f*(3.4f*(adc_1_Result[IDX_CPU_IMON])/4095);
+  current_rpi = 2.0f*(3.4f*adc_1_Result[IDX_RPI_IMON])/4095;
+  temp = ((3.4f*(adc_0_Result[IDX_VTEMP])/4095)-0.5F)/0.01f;
 
     cliff[0] = 0;
     cliff[1] = 0;
@@ -134,14 +134,14 @@ void AnalogManager::step(Pimu_Status * stat, Pimu_Config * cfg)
 
   if (first_filter)
   {
-  voltage_5v0 = (3.414f*(adc_0_Result[IDX_5V0_VOLT])/4095);
-  voltage_36v0 = (3.414f*(adc_0_Result[IDX_36V0_VOLT])/4095);
-  voltage_20v0 = (3.414f*(adc_1_Result[IDX_20V0_VOLT])/4095);
+  voltage_5v0 = 2.6f*(3.4f*(adc_0_Result[IDX_5V0_VOLT])/4095);
+  voltage_36v0 = (31.8f*(3.4f*(adc_0_Result[IDX_36V0_VOLT])/4095))+0.5f;
+  voltage_20v0 = 11.0f*(3.4f*(adc_1_Result[IDX_20V0_VOLT])/4095);
 
-  current_charger = (3.414f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
-  current_cpu = (3.414f*(adc_1_Result[IDX_CPU_IMON])/4095);
-  current_rpi = (3.414f*adc_1_Result[IDX_RPI_IMON])/4095;
-  temp = (3.414f*(adc_0_Result[IDX_VTEMP])/4095);
+  current_charger = 5.5f*(3.4f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
+  current_cpu = 2.0f*(3.4f*(adc_1_Result[IDX_CPU_IMON])/4095);
+  current_rpi = 2.0f*(3.4f*adc_1_Result[IDX_RPI_IMON])/4095;
+  temp = ((3.4f*(adc_0_Result[IDX_VTEMP])/4095)-0.5F)/0.01f;
 
     cliff[0] = 0;
     cliff[1] = 0;
@@ -149,23 +149,15 @@ void AnalogManager::step(Pimu_Status * stat, Pimu_Config * cfg)
     cliff[3] = 0;
     first_filter=false;
   }
-  // voltage_5v0 = (3.3f*(adc_0_Result[IDX_5V0_VOLT])/4095)*2.61f;
-  // voltage_36v0 = (3.3f*(adc_0_Result[IDX_36V0_VOLT])/4095)*35.84f;
-  // voltage_20v0 = (3.3f*(adc_1_Result[IDX_20V0_VOLT])/4095)*11;
 
-  // current_charger = (5.5f*adc_0_Result[IDX_CHARGER_IMON]/4095);
-  // current_cpu = (1.81f*adc_1_Result[IDX_CPU_IMON]/4095);
-  // current_rpi = (1.81f*adc_1_Result[IDX_RPI_IMON]/4095);
-  // temp = ((3.3f*(adc_1_Result[IDX_VTEMP]/4095))-0.5f)/0.01f;
+  voltage_5v0 = 2.6f*(3.4f*(adc_0_Result[IDX_5V0_VOLT])/4095);
+  voltage_36v0 = (31.8f*(3.4f*(adc_0_Result[IDX_36V0_VOLT])/4095))+0.5f;
+  voltage_20v0 = 11.0f*(3.4f*(adc_1_Result[IDX_20V0_VOLT])/4095);
 
-  voltage_5v0 = (3.414f*(adc_0_Result[IDX_5V0_VOLT])/4095);
-  voltage_36v0 = (3.414f*(adc_0_Result[IDX_36V0_VOLT])/4095);
-  voltage_20v0 = (3.414f*(adc_1_Result[IDX_20V0_VOLT])/4095);
-
-  current_charger = (3.414f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
-  current_cpu = (3.414f*(adc_1_Result[IDX_CPU_IMON])/4095);
-  current_rpi = (3.414f*adc_1_Result[IDX_RPI_IMON])/4095;
-  temp = (3.414f*(adc_0_Result[IDX_VTEMP])/4095);
+  current_charger = 5.5f*(3.4f*(adc_1_Result[IDX_CHARGER_IMON])/4095);
+  current_cpu = 2.0f*(3.4f*(adc_1_Result[IDX_CPU_IMON])/4095);
+  current_rpi = 2.0f*(3.4f*adc_1_Result[IDX_RPI_IMON])/4095;
+  temp = ((3.4f*(adc_0_Result[IDX_VTEMP])/4095)-0.5F)/0.01f;
   
   // Serial.print("V5V0: ");
   // Serial.print(voltage_5v0);

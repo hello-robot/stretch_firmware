@@ -15,12 +15,8 @@
 
 #include "Common.h"
 
-#define LIFT_MOTOR 1
-#define OMNI_0_MOTOR 2
-#define OMNI_1_MOTOR 3
-#define OMNI_2_MOTOR 4
-#define ARM_MOTOR 5
-#define EOA_MOTOR 6
+
+#define toggle_sts_led() (REG_PORT_OUTTGL1 = PORT_PB13) 
 
 extern uint8_t    BOARD_VARIANT;
 extern uint8_t    BOARD_VARIANT_DEDICATED_SYNC;

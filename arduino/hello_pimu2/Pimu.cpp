@@ -27,7 +27,8 @@
 #include "ChargerManager.h"
 #include <FlashStorage.h>
 #include "BatteryManager.h"
-
+#include "PowerState.h"
+#include "PeripheralManager.h"
 
 #define V_TO_RAW(v) (int)v/(3.3*11/4095)  //per circuit
 #define I_TO_RAW(i) (int)i/0.004118832 //per circuit
@@ -56,14 +57,16 @@ SyncManager sync_manager(&runstop_manager);
 LightBarManager light_bar_manager;
 
 ChargerManager charger_manager;
-BatteryManager battery_manager;
+
 
 
 bool state_charger_connected = false;
 bool state_charger_is_charging = false;
 uint8_t state_over_tilt_type = 0;
 
-
+BatteryManager battery_manager;
+PowerState power_state_manager;
+PeripheralManager perferial_manager;
 
 //////////////////////////////////////
 Pimu_Config cfg_in, cfg;
@@ -76,6 +79,9 @@ IMU_Status imu_stat;
 LoadTest load_test;
 Pimu_Actuator_Cntrl joint_control;
 
+power_state_status_t pwr_state;
+
+
 void setupTimer4_and_5();
 void toggle_led(int rate_ms);
 uint32_t cycle_cnt=0;
@@ -83,7 +89,7 @@ uint32_t cycle_cnt=0;
 void resetWDT();
 void setupWDT(uint8_t period);
 
-
+bool boot_sts;
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -140,47 +146,51 @@ void setupBoardVariants()
 
   BOARD_VARIANT=5;//Temp for testing
 
+  //Outputs
+
   //Common to all variants
-  pinMode(RUNSTOP_LED, OUTPUT);
-  pinMode(LED, OUTPUT);
-  pinMode(BUZZER, OUTPUT);
-  pinMode(FAN_FET, OUTPUT);
-  pinMode(RUNSTOP_SW, INPUT);
-  pinMode(BTN_GREEN,OUTPUT);
-  pinMode(BTN_RED, OUTPUT);
-  digitalWrite(BTN_GREEN, HIGH);
-  digitalWrite(BTN_RED, LOW);
-
-  digitalWrite(RUNSTOP_LED, LOW);
-  digitalWrite(LED, LOW);
-  digitalWrite(BUZZER, LOW);
-  digitalWrite(FAN_FET, LOW);
-
-  BOARD_VARIANT_DEDICATED_SYNC=1;
-  light_bar_manager.setupLightBarManager();
-  pinMode(RUNSTOP_OUT, OUTPUT);
-  pinMode(SYNC_OUT, OUTPUT);
-  pinMode(CHARGER_CONNECTED,INPUT);
-  digitalWrite(RUNSTOP_OUT, LOW);
-  digitalWrite(SYNC_OUT, LOW);
-
-  pinMode(LATCH_CTRL, OUTPUT);
-  digitalWrite(LATCH_CTRL, HIGH);
-  pinMode(LIFT_EN, OUTPUT);
   pinMode(ARM_EN, OUTPUT);
   pinMode(OMNI_0_EN, OUTPUT);
   pinMode(OMNI_1_EN, OUTPUT);
   pinMode(OMNI_2_EN, OUTPUT);
   pinMode(EOA_EN, OUTPUT);
-  digitalWrite(LATCH_CTRL,LOW);
+  pinMode(LIFT_EN, OUTPUT);
+  pinMode(SYNC_OUT, OUTPUT);
+  pinMode(RUNSTOP_OUT, OUTPUT);
+  pinMode(RUNSTOP_LED, OUTPUT);
+  pinMode(STATUS_LED, OUTPUT);
+  pinMode(LATCH_CTRL, OUTPUT);
+  pinMode(FAN_EN, OUTPUT);
+  pinMode(BUZZER_EN, OUTPUT);
+  pinMode(ESP_RESET, OUTPUT);
+  pinMode(ESP_BOOT, OUTPUT);
+  pinMode(DISABLE_20V0, OUTPUT);
+  pinMode(CHARGER_DISABLE, OUTPUT);
+  pinMode(DISABLE_5V0, OUTPUT);
+  pinMode(BTN_RED, OUTPUT);
+  pinMode(BTN_GREEN, OUTPUT);
+  pinMode(IMU_RESET, OUTPUT);
+  pinMode(NEOPIXEL, OUTPUT);
 
-
-
-
+  //Inputs
+  pinMode(PWR_EN, INPUT);
+  pinMode(SLEEP_EN, INPUT);
+  pinMode(CHARGER_STATE, INPUT);
+  pinMode(CHARGER_CONNECTED, INPUT);
+  pinMode(IMU_INT, INPUT);
+  pinMode(ROBOT_ACTIVE, INPUT);
+  pinMode(EOA_FAULT, INPUT);
+  pinMode(RUNSTOP_SW, INPUT);
+  pinMode(SYS_OC, INPUT);
+  pwr_state = power_state_manager.step();
+  boot_sts = power_state_manager.check_boot_sts();
+  if (!boot_sts){perferial_manager.fast_actuator_control(true);}
+  BOARD_VARIANT_DEDICATED_SYNC=1;
+  light_bar_manager.setupLightBarManager();
+  
 }
 
 void setupPimu() {  
-
   memset(&cfg_in, 0, sizeof(Pimu_Config));
   memset(&cfg, 0, sizeof(Pimu_Config));
   cfg.stop_at_runstop=0; //By default acknowledge runstop, user must override via YAML otherwise
@@ -194,7 +204,6 @@ void setupPimu() {
   analog_manager.factory_config();
   battery_manager.init();
   
-  fast_actuator_control(true);
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
@@ -209,8 +218,8 @@ void stepPimuController()
   runstop_manager.step(&cfg);
   // beep_manager.step();
   analog_manager.step(&stat, &cfg);
-  battery_manager.step();
-  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, state_charger_is_charging, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.voltage);  
+  battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
+  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, battery_manager.flag_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.battery_soc);  
   update_fan();
   update_imu();
   update_board_reset();
@@ -309,13 +318,13 @@ void handleNewRPC()
 
     case RPC_ACTUATOR_ENABLE:
         memcpy(&(joint_control.actuator),rpc_in+1,sizeof(joint_control.actuator));
-        rpc_actuator_control(joint_control.actuator, true);
+        perferial_manager.rpc_actuator_control(joint_control.actuator, true);
         rpc_out[0]=RPC_REPLY_ACTUATOR_ENABLE;
         num_byte_rpc_out=1;
         break;
     case RPC_ACTUATOR_DISABLE:
         memcpy(&(joint_control.actuator),rpc_in+1,sizeof(joint_control.actuator));
-        rpc_actuator_control(joint_control.actuator, false);
+        perferial_manager.rpc_actuator_control(joint_control.actuator, false);
         rpc_out[0]=RPC_REPLY_ACTUATOR_DISABLE;
         num_byte_rpc_out=1;
         break;
@@ -377,26 +386,23 @@ void handle_trigger()
     if (trg.data & TRIGGER_BUZZER_ON)
     {
           state_buzzer_on=true;
-          digitalWrite(BUZZER, HIGH);
+          digitalWrite(BUZZER_EN, HIGH);
     }
     if (trg.data & TRIGGER_BUZZER_OFF)
     {
           state_buzzer_on=false;
-          digitalWrite(BUZZER, LOW);
+          digitalWrite(BUZZER_EN, LOW);
     }
     if (trg.data & TRIGGER_FAN_ON)
     {
           state_fan_on=true;
-          digitalWrite(FAN_FET, HIGH);
+          digitalWrite(FAN_EN, HIGH);
           fan_on_cnt=1200;
     }
     if (trg.data & TRIGGER_FAN_OFF)
     {
         state_fan_on=false;
-        digitalWrite(SYNC_OUT, HIGH);
-        delay(500);
-        digitalWrite(SYNC_OUT, LOW);
-        delay(500);
+        digitalWrite(FAN_EN, OFF);
         
     }
     if (trg.data & TRIGGER_IMU_RESET)
@@ -415,6 +421,15 @@ void handle_trigger()
           digitalWrite(IMU_RESET, HIGH);
          }
     }
+    if (trg.data & TRIGGER_CHARGER_ON)
+    {
+      battery_manager.charger_control(true);
+    }
+    if (trg.data & TRIGGER_CHARGER_OFF)
+    {
+      battery_manager.charger_control(false);
+    }
+    
 }
 ////////////////////////////
 
@@ -450,7 +465,7 @@ void update_fan()
   if (!fan_on_cnt && state_fan_on)
   {
     state_fan_on=false;
-    digitalWrite(FAN_FET, LOW);
+    digitalWrite(FAN_EN, LOW);
   }
 }
 ////////////////////////////
@@ -462,41 +477,34 @@ void update_imu()
 }
 
 ////////////////////////////
-// void update_voltage_monitor()
-// {
-//   if (BOARD_VARIANT >= 1)
-//   {
-//     state_charger_is_charging = charger_manager.step(RAW_TO_V(analog_manager.voltage), RAW_TO_I(analog_manager.current_efuse), RAW_TO_CHRG_I(analog_manager.current_charge) , BOARD_VARIANT);
-//     state_charger_connected = charger_manager.charger_plugged_in_flag;
-    
-    
-//     if(analog_manager.voltage<low_voltage_alert) //dropped below
-//       {
-//         state_low_voltage_alert=true;
-//         if (cfg.stop_at_low_voltage)
-//           runstop_manager.activate_runstop();
-//       }
-//       else
-//       {
-//         state_low_voltage_alert=false;
-//       }
-//   }
-
+void update_voltage_monitor()
+{
+    if(battery_manager.battery_soc == 10) //dropped below
+    {
+      state_low_voltage_alert=true;
+      if (cfg.stop_at_low_voltage)
+        runstop_manager.activate_runstop();
+    }
+    else
+    {
+      state_low_voltage_alert=false;
+    }
+  }
 // }
 ////////////////////////////
 
-// void update_current_monitor()
-// {
-//   if(analog_manager.current>high_current_alert && cfg.stop_at_high_current) //dropped below
-//     {
-//       state_high_current_alert=true;
-//       runstop_manager.activate_runstop();
-//     }
-//     else
-//     {
-//       state_high_current_alert=false;
-//     }
-// }
+void update_current_monitor()
+{
+  if(battery_manager.current_sys>high_current_alert && cfg.stop_at_high_current) //dropped below
+    {
+      state_high_current_alert=true;
+      runstop_manager.activate_runstop();
+    }
+    else
+    {
+      state_high_current_alert=false;
+    }
+}
 ////////////////////////////
 
 void update_tilt_monitor()
@@ -534,54 +542,6 @@ void update_cliff_monitor()
     runstop_manager.activate_runstop();
 }
 
-void fast_actuator_control(bool en)
-{
-  digitalWrite(LATCH_CTRL, HIGH);
-  digitalWrite(LIFT_EN, en);
-  digitalWrite(ARM_EN, en);
-  digitalWrite(OMNI_0_EN, en);
-  digitalWrite(OMNI_1_EN, en);
-  digitalWrite(OMNI_2_EN, en);
-  digitalWrite(EOA_EN, en);
-}
-
-void rpc_actuator_control(uint8_t actuator, uint8_t enable)
-
-{
-  digitalWrite(LATCH_CTRL, HIGH);
-  switch (actuator)
-  {
-  case LIFT_MOTOR:
-    digitalWrite(LIFT_EN, enable);
-    break;
-
-  case ARM_MOTOR:
-    digitalWrite(ARM_EN, enable);
-    break;
-
-  case OMNI_0_MOTOR:
-    digitalWrite(OMNI_0_EN, enable);
-    break;
-
-  case OMNI_1_MOTOR:
-    digitalWrite(OMNI_1_EN, enable);
-    break;
-
-  case OMNI_2_MOTOR:
-    digitalWrite(OMNI_2_EN, enable);
-    break;
-
-  case EOA_MOTOR:
-    digitalWrite(EOA_EN, enable);
-    break;
-
-  default:
-    break;
-  }
-  digitalWrite(LATCH_CTRL, LOW);
-
-}
-
 ////////////////////////////
 
 void update_status()
@@ -592,9 +552,9 @@ void update_status()
   if(stat.imu.bump>cfg.bump_thresh) //Use the FW tap detector
       stat.bump_event_cnt++;
 
-  stat.voltage=battery_manager.voltage;
-  stat.current_charge=analog_manager.current_charger;
-  stat.current=battery_manager.sys_current;
+  stat.voltage=battery_manager.voltage_battery;
+  stat.current_charge=battery_manager.current_charger;
+  stat.current=battery_manager.current_sys;
   stat.temp=analog_manager.temp;
   stat.state=0;
   stat.state = analog_manager.at_cliff[0] ? stat.state|STATE_AT_CLIFF_0 : stat.state;
@@ -607,11 +567,11 @@ void update_status()
   stat.state= state_buzzer_on ? stat.state|STATE_BUZZER_ON : stat.state;
   stat.state= state_low_voltage_alert ? stat.state|STATE_LOW_VOLTAGE_ALERT : stat.state;
   stat.state= state_high_current_alert ? stat.state|STATE_HIGH_CURRENT_ALERT : stat.state;
-  stat.state= state_charger_connected ? stat.state|STATE_CHARGER_CONNECTED : stat.state;
+  stat.state= battery_manager.flag_charger_connected ? stat.state|STATE_CHARGER_CONNECTED : stat.state;
   stat.state= state_boot_detected ? stat.state|STATE_BOOT_DETECTED : stat.state;
   stat.state= state_over_tilt_alert ? stat.state|STATE_OVER_TILT_ALERT : stat.state;
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
-  stat.state= state_charger_is_charging ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
+  stat.state= battery_manager.flag_charger_disabled ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
   stat.over_tilt_type = state_over_tilt_type;
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
@@ -765,15 +725,16 @@ void toggle_led(int rate_ms)
   unsigned long t = time_manager.get_elapsed_time_ms();
   if (t-t_toggle_last>rate_ms)
   {
+    toggle_sts_led();
     t_toggle_last=t;
-    if (!led_on)
-    {
-          digitalWrite(LED, HIGH);  //LED
-    }
-      else
-      {
-          digitalWrite(LED,LOW);   //LED
-      }
-     led_on=!led_on;
+    // if (!led_on)
+    // {
+    //       digitalWrite(LED, HIGH);  //LED
+    // }
+    //   else
+    //   {
+    //       digitalWrite(LED,LOW);   //LED
+    //   }
+    //  led_on=!led_on;
   }
 }

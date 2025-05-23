@@ -116,12 +116,66 @@ class SlewPixel
 uint32_t Color1, Color2;  // What colors are in use
 SlewPixel p0, p1, p2, p3;
 
-
+int test_soc;
 LightBarManager::LightBarManager()
 {
   lightBar_init=false;
 }
-
+void LightBarManager::Battery_Gauge(int soc,bool runstop_on, bool runstop_led_on,bool charger_on)
+{
+  if (runstop_led_on || !runstop_on)
+  {
+    if (!charger_on)
+    {
+      if (soc == 100){
+          pixels.setPixelColor(0, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(1, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+          pixels.show();
+      }
+      if (soc == 75){
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+          pixels.show();
+      }
+      if (soc == 50){
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_OFF));
+          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+          pixels.show();
+      }
+      if (soc == 20)
+      {
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_OFF));
+          pixels.setPixelColor(2, pixels.Color(PX_OFF));
+          pixels.setPixelColor(3, pixels.Color(PX_YELLOW));
+          pixels.show();
+      }
+      if (soc == 10)
+      {
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_OFF));
+          pixels.setPixelColor(2, pixels.Color(PX_OFF));
+          pixels.setPixelColor(3, pixels.Color(PX_RED));
+          pixels.show();
+      }
+    }
+    if (charger_on && !runstop_on)
+    {
+      ColoredScanUpdate(pixels.Color(PX_OFF),pixels.Color(PX_GREEN),1000);
+    } 
+  }
+  else
+  {
+    pixels.clear();
+    pixels.show();
+  }
+}
 void LightBarManager::ColoredBatteryLevel(float v_bat, float v_bat_min, float v_bat_max,bool runstop_on, bool runstop_led_on,bool charger_on)
 {
   if (runstop_led_on || !runstop_on)
@@ -241,7 +295,7 @@ void LightBarManager::start_test()
   running_test=true;
 }
 
-void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on,float v_bat) 
+void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on,float soc) 
 {
   if (lightBar_init)
   {
@@ -254,7 +308,7 @@ void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on,
       }
       else
       {
-        ColoredBatteryLevel(v_bat, V_BAT_MIN, V_BAT_MAX, runstop_on, runstop_led_on, charger_on );
+        Battery_Gauge(soc, runstop_on, runstop_led_on, charger_on );
       }
   }
 }

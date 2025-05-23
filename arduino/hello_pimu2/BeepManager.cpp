@@ -72,21 +72,21 @@ void BeepManager::step() //Called at 100hz by TC5 loop
 {
     if (beep1_on_cnt>0)
     {
-      digitalWrite(BUZZER, HIGH);
+      digitalWrite(BUZZER_EN, HIGH);
       beep1_on_cnt=max(0,beep1_on_cnt-1);
     }
     if (beep1_on_cnt==0 && beep1_off_cnt>0)
     {
       beep1_off_cnt=max(0,beep1_off_cnt-1);
-      digitalWrite(BUZZER, LOW);
+      digitalWrite(BUZZER_EN, LOW);
     }
     if (beep1_on_cnt==0 &&  beep1_off_cnt==0 && beep2_on_cnt>0)
     {
-      digitalWrite(BUZZER, HIGH);
+      digitalWrite(BUZZER_EN, HIGH);
       beep2_on_cnt=max(0,beep2_on_cnt-1);
     }
     if (beep1_on_cnt==0 && beep1_off_cnt==0 && beep2_on_cnt==0)
     {
-      digitalWrite(BUZZER, LOW);
+      digitalWrite(BUZZER_EN, LOW);
     }
 }

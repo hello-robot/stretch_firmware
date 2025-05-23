@@ -76,10 +76,10 @@
 #define SYNC_OUT            PIN_MOTORS_SYNC
 #define RUNSTOP_OUT         PIN_MOTORS_RUNSTOP
 #define RUNSTOP_LED         PIN_RUNSTOP_LED
-#define LED                 PIN_STS_LED
+#define STATUS_LED          PIN_STS_LED
 #define LATCH_CTRL          PIN_LATCH_CTRL
-#define FAN_FET             PIN_FAN_EN
-#define BUZZER              PIN_BUZZER_EN
+#define FAN_EN              PIN_FAN_EN
+#define BUZZER_EN           PIN_BUZZER_EN
 #define ESP_RESET           PIN_ESP_RESET
 #define ESP_BOOT            PIN_ESP_BOOT
 #define DISABLE_20V0        PIN_20V_DISABLE
@@ -138,6 +138,10 @@
 #define TRIGGER_LIGHTBAR_TEST 1024
 #define TRIGGER_ENABLE_TRACE 2048
 #define TRIGGER_DISABLE_TRACE 4096
+#define TRIGGER_CHARGER_ON 8192
+#define TRIGGER_CHARGER_OFF 16384
+
+
 /////////////////////////////////////////////////////////////////
 
 //Note, to serialize to Linux must pack structs given use of sizeof()
