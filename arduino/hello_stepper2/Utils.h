@@ -19,7 +19,8 @@
 
 //DRV8262 min vref value needs to be set above 50mV
 #define VREF_RES 4096
-#define DRV8262_MIN_VREF ((uint16_t)(0.05f * VREF_RES / 3.3f + 0.5f)) 
+// #define DRV8262_MIN_VREF ((uint16_t)(0.05f * VREF_RES / 3.3f + 0.5f))
+#define DRV8262_MIN_VREF (5)
 
 	void setupPins();                 // initializes pins
 	

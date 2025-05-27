@@ -53,10 +53,10 @@ void setup()        // This code runs once at startup
 #ifdef HELLO
     setupTransport();
     setupHelloController();
-    enableTCInterrupts();  //Always be running the loop
     setMotorDecay(0); //Sets motor decay to mixed decay
     setTOFF(0);
     enableMotorDrivers(); //Turn on now that gains are loaded
+    enableTCInterrupts();  //Always be running the loop
 #endif
 setupWDT(WDT_TIMEOUT_PERIOD);
 

@@ -140,7 +140,8 @@
 #define TRIGGER_DISABLE_TRACE 4096
 #define TRIGGER_CHARGER_ON 8192
 #define TRIGGER_CHARGER_OFF 16384
-
+#define TRIGGER_ESP_FW_UPDATE 32768
+#define TRIGGER_ESP_RESET 65536
 
 /////////////////////////////////////////////////////////////////
 
@@ -207,6 +208,7 @@ struct __attribute__ ((packed)) Pimu_Status{
   float debug;
   float current_charge;
   uint8_t over_tilt_type;
+  float current_battery;
 
 };
 

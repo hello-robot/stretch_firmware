@@ -29,6 +29,7 @@
 #include "BatteryManager.h"
 #include "PowerState.h"
 #include "PeripheralManager.h"
+#include "EspManager.h"
 
 #define V_TO_RAW(v) (int)v/(3.3*11/4095)  //per circuit
 #define I_TO_RAW(i) (int)i/0.004118832 //per circuit
@@ -67,6 +68,7 @@ uint8_t state_over_tilt_type = 0;
 BatteryManager battery_manager;
 PowerState power_state_manager;
 PeripheralManager perferial_manager;
+EspManager esp_manager;
 
 //////////////////////////////////////
 Pimu_Config cfg_in, cfg;
@@ -203,6 +205,7 @@ void setupPimu() {
   analog_manager.setupADC();
   analog_manager.factory_config();
   battery_manager.init();
+  Serial1.begin(115200);
   
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
@@ -223,6 +226,7 @@ void stepPimuController()
   update_fan();
   update_imu();
   update_board_reset();
+  Serial1.write(0x45);
   
   startup_cnt=max(0,startup_cnt-1);
   if(startup_cnt==0)
@@ -429,6 +433,14 @@ void handle_trigger()
     {
       battery_manager.charger_control(false);
     }
+    if (trg.data & TRIGGER_ESP_FW_UPDATE)
+    {
+      esp_manager.esp_fw_update();
+    }
+    if (trg.data & TRIGGER_ESP_RESET)
+    {
+      esp_manager.esp_reset();
+    }
     
 }
 ////////////////////////////
@@ -573,6 +585,7 @@ void update_status()
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   stat.state= battery_manager.flag_charger_disabled ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
   stat.over_tilt_type = state_over_tilt_type;
+  stat.current_battery = battery_manager.current_battery;
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
   if(TRACE_TYPE==TRACE_TYPE_DEBUG)
@@ -698,7 +711,7 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   NVIC_EnableIRQ(TC4_IRQn);
 
   // Enable TC
-    enableTCInterrupts();
+  enableTCInterrupts();
 }
 
 ////////////////////// Timer4 /////////////////////////////////////////
@@ -727,14 +740,5 @@ void toggle_led(int rate_ms)
   {
     toggle_sts_led();
     t_toggle_last=t;
-    // if (!led_on)
-    // {
-    //       digitalWrite(LED, HIGH);  //LED
-    // }
-    //   else
-    //   {
-    //       digitalWrite(LED,LOW);   //LED
-    //   }
-    //  led_on=!led_on;
   }
 }

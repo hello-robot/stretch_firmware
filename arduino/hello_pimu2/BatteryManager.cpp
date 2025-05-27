@@ -37,6 +37,7 @@ void BatteryManager::get_currents(float chrg_current) {
     {
         current_sys = c;
         current_charger = 0;
+        current_battery = current_sys;
     }
 
 }

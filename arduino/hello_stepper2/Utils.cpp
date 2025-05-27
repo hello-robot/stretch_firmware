@@ -651,7 +651,7 @@ void oneStep() {           /////////////////////////////////   oneStep    //////
   //output(1.8 * stepNumber, 64); //updata 1.8 to aps..., second number is control effort
   //Use DRV8262_MIN_VREF during calibration
 #ifdef HELLO
-  output(aps * stepNumber, (int)(0.5 * uMAX),DRV8262_MIN_VREF); //Command constant effort one step angle away
+  output(aps * stepNumber, (int)(0.33 * uMAX),5); //Command constant effort one step angle away
 #else
   output(aps * stepNumber, (int)(0.33 * uMAX),DRV8262_MIN_VREF);
 #endif

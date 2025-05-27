@@ -225,9 +225,9 @@ void setupBoardVariants()
   if (BOARD_VARIANT>=0)
   {
     //S4 Stepper V1 uses DRV8262 Motor Driver Full Scale Peak Current 7.78A 
-    iMAX =7.7;        
-    uMAX = (VREF_RES/3.3)*(iMAX*0.424);   
-    k_c2e =(VREF_RES/3.3)*0.424;
+    iMAX =7.78f;        
+    uMAX = (VREF_RES/3.3f)*(iMAX*0.424f);   
+    k_c2e =(VREF_RES/3.3f)*0.424f;
     
     BOARD_VARIANT_DRV8842=1;
     BOARD_VARIANT_PIN_RUNSTOP=PIN_MCU_RUNSTOP;
@@ -1078,7 +1078,7 @@ void stepHelloController()
             diag_is_mg_accelerating=0;
             diag_is_mg_moving=0;
             //This makes them easier to backdrive
-            disableMotorDrivers();
+            // disableMotorDrivers();
             break;
            } //else do a safety float /hold
            else
@@ -1432,11 +1432,11 @@ void TC5_Handler() {                // gets called with FPID frequency
           //stat.debug=round(U);
           if (gains.decay_setting==0)
           {
-            output(-(y+PAY), round(U),0);
+            output(-(y+PAY), round(U),5);
           }
           else
           {
-            output(-(y+PAY), round(U),DRV8262_MIN_VREF);
+            output(-(y+PAY), round(U),5);
           }
         }
         
