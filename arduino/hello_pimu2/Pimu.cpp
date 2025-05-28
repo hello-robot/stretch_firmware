@@ -205,7 +205,8 @@ void setupPimu() {
   analog_manager.setupADC();
   analog_manager.factory_config();
   battery_manager.init();
-  Serial1.begin(115200);
+  esp_manager.setup();
+
   
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
@@ -226,7 +227,9 @@ void stepPimuController()
   update_fan();
   update_imu();
   update_board_reset();
-  Serial1.write(0x45);
+  uint8_t buf[1];
+  buf[0]=0x45;
+  esp_manager.write_packet(buf, sizeof(buf));
   
   startup_cnt=max(0,startup_cnt-1);
   if(startup_cnt==0)

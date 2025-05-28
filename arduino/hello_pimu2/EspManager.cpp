@@ -1,7 +1,13 @@
 #include "EspManager.h"
 #include "TimeManager.h"
 
+void EspManager::setup() {
+    Serial1.begin(1000000);
+}   
 
+void EspManager::write_packet(uint8_t *data, size_t len) {
+    Serial1.write(data, len);
+}
 
 void EspManager::esp_fw_update() {
     digitalWrite(ESP_RESET, HIGH);

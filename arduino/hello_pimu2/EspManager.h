@@ -9,6 +9,7 @@ class EspManager {
     void step();
     void esp_reset();
     void esp_fw_update();
+    void write_packet(uint8_t *data, size_t len);
     
   private:
     bool esp_connected;
