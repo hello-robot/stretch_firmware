@@ -4,20 +4,33 @@
 #include "HardwareSerial.h"
 #include "esp32-hal-uart.h"
 #include <stdint.h>
+#include <Transport.h>
+#include "CommProtocol.h"
+
+#define COBS_FRAME_DELIMITER 0x00
+#define MAX_UART_PACKET_SIZE 256
+#define FRAMING_TIMEOUT 100000
+
 
 
 class UartManager {
   public:
+    UartManager();
     void setup_uart();
     volatile uint8_t uart_rx_buffer[256]; // Buffer for received data
-    bool read_byte(uint8_t* data);
+    void send_packet(const uint8_t *data, uint8_t len);
+    bool receive_packet(uint8_t *data, uint8_t& n, int cobbs_frame_size);
     void enable_rx_interrupt();
 
 
   private:
     HardwareSerial* _hardwareSerial;
-    volatile uint16_t _uart_rx_head = 0;
-    volatile uint16_t _uart_rx_tail = 0;
+    Crc16* _crc;
+    COBS* _cobs;
+    bool _rx_buffer_overflow = false;
+    int  _rx_buffer_idx=0;
+    uint8_t _rx_buffer[MAX_UART_PACKET_SIZE];
+    uint8_t _tx_buffer[MAX_UART_PACKET_SIZE];
 };
 
 

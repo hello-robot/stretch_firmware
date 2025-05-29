@@ -83,6 +83,8 @@ Pimu_Actuator_Cntrl joint_control;
 
 power_state_status_t pwr_state;
 
+Esp_VoltageStatus esp_voltage_status;
+
 
 void setupTimer4_and_5();
 void toggle_led(int rate_ms);
@@ -130,7 +132,7 @@ void rpc_actuator_control(uint8_t actuator, uint8_t enable);
 void fast_actuator_control(bool en);
 void enableTCInterrupts();
 void disableTCInterrupts();
-
+void update_esp();
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -227,10 +229,7 @@ void stepPimuController()
   update_fan();
   update_imu();
   update_board_reset();
-  uint8_t buf[1];
-  buf[0]=0x45;
-  esp_manager.write_packet(buf, sizeof(buf));
-  
+
   startup_cnt=max(0,startup_cnt-1);
   if(startup_cnt==0)
   {
@@ -250,6 +249,7 @@ void stepPimuController()
   }
 
   update_status();
+  update_esp();
   
 
 }
@@ -533,6 +533,13 @@ void update_tilt_monitor()
       {
         state_over_tilt_alert=false;
       }
+}
+
+void update_esp()
+{
+  esp_voltage_status.voltage_battery = battery_manager.voltage_battery;
+  esp_voltage_status.voltage_20v0 = analog_manager.voltage_20v0;
+  esp_manager.send_status(UART_STS_VOLTAGE, &esp_voltage_status, sizeof(Esp_VoltageStatus));
 }
 ////////////////////////////
 

@@ -7,6 +7,9 @@
 #define USB_VID 0x303a
 #define USB_PID 0x1001
 
+
+#define SerialUSB Serial
+
 //Analog pins
 static const uint8_t PIN_AUX_20V0_VOLT = 4;
 static const uint8_t PIN_12V0_VOLT = 5;

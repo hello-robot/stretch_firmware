@@ -200,7 +200,7 @@ unsigned int Crc16::fastCrc(uint8_t data[], uint8_t start, uint16_t length, uint
 //-------------------------------------------------------
 // Reflects bit in a uint8_t
 //-------------------------------------------------------
-uint8_t Crc16::reflect(uint8_t data)
+inline uint8_t Crc16::reflect(uint8_t data)
 {
   const uint8_t bits = 8;
 	unsigned long reflection = 0x00000000;
@@ -221,7 +221,7 @@ uint8_t Crc16::reflect(uint8_t data)
 //-------------------------------------------------------
 // Reflects bit in a uint16_t
 //-------------------------------------------------------
-uint16_t Crc16::reflect(uint16_t data)
+inline uint16_t Crc16::reflect(uint16_t data)
 {
   const uint8_t bits = 16;
   unsigned long reflection = 0x00000000;

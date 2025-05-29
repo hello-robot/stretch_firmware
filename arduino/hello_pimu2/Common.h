@@ -143,6 +143,13 @@
 #define TRIGGER_ESP_FW_UPDATE 32768
 #define TRIGGER_ESP_RESET 65536
 
+
+/////////////////////////////////////////////////////////////////
+#define UART_STS_VOLTAGE 0x01
+#define UART_STS_CURRENT 0x02
+#define UART_TRIGGER 0x03
+#define UART_PWR_SLEEP 0x04
+
 /////////////////////////////////////////////////////////////////
 
 //Note, to serialize to Linux must pack structs given use of sizeof()
@@ -244,5 +251,10 @@ struct __attribute__ ((packed)) Pimu_Actuator_Cntrl{
 
 
 /////////////////////////////////////////////////////////////////
+
+struct Esp_VoltageStatus {
+    float voltage_battery; // Voltage in Volts
+    float voltage_20v0;
+};
 
 #endif

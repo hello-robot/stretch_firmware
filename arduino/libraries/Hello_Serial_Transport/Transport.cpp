@@ -1,6 +1,5 @@
 #include "Transport.h"
-#include "COBS.h"
-#include "Crc16.h"
+
 /////////////////////////////////////////////////////////////////////////////////
 /* Hello Robot RPC Serial Transport protocol
 
