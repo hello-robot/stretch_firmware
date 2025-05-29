@@ -10,6 +10,8 @@ UartManager::UartManager()
 void UartManager::setup_uart() {
 		_hardwareSerial->begin(1000000, SERIAL_8N1, PIN_UART1_RX, PIN_UART1_TX); // RX, TX
 		_hardwareSerial->flush(); // Clear any existing data in the buffer
+		esp_sleep_enable_uart_wakeup(UART_NUM_1);
+		
 }
 
 // void UartManager::enable_rx_interrupt() {

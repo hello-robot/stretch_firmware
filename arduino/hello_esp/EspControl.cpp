@@ -7,6 +7,8 @@ PeripheralManager peripheral_manager;
 
 VoltageStatus voltage_status;
 
+bool system_pwr_state_active = true;
+
 void setup_esp()
 {
     peripheral_manager.gpio_init();
@@ -23,10 +25,6 @@ void process_pimu_requests()
 		switch (rx_buf[0]) {
 			case UART_STS_VOLTAGE:
 				memcpy(&voltage_status, &rx_buf[1], sizeof(VoltageStatus));
-                SerialUSB.print("Battery Voltage: ");
-                SerialUSB.print(voltage_status.voltage_battery);
-                SerialUSB.print(", 20V Voltage: ");
-                SerialUSB.println(voltage_status.voltage_20v0);
 				break;
 			case UART_STS_CURRENT:
 				// Handle current status
@@ -34,11 +32,22 @@ void process_pimu_requests()
 			case UART_TRIGGER:
 				// Handle trigger command
 				break;
+			case UART_PWR_SLEEP:
+				system_pwr_state_active = false;
+				peripheral_manager.peripheral_sleep_state();
+				// Handle trigger command
+				break;
 			default:
 				// Handle unknown command
 				break;
 		}
 	}
+}
+
+void enter_wake()
+{
+	system_pwr_state_active = true;
+	peripheral_manager.peripheral_wakeup_state();
 }
 
 void toggle_led(int rate_ms)

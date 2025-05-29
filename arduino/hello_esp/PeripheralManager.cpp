@@ -23,7 +23,7 @@ void PeripheralManager::gpio_init() {
 }
 
 void PeripheralManager::disable_12v0(bool disable) {
-    digitalWrite(PIN_12V0_DISABLE, disable ? HIGH : LOW);
+    digitalWrite(PIN_12V0_DISABLE, disable);
 }
 
 void PeripheralManager::enable_aux_20v0(bool enable) {
@@ -47,4 +47,17 @@ void PeripheralManager::pimu_bootloader_mode() {
     digitalWrite(PIN_PIMU_RESET, HIGH);
     delay(100);
     digitalWrite(PIN_PIMU_RESET, LOW);
+}
+
+void PeripheralManager::peripheral_sleep_state() {
+    digitalWrite(PIN_STS_LEDS_DISABLE, HIGH);
+    digitalWrite(PIN_12V0_DISABLE, HIGH);
+    digitalWrite(PIN_DCM_MODE_EN, HIGH);
+    digitalWrite(PIN_ESP_STS_LED, LOW);
+}
+
+void PeripheralManager::peripheral_wakeup_state() {
+    digitalWrite(PIN_STS_LEDS_DISABLE, LOW);
+    digitalWrite(PIN_12V0_DISABLE, LOW);
+    digitalWrite(PIN_DCM_MODE_EN, LOW);
 }

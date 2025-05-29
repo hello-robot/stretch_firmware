@@ -4,11 +4,8 @@
 #include "Common.h"
 #include "PeripheralManager.h"
 #include "EspManager.h"
+#include "LightBarManager.h"
 
-typedef enum{
-    PWR_STATE_ACTIVE,
-    PWR_STATE_SLEEP,
-} power_state_status_t;
 
 typedef enum{
     STATE_BOOTED,
@@ -18,18 +15,23 @@ typedef enum{
 class PowerStateManager
 {
     public:
-    PowerStateManager(PeripheralManager& pm, EspManager& em) : _peripheral_manager(pm), _esp_manager(em) {}
-    power_state_status_t step();
+    PowerStateManager(PeripheralManager& pm, EspManager& em, LightBarManager& lb) :
+    _peripheral_manager(pm), _esp_manager(em), _lightbar_manager(lb){}
+    void step();
     bool check_boot_sts();
     void enter_sleep();
+    void enter_wake();
+    void sleep_pwr_button(uint8_t pwm);
     void power_state_setup();
+    volatile bool system_pwr_state_active = false;
 
     private:
     PeripheralManager& _peripheral_manager;
     EspManager& _esp_manager;
+    LightBarManager& _lightbar_manager;
     void set_pwr_button(bool state);
-    bool _active;
-    power_state_status_t _state;
+    bool _state;
+    uint8_t _cnt = 255;
 
 };
 

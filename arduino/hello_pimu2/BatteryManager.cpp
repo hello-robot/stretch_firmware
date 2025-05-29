@@ -20,6 +20,7 @@ void BatteryManager::step(float chrg_current, float adapter_v){
     voltage_battery = ina228.read_vbus();
     get_currents(chrg_current);
     charging_state(adapter_v);
+    battery_soc = get_battery_soc(voltage_battery, flag_charger_connected);
 
 
 

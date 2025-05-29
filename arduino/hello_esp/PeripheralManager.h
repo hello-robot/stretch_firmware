@@ -11,5 +11,7 @@ class PeripheralManager {
         void disable_lidar(bool disable);
         void pimu_reset();
         void pimu_bootloader_mode();
+        void peripheral_sleep_state();
+        void peripheral_wakeup_state();
 };
 #endif

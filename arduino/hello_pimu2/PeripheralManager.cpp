@@ -58,6 +58,7 @@ void PeripheralManager::peripheral_sleep_state()
     digitalWrite(DISABLE_5V0, HIGH);
     digitalWrite(DISABLE_20V0, HIGH);
     digitalWrite(RUNSTOP_LED, LOW);
+    digitalWrite(STATUS_LED, LOW);
 }
 void PeripheralManager::peripheral_active_state()
 {

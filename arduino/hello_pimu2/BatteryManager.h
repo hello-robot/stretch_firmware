@@ -24,7 +24,7 @@ public:
     bool flag_charger_disabled = false;
     bool flag_charger_connected = false;
 
-    float battery_soc;
+    int battery_soc;
     int current_soc = 100;
     
 

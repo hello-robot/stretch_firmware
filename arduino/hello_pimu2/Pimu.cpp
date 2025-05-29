@@ -27,7 +27,7 @@
 #include "ChargerManager.h"
 #include <FlashStorage.h>
 #include "BatteryManager.h"
-#include "PowerState.h"
+#include "PowerStateManager.h"
 #include "PeripheralManager.h"
 #include "EspManager.h"
 
@@ -66,9 +66,10 @@ bool state_charger_is_charging = false;
 uint8_t state_over_tilt_type = 0;
 
 BatteryManager battery_manager;
-PowerState power_state_manager;
+
 PeripheralManager perferial_manager;
 EspManager esp_manager;
+PowerStateManager power_state_manager(perferial_manager, esp_manager, light_bar_manager);
 
 //////////////////////////////////////
 Pimu_Config cfg_in, cfg;
@@ -81,7 +82,7 @@ IMU_Status imu_stat;
 LoadTest load_test;
 Pimu_Actuator_Cntrl joint_control;
 
-power_state_status_t pwr_state;
+
 
 Esp_VoltageStatus esp_voltage_status;
 
@@ -186,7 +187,7 @@ void setupBoardVariants()
   pinMode(EOA_FAULT, INPUT);
   pinMode(RUNSTOP_SW, INPUT);
   pinMode(SYS_OC, INPUT);
-  pwr_state = power_state_manager.step();
+  power_state_manager.power_state_setup();
   boot_sts = power_state_manager.check_boot_sts();
   if (!boot_sts){perferial_manager.fast_actuator_control(true);}
   BOARD_VARIANT_DEDICATED_SYNC=1;
@@ -209,7 +210,6 @@ void setupPimu() {
   battery_manager.init();
   esp_manager.setup();
 
-  
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
@@ -250,6 +250,7 @@ void stepPimuController()
 
   update_status();
   update_esp();
+  
   
 
 }
@@ -649,13 +650,19 @@ void setupWDT(uint8_t period) {
 
 ////////////////////// Timer5 /////////////////////////////////////////
 
-// int testpin;
 void TC5_Handler() {
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
-    stepPimuController();
+    if (power_state_manager.system_pwr_state_active)
+    {
+      stepPimuController();
+      power_state_manager.step();
+    }
+    else if (!power_state_manager.system_pwr_state_active)
+    {
+      power_state_manager.step();
+    }
     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
-    
   }
 }
 
@@ -730,8 +737,11 @@ void TC4_Handler() {                // gets called with FsMg frequency
 
   if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
     time_manager.ts_base++;
-    sync_manager.step();
-  TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
+    if (power_state_manager.system_pwr_state_active)
+    {
+      sync_manager.step();
+    }
+    TC4->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
 
