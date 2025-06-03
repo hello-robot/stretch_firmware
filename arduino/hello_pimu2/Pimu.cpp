@@ -97,6 +97,7 @@ void setupWDT(uint8_t period);
 bool boot_sts;
 
 
+
 /////////////////////////////////////////////////////////////////////////
 float deg_to_rad(float x)
 {
@@ -188,6 +189,7 @@ void setupBoardVariants()
   pinMode(RUNSTOP_SW, INPUT);
   pinMode(SYS_OC, INPUT);
   power_state_manager.power_state_setup();
+
   boot_sts = power_state_manager.check_boot_sts();
   if (!boot_sts){perferial_manager.fast_actuator_control(true);}
   BOARD_VARIANT_DEDICATED_SYNC=1;
@@ -198,7 +200,7 @@ void setupBoardVariants()
 void setupPimu() {  
   memset(&cfg_in, 0, sizeof(Pimu_Config));
   memset(&cfg, 0, sizeof(Pimu_Config));
-  cfg.stop_at_runstop=0; //By default acknowledge runstop, user must override via YAML otherwise
+  cfg.stop_at_runstop=1; //By default acknowledge runstop, user must override via YAML otherwise
   memset(&trg_in, 0, sizeof(Pimu_Trigger));
   memset(&trg, 0, sizeof(Pimu_Trigger));
   memset(&stat, 0, sizeof(Pimu_Status));
@@ -700,6 +702,7 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_MODE_COUNT16;   // Set Timer counter Mode to 16 bits
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_MODE_COUNT16;   // Set Timer counter Mode to 16 bits
+  // TC5->COUNT16.CTRLA.reg |= TC_CTRLA_RUNSTDBY;   // Run TC5 in standby mode
 
   TC5->COUNT16.WAVE.reg |= TC_WAVE_WAVEGEN_MFRQ; // Set TC as normal Normal Frq
   TC4->COUNT16.WAVE.reg |= TC_WAVE_WAVEGEN_MFRQ; // Set TC as normal Normal Frq
