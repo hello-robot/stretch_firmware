@@ -13,8 +13,8 @@
 #include "IMU_BNO085.h"
 #include <Arduino.h>
 #include <Wire.h>
-#include "SparkFun_BNO080_Arduino_Library.h"
-
+// #include "SparkFun_BNO080_Arduino_Library.h"
+#include "SparkFun_BNO08x_Arduino_Library.h"
 IMU_BNO085 imu_b;
 
 
@@ -43,7 +43,7 @@ uint32_t systemorientation[4] = {SYSTEM_QX_ORIENTATION, SYSTEM_QY_ORIENTATION, S
 void interrupt_handler()
 {
 
-  switch (imu_b.device.getReadings())
+  switch (imu_b.device.getSensorEventID())
   {
 
     case SENSOR_REPORTID_ACCELEROMETER: 
@@ -69,40 +69,37 @@ void interrupt_handler()
   }       
 }
 
-bool frsWriteResponse()
-{
-    while (1)
-    {
-      uint8_t counter = 0;
-      while(imu_b.device.receivePacket() == false)
-      {
-          if (counter++ > 100)
-              return false;
-          delay(1);
-      }
+// bool frsWriteResponse()
+// {
+//     while (1)
+//     {
+//       uint8_t counter = 0;
+//       while(imu_b.device.receivePacket() == false)
+//       {
+//           if (counter++ > 100)
+//               return false;
+//           delay(1);
+//       }
 
-      //0xF5 is Write Response first 2 byte in shtp data is status
-      if (imu_b.device.shtpData[0] == FRS_WRITE_RESPONSE)
-      {
-          uint8_t frsStatus = imu_b.device.shtpData[1];
-          if (frsStatus == 0 || frsStatus == 3 || frsStatus == 4)
-          {
+//       //0xF5 is Write Response first 2 byte in shtp data is status
+//       if (imu_b.device.shtpData[0] == FRS_WRITE_RESPONSE)
+//       {
+//           uint8_t frsStatus = imu_b.device.shtpData[1];
+//           if (frsStatus == 0 || frsStatus == 3 || frsStatus == 4)
+//           {
 
-            return true;
-          }
-          else
-          {
-            return false;
-          }
+//             return true;
+//           }
+//           else
+//           {
+//             return false;
+//           }
           
-      }
-    }
-}
+//       }
+//     }
+// }
 
-void IMU_BNO085::setIMUCalibration()
-{
 
-}
 
 bool IMU_BNO085::isIMUOrientationValid()
 {
@@ -114,29 +111,37 @@ void IMU_BNO085::setupIMU()
   //https://www.ceva-dsp.com/wp-content/uploads/2019/10/BNO080_085-Datasheet.pdf
   //https://github.com/sparkfun/SparkFun_BNO080_Arduino_Library/tree/main
 
- //Reset IMU here (toggle low, high = enabled)(10ms)
-  digitalWrite(IMU_RESET, LOW); 
-  delay(10);//ms  
+  
+  Wire1.begin();
+  // Wire1.setClock(400000);
+  digitalWrite(IMU_RESET, LOW);
+  delay(10);
   digitalWrite(IMU_RESET, HIGH);
+  imu_valid=device.begin(0x4A, Wire1, IMU_INT, IMU_RESET);
 
-  Wire.begin();
-  imu_valid=device.begin(0x4A, Wire1, IMU_INT);
   if (imu_valid)  
   {
-      Wire1.setClock(400000); //Increase I2C data rate to 400kHz
+      // Wire1.setClock(400000); //Increase I2C data rate to 400kHz
       
-      __enable_irq();
-      attachInterrupt(digitalPinToInterrupt(IMU_INT), interrupt_handler, FALLING);
+      // __enable_irq();
+      // attachInterrupt(digitalPinToInterrupt(IMU_INT), interrupt_handler, FALLING);
       
       
       // device.enableLinearAccelerometer(50);  // m/s^2 no gravity, data update every 50 ms
       // device.enableRotationVector(100); //Send data update every 100 ms
   
-      device.enableGyroIntegratedRotationVector(50);//RotationVector(10); //Send data update every 10ms
-      device.enableAccelerometer(50); //Send data update every 50
-      device.enableMagnetometer(50); //Send data update every 50 // cannot be enabled at the same time as RotationVector (will not produce data)
+      // device.enableGyroIntegratedRotationVector(50);//RotationVector(10); //Send data update every 10ms
+      // device.enableAccelerometer(50); //Send data update every 50
+      // // device.enableMagnetometer(50); //Send data update every 50 // cannot be enabled at the same time as RotationVector (will not produce data)
       // device.enableGyro(50); //Send data update every 10ms
       // device.enableTapDetector(50); //Send data update every 50ms
+      // digitalWrite(IMU_RESET, LOW);
+      // delay(10);
+      // digitalWrite(IMU_RESET, HIGH);
+
+      // device.enableAccelerometer(50);
+      setReports();
+
       dirtyRotationVector=false;
       dirtyAccelerometer=false;
       dirtyMagnetometer=false;
@@ -144,78 +149,109 @@ void IMU_BNO085::setupIMU()
       dirtyLinearAcc=false;
       dirtyQuat=false;
       irq_cnt=0;
-
   }
 }
 
-
-
-void IMU_BNO085::writeSystemOrientation(bool resetOrientation)
-{
-    __disable_irq();
-    uint16_t length;
-    uint32_t *data = systemorientation;
-    
-    if (resetOrientation == true)
-    {
-      length = 0;
-    }
-    else
-    {
-      length = 4;
-    }
-
-    uint8_t offset = 0;
-    device.shtpData[0] = FRS_WRITE_REQUEST;     //FRS Write Request
-    device.shtpData[1] = 0;                     //Reserved
-    device.shtpData[2] = (length >> 0) & 0xFF;  //Word Length LSB
-    device.shtpData[3] = (length >> 8) & 0xFF;  //Word Length MSB
-    device.shtpData[4] = (FRS_SYSTEM_ORIENTATION_ID >> 0) & 0xFF; //FRS Type LSB
-    device.shtpData[5] = (FRS_SYSTEM_ORIENTATION_ID >> 8) & 0xFF; //FRS Type MSB
-
-    //Transmit packet on channel 2, 6 bytes
-    device.sendPacket(CHANNEL_CONTROL, 6);
-
-    if (frsWriteResponse() == true)
-    {
-      while (1)
-      {
-        for (uint8_t i = 0; i <= 2; i += 2)
-        {
-
-          device.shtpData[0] = FRS_WRITE_DATA_REQUEST; //FRS Write Data Request
-          device.shtpData[1] = 0;                      //Reserved
-          device.shtpData[2] = (offset+i >> 0) & 0xFF; //Write Offset LSB
-          device.shtpData[3] = (offset+i >> 8) & 0xFF; //Write Offset MSB
-          device.shtpData[4] = (data[i] >> 0) & 0xFF;  //Data 0 LSB
-          device.shtpData[5] = (data[i]  >> 8) & 0xFF;
-          device.shtpData[6] = (data[i] >> 16) & 0xFF;
-          device.shtpData[7] = (data[i] >> 24) & 0xFF; //Data 0 MSB
-          device.shtpData[8] = (data[i+1] >> 0) & 0xFF;//Data 1 LSB
-          device.shtpData[9] = (data[i+1] >> 8) & 0xFF;
-          device.shtpData[10] = (data[i+1] >> 16) & 0xFF;
-          device.shtpData[11] = (data[i+1] >> 24) & 0xFF;//Data 1 MSB
-          device.sendPacket(CHANNEL_CONTROL, 12);
-        }
-        if (frsWriteResponse() == true)
-        {
-          break;
-        }
-        if (frsWriteResponse() == false)
-        {
-          break;
-        }
-      }
-      __enable_irq();
-    }
+void IMU_BNO085::setReports(void) {
+  if (device.enableAccelerometer(50))
+    return;
 }
+
+
+void IMU_BNO085::imu_sleep_mode()
+{
+  EIC->INTENCLR.reg = (1 << 0x04);
+  while (EIC->INTENCLR.reg & (1 << 0x04));
+  while (!device.modeSleep()); //Put the IMU to sleep
+  SERCOM1->I2CM.CTRLA.bit.ENABLE = 0;
+  while (SERCOM1->I2CM.SYNCBUSY.bit.ENABLE);
+  // digitalWrite(IMU_RESET, LOW);
+}
+
+void IMU_BNO085::imu_wake_up()
+{
+  // digitalWrite(IMU_RESET, HIGH);
+  SERCOM1->I2CM.CTRLA.bit.ENABLE = 1;
+  while (SERCOM1->I2CM.SYNCBUSY.bit.ENABLE);
+  attachInterrupt(digitalPinToInterrupt(IMU_INT), interrupt_handler, FALLING);
+  device.modeOn(); //Wake up IMU
+}
+
+// void IMU_BNO085::writeSystemOrientation(bool resetOrientation)
+// {
+//     __disable_irq();
+//     uint16_t length;
+//     uint32_t *data = systemorientation;
+    
+//     if (resetOrientation == true)
+//     {
+//       length = 0;
+//     }
+//     else
+//     {
+//       length = 4;
+//     }
+
+//     uint8_t offset = 0;
+//     device.shtpData[0] = FRS_WRITE_REQUEST;     //FRS Write Request
+//     device.shtpData[1] = 0;                     //Reserved
+//     device.shtpData[2] = (length >> 0) & 0xFF;  //Word Length LSB
+//     device.shtpData[3] = (length >> 8) & 0xFF;  //Word Length MSB
+//     device.shtpData[4] = (FRS_SYSTEM_ORIENTATION_ID >> 0) & 0xFF; //FRS Type LSB
+//     device.shtpData[5] = (FRS_SYSTEM_ORIENTATION_ID >> 8) & 0xFF; //FRS Type MSB
+
+//     //Transmit packet on channel 2, 6 bytes
+//     device.sendPacket(CHANNEL_CONTROL, 6);
+
+//     if (frsWriteResponse() == true)
+//     {
+//       while (1)
+//       {
+//         for (uint8_t i = 0; i <= 2; i += 2)
+//         {
+
+//           device.shtpData[0] = FRS_WRITE_DATA_REQUEST; //FRS Write Data Request
+//           device.shtpData[1] = 0;                      //Reserved
+//           device.shtpData[2] = (offset+i >> 0) & 0xFF; //Write Offset LSB
+//           device.shtpData[3] = (offset+i >> 8) & 0xFF; //Write Offset MSB
+//           device.shtpData[4] = (data[i] >> 0) & 0xFF;  //Data 0 LSB
+//           device.shtpData[5] = (data[i]  >> 8) & 0xFF;
+//           device.shtpData[6] = (data[i] >> 16) & 0xFF;
+//           device.shtpData[7] = (data[i] >> 24) & 0xFF; //Data 0 MSB
+//           device.shtpData[8] = (data[i+1] >> 0) & 0xFF;//Data 1 LSB
+//           device.shtpData[9] = (data[i+1] >> 8) & 0xFF;
+//           device.shtpData[10] = (data[i+1] >> 16) & 0xFF;
+//           device.shtpData[11] = (data[i+1] >> 24) & 0xFF;//Data 1 MSB
+//           device.sendPacket(CHANNEL_CONTROL, 12);
+//         }
+//         if (frsWriteResponse() == true)
+//         {
+//           break;
+//         }
+//         if (frsWriteResponse() == false)
+//         {
+//           break;
+//         }
+//       }
+//       __enable_irq();
+//     }
+// }
 
 
 void IMU_BNO085::stepIMU(IMU_Status * imu_status)
 {
-
-  if (!imu_valid)
+    if (device.wasReset()) {
+    // Serial.println ("sensor was reset ");
+    setReports();
+    __disable_irq();
+    attachInterrupt(IMU_INT, interrupt_handler,FALLING);
+    __enable_irq();
     return;
+  }
+  if (!device.getSensorEvent())
+    return;
+
+
   if(dirtyQuat)
   {
     device.getQuat(qx, qy, qz, qw, quatRadianAccuracy, quatAccuracy);
@@ -224,9 +260,9 @@ void IMU_BNO085::stepIMU(IMU_Status * imu_status)
     imu_status->qz = qz;
     imu_status->qw = qw;
 
-    imu_status->gx = device.getFastGyroX();
-    imu_status->gy = device.getFastGyroY();
-    imu_status->gz = device.getFastGyroZ();
+    imu_status->gx = device.getGyroX();
+    imu_status->gy = device.getGyroY();
+    imu_status->gz = device.getGyroZ();
 
      imu_status->roll=(device.getRoll()) * 180.0 / PI; 
     
@@ -241,6 +277,7 @@ void IMU_BNO085::stepIMU(IMU_Status * imu_status)
     imu_status->pitch=(device.getPitch()) * 180.0 / PI;;
     imu_status->heading=(device.getYaw()) * 180.0 / PI;
 
+
     dirtyQuat=0;
   }
   
@@ -250,6 +287,10 @@ void IMU_BNO085::stepIMU(IMU_Status * imu_status)
     imu_status->ax = ax;
     imu_status->ay = ay;
     imu_status->az = az;
+
+    // SerialUSB.print(" IMU AX: ");
+    // SerialUSB.println(ax);
+
 
     float maxx,maxy,maxz;
     int i;

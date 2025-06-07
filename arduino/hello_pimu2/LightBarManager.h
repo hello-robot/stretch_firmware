@@ -27,6 +27,8 @@ class LightBarManager {
     uint8_t get_mode(){return (uint8_t) mode;}
     void start_test();
     void Off();
+    void disableDMAC();
+    void enableDMAC();
     
   private:
     void ColorSet(uint32_t color);
@@ -35,6 +37,13 @@ class LightBarManager {
     void Battery_Gauge(int soc,bool runstop_on, bool runstop_led_on,bool charger_on);
     bool lightBar_init;
     lightbar_mode mode; 
+};
+
+class helloDMA : public Adafruit_ZeroDMA
+{
+  public:
+    uint8_t _dmac_channel;
+    uint8_t getChannel() { return _dmac_channel; }
 };
 
 

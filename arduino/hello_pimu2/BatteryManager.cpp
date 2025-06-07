@@ -5,7 +5,7 @@ INA228 ina228(INA228_ADDRESS); // Create an instance of the INA228 class with th
 
 
 void BatteryManager::init() {
-    ina228.begin(Wire, 400000); // Initialize the INA228 with the Wire library and a clock speed of 400kHz
+    ina228.begin(Wire, 1000000); // Initialize the INA228 with the Wire library and a clock speed of 400kHz
     ina228.init();
     ina228.set_shunt_measurment_time();
     ina228.set_conversion_delay();

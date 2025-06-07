@@ -13,6 +13,26 @@ void PeripheralManager::fast_actuator_control(bool en)
   digitalWrite(LATCH_CTRL, LOW);
 }
 
+// void PeripheralManager::setupPeripheralManager()
+// {
+
+//   //Outputs
+//   pinMode(LATCH_CTRL, OUTPUT);
+//   pinMode(LIFT_EN, OUTPUT);
+//   pinMode(ARM_EN, OUTPUT);
+//   pinMode(OMNI_0_EN, OUTPUT);
+//   pinMode(OMNI_1_EN, OUTPUT);
+//   pinMode(OMNI_2_EN, OUTPUT);
+//   pinMode(EOA_EN, OUTPUT);
+//   pinMode(SYNC_OUT, OUTPUT);
+//   pinMode(RUNSTOP_OUT, OUTPUT);
+//   pinMode(RUNSTOP_LED, OUTPUT);
+//   pinMode(STATUS_LED, OUTPUT);
+  
+//   //Common to all variants
+//   fast_actuator_control(false);
+
+// }
 
 void PeripheralManager::rpc_actuator_control(uint8_t actuator, uint8_t enable)
 {

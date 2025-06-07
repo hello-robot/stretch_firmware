@@ -16,7 +16,8 @@
 #ifndef __IMU_BNO085_H__
 #define  __IMU_BNO085_H__
 #include "Common.h"
-#include "SparkFun_BNO080_Arduino_Library.h"
+// #include "SparkFun_BNO080_Arduino_Library.h"
+#include "SparkFun_BNO08x_Arduino_Library.h" 
 
 // #define IMU_BNO085_RESET (27u) //PA21 27
 // #define IMU_BNO085_INT (17u) //PA13 17
@@ -42,13 +43,16 @@ class IMU_BNO085{
     void setIMUCalibration();
     void writeSystemOrientation(bool resetOrientation);
     bool isIMUOrientationValid();
+    void imu_sleep_mode();
+    void imu_wake_up();
+    void setReports();
     volatile bool dirtyLinearAcc;
     volatile bool dirtyQuat;
     volatile bool dirtyRotationVector;
     volatile bool dirtyAccelerometer;
     volatile bool dirtyMagnetometer;
     volatile bool dirtyGyro;
-    BNO080 device;
+    BNO08x device;
     float accel_max_log[3][8];
     int accel_max_idx=0;
 };

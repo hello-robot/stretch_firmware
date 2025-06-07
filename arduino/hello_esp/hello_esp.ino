@@ -3,7 +3,7 @@
 
 void setup() {
   // put your setup code here, to run once:
-  SerialUSB.begin(9600);
+  SerialUSB.begin(250000);
   setup_esp();
    // Enable UART1 wakeup for deep sleep
 

@@ -286,6 +286,30 @@ void LightBarManager::setupLightBarManager()
    lightBar_init = pixels.begin(&sercom2, SERCOM2, SERCOM2_DMAC_ID_TX, NEOPIXEL, SPI_PAD_3_SCK_1, PIO_SERCOM);
 }
 
+void LightBarManager::disableDMAC()
+{
+  Off();
+  delayMicroseconds(500);
+  uint8_t chan = pixels.getDMA().getChannel();
+  while(DMAC->Channel[chan].CHSTATUS.bit.BUSY);
+  DMAC->Channel[chan].CHCTRLA.bit.ENABLE = 0; //Disable the channel
+  while(DMAC->Channel[chan].CHCTRLA.bit.ENABLE);
+
+  SERCOM2->SPI.CTRLA.bit.ENABLE = 0; //Disable the SERCOM SPI
+  while(SERCOM2->SPI.SYNCBUSY.bit.ENABLE); //Wait for the SERCOM SPI to be disabled
+
+}
+
+void LightBarManager::enableDMAC()
+{
+   uint8_t chan = pixels.getDMA().getChannel();
+  DMAC->Channel[chan].CHCTRLA.bit.ENABLE = 1; //Disable the channel
+  while(!DMAC->Channel[chan].CHCTRLA.bit.ENABLE);
+
+  SERCOM2->SPI.CTRLA.bit.ENABLE = 1; //Disable the SERCOM SPI
+  while(!SERCOM2->SPI.SYNCBUSY.bit.ENABLE); //Wait for the SERCOM SPI to be disabled
+}
+
 float test_voltage=0.0;
 bool running_test=false;
 
@@ -298,7 +322,8 @@ void LightBarManager::start_test()
 void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on,float soc) 
 {
   if (lightBar_init)
-  {
+  {   
+    
       if (running_test)
       {
         ColoredBatteryLevel(test_voltage, V_BAT_MIN, V_BAT_MAX, runstop_on, runstop_led_on, charger_on );

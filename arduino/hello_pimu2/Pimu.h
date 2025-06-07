@@ -26,11 +26,19 @@ extern void setupADC();
 extern void stepPimuRPC();
 extern void setupBoardVariants();
 
+extern void disableTCInterrupts();
+extern void enableTCInterrupts();
+extern void disableWDT();
+extern void enableWDT();
+
 extern void toggle_led(int rate_ms);
 
 
 extern void on_runstop();
 extern void do_beep(int bid);
+
+extern volatile bool sleep_mode_done;
+
 
 
 #endif

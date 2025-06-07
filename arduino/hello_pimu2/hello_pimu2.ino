@@ -32,5 +32,20 @@ void setup()        // This code runs once at startup
 
 void loop()
 {
-  stepPimuRPC();
+  if (!sleep_mode_done)
+  {
+    stepPimuRPC();
+  }
+  else if (sleep_mode_done)
+  { 
+    disableTCInterrupts();
+    disableWDT();
+              // Block all IRQs for setup (optional)
+  
+    __DSB();                   // Ensure memory accesses are complete
+    __WFI();                   // Wait for *any* interrupt
+    enableTCInterrupts();
+    enableWDT();
+    sleep_mode_done = false;
+  }
 }

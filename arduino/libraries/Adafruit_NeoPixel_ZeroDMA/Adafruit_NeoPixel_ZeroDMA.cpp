@@ -439,3 +439,5 @@ void Adafruit_NeoPixel_ZeroDMA::setBrightness(uint8_t b) {
 uint8_t Adafruit_NeoPixel_ZeroDMA::getBrightness(void) const {
   return brightness - 1; // 1-256 in, 0-255 out
 }
+
+

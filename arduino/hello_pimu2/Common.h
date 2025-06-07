@@ -150,6 +150,7 @@
 #define UART_TRIGGER 0x03
 #define UART_PWR_SLEEP 0x04
 #define UART_PWR_WAKE 0x05
+#define UART_STS_BOOTED 0x06
 
 /////////////////////////////////////////////////////////////////
 

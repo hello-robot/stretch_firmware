@@ -162,6 +162,7 @@ static const uint8_t A0  = PIN_5V0_VOLT;
 static const uint8_t SDA = PIN_WIRE_SDA;
 static const uint8_t SCL = PIN_WIRE_SCL;
 
+
 /*
  * USB
  */

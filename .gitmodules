@@ -1,0 +1,3 @@
+[submodule "arduino/arduino/libraries/SparkFun_BNO08x_Arduino_Library"]
+	path = arduino/arduino/libraries/SparkFun_BNO08x_Arduino_Library
+	url = https://github.com/sparkfun/SparkFun_BNO08x_Arduino_Library

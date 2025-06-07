@@ -19,7 +19,7 @@ void PeripheralManager::gpio_init() {
     pinMode(PIN_BARREL_FAULT, INPUT);
     pinMode(PIN_ADAPTER_FAULT, INPUT);
 
-    digitalWrite(PIN_ROBOT_ACTIVE, HIGH);
+    
 }
 
 void PeripheralManager::disable_12v0(bool disable) {

@@ -95,6 +95,7 @@ void resetWDT();
 void setupWDT(uint8_t period);
 
 bool boot_sts;
+volatile bool sleep_mode_done = false;
 
 
 
@@ -132,8 +133,8 @@ void update_status();
 void toggle_led(int rate_ms);
 void rpc_actuator_control(uint8_t actuator, uint8_t enable);
 void fast_actuator_control(bool en);
-void enableTCInterrupts();
-void disableTCInterrupts();
+// void enableTCInterrupts();
+// void disableTCInterrupts();
 void update_esp();
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -166,7 +167,14 @@ void setupBoardVariants()
   pinMode(RUNSTOP_LED, OUTPUT);
   pinMode(STATUS_LED, OUTPUT);
   pinMode(LATCH_CTRL, OUTPUT);
-  pinMode(FAN_EN, OUTPUT);
+
+  
+  PORT->Group[0].OUTSET.reg = (1 << 10);//Setting up Fan pin as default HIGH
+  PORT->Group[0].DIRSET.reg = (1 << 10);//Setting up Fan pin as output
+
+  PORT->Group[0].OUTSET.reg = (1 << 14);
+  PORT->Group[0].DIRSET.reg = (1 << 14);
+
   pinMode(BUZZER_EN, OUTPUT);
   pinMode(ESP_RESET, OUTPUT);
   pinMode(ESP_BOOT, OUTPUT);
@@ -175,7 +183,7 @@ void setupBoardVariants()
   pinMode(DISABLE_5V0, OUTPUT);
   pinMode(BTN_RED, OUTPUT);
   pinMode(BTN_GREEN, OUTPUT);
-  pinMode(IMU_RESET, OUTPUT);
+  // pinMode(IMU_RESET, OUTPUT);
   pinMode(NEOPIXEL, OUTPUT);
 
   //Inputs
@@ -183,21 +191,25 @@ void setupBoardVariants()
   pinMode(SLEEP_EN, INPUT);
   pinMode(CHARGER_STATE, INPUT);
   pinMode(CHARGER_CONNECTED, INPUT);
-  pinMode(IMU_INT, INPUT);
+  pinMode(IMU_INT, INPUT_PULLUP);
   pinMode(ROBOT_ACTIVE, INPUT);
   pinMode(EOA_FAULT, INPUT);
   pinMode(RUNSTOP_SW, INPUT);
   pinMode(SYS_OC, INPUT);
   power_state_manager.power_state_setup();
-
-  boot_sts = power_state_manager.check_boot_sts();
-  if (!boot_sts){perferial_manager.fast_actuator_control(true);}
+  esp_manager.setup();
+  if (!power_state_manager.check_boot_sts())
+  {
+    esp_manager.send_status(UART_STS_BOOTED, 0, 0);
+    perferial_manager.fast_actuator_control(true);
+  }
   BOARD_VARIANT_DEDICATED_SYNC=1;
   light_bar_manager.setupLightBarManager();
   
 }
 
 void setupPimu() {  
+
   memset(&cfg_in, 0, sizeof(Pimu_Config));
   memset(&cfg, 0, sizeof(Pimu_Config));
   cfg.stop_at_runstop=1; //By default acknowledge runstop, user must override via YAML otherwise
@@ -210,9 +222,9 @@ void setupPimu() {
   analog_manager.setupADC();
   analog_manager.factory_config();
   battery_manager.init();
-  esp_manager.setup();
 
   setupTimer4_and_5();
+  power_state_manager.enableTC1();
   setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
 }
@@ -406,13 +418,13 @@ void handle_trigger()
     if (trg.data & TRIGGER_FAN_ON)
     {
           state_fan_on=true;
-          digitalWrite(FAN_EN, HIGH);
+          digitalWrite(FAN_EN, LOW);
           fan_on_cnt=1200;
     }
     if (trg.data & TRIGGER_FAN_OFF)
     {
         state_fan_on=false;
-        digitalWrite(FAN_EN, OFF);
+        digitalWrite(FAN_EN, HIGH);
         
     }
     if (trg.data & TRIGGER_IMU_RESET)
@@ -422,7 +434,7 @@ void handle_trigger()
           //Setting imu orientation to match other robots (clear orientation = false)
           //setting clear orientation to true clears the system orientation register
           bool clear_orientation_frs = false;
-          imu_b.writeSystemOrientation(clear_orientation_frs);
+          // imu_b.writeSystemOrientation(clear_orientation_frs);
          }
          else
          {
@@ -483,7 +495,7 @@ void update_fan()
   if (!fan_on_cnt && state_fan_on)
   {
     state_fan_on=false;
-    digitalWrite(FAN_EN, LOW);
+    digitalWrite(FAN_EN, HIGH);
   }
 }
 ////////////////////////////
@@ -493,6 +505,7 @@ void update_imu()
   stepIMU(&imu_stat);
   memcpy(&stat.imu,&imu_stat, sizeof(IMU_Status));
 }
+
 
 ////////////////////////////
 void update_voltage_monitor()
@@ -633,6 +646,18 @@ void resetWDT() {
   }
 }
 
+void disableWDT()
+{
+  WDT->CTRLA.bit.ENABLE = 0;
+  while (WDT->SYNCBUSY.bit.ENABLE);
+}
+
+void enableWDT()
+{
+  WDT->CTRLA.bit.ENABLE = 1;
+  while (WDT->SYNCBUSY.bit.ENABLE);
+}
+
 void systemReset() {
   // use the WDT watchdog timer to force a system reset.
   // WDT MUST be running for this to work
@@ -647,7 +672,7 @@ void setupWDT(uint8_t period) {
 
   WDT->CONFIG.reg = min(period,11); // see Table 17-5 Timeout Period (valid values 0-11) (ms)
   WDT->CTRLA.bit.ENABLE = 1;
-  while (WDT->SYNCBUSY.bit.ENABLE);
+  while (!WDT->SYNCBUSY.bit.ENABLE);
 }
 
 ////////////////////// Timer5 /////////////////////////////////////////
@@ -655,26 +680,27 @@ void setupWDT(uint8_t period) {
 void TC5_Handler() {
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
+    power_state_manager.step();
     if (power_state_manager.system_pwr_state_active)
     {
       stepPimuController();
-      power_state_manager.step();
     }
-    else if (!power_state_manager.system_pwr_state_active)
-    {
-      power_state_manager.step();
-    }
+    sleep_mode_done = power_state_manager.sleep_mode_set;
     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
 
 
 void enableTCInterrupts() {   //enables the controller interrupt ("closed loop mode")
+    // Enable InterruptVector
+  NVIC_EnableIRQ(TC5_IRQn);
+  NVIC_EnableIRQ(TC4_IRQn);
+  
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC5
-  while(TC5->COUNT16.SYNCBUSY.bit.ENABLE);
+  while(!TC5->COUNT16.SYNCBUSY.bit.ENABLE);
 
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC4
-  while(TC4->COUNT16.SYNCBUSY.bit.ENABLE);
+  while(!TC4->COUNT16.SYNCBUSY.bit.ENABLE);
 
 }
 
@@ -685,6 +711,8 @@ void disableTCInterrupts() {  //disables the controller interrupt ("closed loop 
   TC4->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC5
   while(TC4->COUNT16.SYNCBUSY.bit.ENABLE);
 
+  NVIC_DisableIRQ(TC5_IRQn);
+  NVIC_DisableIRQ(TC4_IRQn);
 
 }
 
@@ -702,7 +730,7 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_MODE_COUNT16;   // Set Timer counter Mode to 16 bits
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_MODE_COUNT16;   // Set Timer counter Mode to 16 bits
-  // TC5->COUNT16.CTRLA.reg |= TC_CTRLA_RUNSTDBY;   // Run TC5 in standby mode
+
 
   TC5->COUNT16.WAVE.reg |= TC_WAVE_WAVEGEN_MFRQ; // Set TC as normal Normal Frq
   TC4->COUNT16.WAVE.reg |= TC_WAVE_WAVEGEN_MFRQ; // Set TC as normal Normal Frq
@@ -726,9 +754,7 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   NVIC_SetPriority(TC5_IRQn, 3);              //Set interrupt priority
   NVIC_SetPriority(TC4_IRQn, 2);              //TC4 pulse generator highest priority so timing is correct
 
-  // Enable InterruptVector
-  NVIC_EnableIRQ(TC5_IRQn);
-  NVIC_EnableIRQ(TC4_IRQn);
+
 
   // Enable TC
   enableTCInterrupts();

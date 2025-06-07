@@ -13,6 +13,7 @@ void setup_esp()
 {
     peripheral_manager.gpio_init();
     uart_manager.setup_uart();
+	
 }
 
 void process_pimu_requests()
@@ -29,8 +30,9 @@ void process_pimu_requests()
 			case UART_STS_CURRENT:
 				// Handle current status
 				break;
-			case UART_TRIGGER:
-				// Handle trigger command
+			case UART_STS_BOOTED:
+				//Can send packet back if needed
+				digitalWrite(PIN_ROBOT_ACTIVE, HIGH); // Indicate that the system is booted
 				break;
 			case UART_PWR_SLEEP:
 				system_pwr_state_active = false;

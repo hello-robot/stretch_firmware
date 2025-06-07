@@ -21,6 +21,7 @@ public:
                             neoPixelType t = NEO_GRB);
   Adafruit_NeoPixel_ZeroDMA(void);
   ~Adafruit_NeoPixel_ZeroDMA();
+  
 
   bool begin(void);
   // Although esoteric, there IS a use case for keeping this overloaded
@@ -35,6 +36,7 @@ public:
    * double buffer
    * @returns True always */
   inline bool canShow(void) { return true; }
+  Adafruit_ZeroDMA& getDMA() { return dma; } //Added to get actual channel of Neopixel DMA
 
 protected:
   Adafruit_ZeroDMA dma; ///< The DMA manager for the SPI class
