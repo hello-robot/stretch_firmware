@@ -13,5 +13,6 @@ class PeripheralManager {
         void pimu_bootloader_mode();
         void peripheral_sleep_state();
         void peripheral_wakeup_state();
+        void peripheral_sd_state();
 };
 #endif

@@ -24,7 +24,7 @@
 void setup()        // This code runs once at startup
 {     
   setupBoardVariants();
-  setupIMU();
+  // setupIMU();
   SerialUSB.begin(2000000);
   setupPimu();              
   setupTransport();
@@ -32,20 +32,5 @@ void setup()        // This code runs once at startup
 
 void loop()
 {
-  if (!sleep_mode_done)
-  {
-    stepPimuRPC();
-  }
-  else if (sleep_mode_done)
-  { 
-    disableTCInterrupts();
-    disableWDT();
-              // Block all IRQs for setup (optional)
-  
-    __DSB();                   // Ensure memory accesses are complete
-    __WFI();                   // Wait for *any* interrupt
-    enableTCInterrupts();
-    enableWDT();
-    sleep_mode_done = false;
-  }
+  stepPimuRPC();
 }

@@ -38,6 +38,7 @@
 uint8_t Red(uint32_t color){return (color >> 16) & 0xFF;}
 uint8_t Green(uint32_t color){return (color >> 8) & 0xFF;}
 uint8_t Blue(uint32_t color){return color & 0xFF;}
+unsigned long _lightbar_st=0;
 
 Adafruit_NeoPixel_ZeroDMA pixels(NUM_PIXELS, NEOPIXEL, NEO_GRB);
 
@@ -169,6 +170,20 @@ void LightBarManager::Battery_Gauge(int soc,bool runstop_on, bool runstop_led_on
     {
       ColoredScanUpdate(pixels.Color(PX_OFF),pixels.Color(PX_GREEN),1000);
     } 
+  }
+  else
+  {
+    pixels.clear();
+    pixels.show();
+  }
+}
+
+void LightBarManager::sleep_chrg(unsigned long st)
+{
+  unsigned long t = time_manager.get_elapsed_time_ms();
+  if ((t - st) <= 5000)
+  {
+    ColoredScanUpdate(pixels.Color(PX_OFF),pixels.Color(PX_GREEN),1000);
   }
   else
   {

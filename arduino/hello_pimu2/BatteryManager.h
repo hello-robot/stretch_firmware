@@ -21,11 +21,15 @@ public:
     float current_battery;
     float current_charger;
 
-    bool flag_charger_disabled = false;
     bool flag_charger_connected = false;
+    bool flag_charger_is_charging = false;
 
     int battery_soc;
     int current_soc = 100;
+
+    private:
+        bool _flag_charger_disabled = false;
+        bool _chrg_done = false;
     
 
     

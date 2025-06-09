@@ -69,7 +69,7 @@ BatteryManager battery_manager;
 
 PeripheralManager perferial_manager;
 EspManager esp_manager;
-PowerStateManager power_state_manager(perferial_manager, esp_manager, light_bar_manager);
+PowerStateManager power_state_manager(perferial_manager, esp_manager, light_bar_manager, battery_manager);
 
 //////////////////////////////////////
 Pimu_Config cfg_in, cfg;
@@ -85,6 +85,7 @@ Pimu_Actuator_Cntrl joint_control;
 
 
 Esp_VoltageStatus esp_voltage_status;
+
 
 
 void setupTimer4_and_5();
@@ -131,11 +132,8 @@ void update_board_reset();
 void update_cliff_monitor();
 void update_status();
 void toggle_led(int rate_ms);
-void rpc_actuator_control(uint8_t actuator, uint8_t enable);
-void fast_actuator_control(bool en);
-// void enableTCInterrupts();
-// void disableTCInterrupts();
-void update_esp();
+void shutdown_state_step();
+void update_esp(uint8_t state);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -196,15 +194,9 @@ void setupBoardVariants()
   pinMode(EOA_FAULT, INPUT);
   pinMode(RUNSTOP_SW, INPUT);
   pinMode(SYS_OC, INPUT);
-  power_state_manager.power_state_setup();
-  esp_manager.setup();
-  if (!power_state_manager.check_boot_sts())
-  {
-    esp_manager.send_status(UART_STS_BOOTED, 0, 0);
-    perferial_manager.fast_actuator_control(true);
-  }
+
   BOARD_VARIANT_DEDICATED_SYNC=1;
-  light_bar_manager.setupLightBarManager();
+  
   
 }
 
@@ -222,9 +214,13 @@ void setupPimu() {
   analog_manager.setupADC();
   analog_manager.factory_config();
   battery_manager.init();
-
-  setupTimer4_and_5();
+  esp_manager.setup();
+  light_bar_manager.setupLightBarManager();
+  analog_manager.step(&stat, &cfg);
+  battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
+  power_state_manager.power_state_setup();
   power_state_manager.enableTC1();
+  setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
 }
@@ -234,20 +230,19 @@ void stepPimuController()
   
   cycle_cnt++;
   toggle_led(500);
-
   runstop_manager.step(&cfg);
-  // beep_manager.step();
+  beep_manager.step();
   analog_manager.step(&stat, &cfg);
   battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
   light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, battery_manager.flag_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.battery_soc);  
   update_fan();
-  update_imu();
+  // update_imu();
   update_board_reset();
 
   startup_cnt=max(0,startup_cnt-1);
   if(startup_cnt==0)
   {
-    // update_voltage_monitor();
+    update_voltage_monitor();
     // update_current_monitor();
     update_tilt_monitor();
     update_cliff_monitor();
@@ -263,10 +258,18 @@ void stepPimuController()
   }
 
   update_status();
-  update_esp();
-  
-  
+  update_esp(UART_PWR_WAKE);
+}
 
+void shutdown_state_step()
+{
+  analog_manager.step(&stat, &cfg);
+  battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
+  if (power_state_manager.sleep_chrg_indication)
+  {
+    light_bar_manager.sleep_chrg(power_state_manager.sleep_chrg_start_time);
+  }
+  update_esp(UART_STS_SD_CHRG);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -470,7 +473,7 @@ void update_config()
 
     if (cfg_in.low_voltage_alert!=cfg.low_voltage_alert) 
     {
-      low_voltage_alert=V_TO_RAW(cfg_in.low_voltage_alert);
+      low_voltage_alert=10;
     }
     if (cfg_in.high_current_alert!=cfg.high_current_alert) 
     {
@@ -482,7 +485,6 @@ void update_config()
       over_tilt_alert_deg=rad_to_deg(cfg_in.over_tilt_alert);
     }
     
-
     memcpy(&cfg,&cfg_in,sizeof(Pimu_Config));
     
 }
@@ -510,10 +512,10 @@ void update_imu()
 ////////////////////////////
 void update_voltage_monitor()
 {
-    if(battery_manager.battery_soc == 10) //dropped below
+    if(battery_manager.battery_soc <= 10) //dropped below
     {
-      state_low_voltage_alert=true;
-      if (cfg.stop_at_low_voltage)
+      // state_low_voltage_alert=true;
+      // if (cfg.stop_at_low_voltage)
         runstop_manager.activate_runstop();
     }
     else
@@ -551,11 +553,12 @@ void update_tilt_monitor()
       }
 }
 
-void update_esp()
+void update_esp(uint8_t state)
+
 {
   esp_voltage_status.voltage_battery = battery_manager.voltage_battery;
   esp_voltage_status.voltage_20v0 = analog_manager.voltage_20v0;
-  esp_manager.send_status(UART_STS_VOLTAGE, &esp_voltage_status, sizeof(Esp_VoltageStatus));
+  esp_manager.send_status(state, UART_STS_VOLTAGE, &esp_voltage_status, sizeof(Esp_VoltageStatus));
 }
 ////////////////////////////
 
@@ -609,7 +612,7 @@ void update_status()
   stat.state= state_boot_detected ? stat.state|STATE_BOOT_DETECTED : stat.state;
   stat.state= state_over_tilt_alert ? stat.state|STATE_OVER_TILT_ALERT : stat.state;
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
-  stat.state= battery_manager.flag_charger_disabled ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
+  stat.state= battery_manager.flag_charger_is_charging ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
   stat.over_tilt_type = state_over_tilt_type;
   stat.current_battery = battery_manager.current_battery;
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
@@ -680,13 +683,27 @@ void setupWDT(uint8_t period) {
 void TC5_Handler() {
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
+    TC5->COUNT16.INTFLAG.bit.OVF = 1;
     power_state_manager.step();
-    if (power_state_manager.system_pwr_state_active)
+    switch (power_state_manager.current_pwr_state)
     {
-      stepPimuController();
+      case STATE_ACTIVE:
+        stepPimuController();
+        break;
+      
+      case STATE_SLEEP:
+        analog_manager.step(&stat, &cfg);
+        battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
+        break;
+
+      case STATE_SHUTDOWN_CHRG:
+      case STATE_SLEEP_CHRG:
+        shutdown_state_step();
+        break;
+
+      default:
+        break;
     }
-    sleep_mode_done = power_state_manager.sleep_mode_set;
-    TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 }
 
@@ -766,7 +783,7 @@ void TC4_Handler() {                // gets called with FsMg frequency
 
   if (TC4->COUNT16.INTFLAG.bit.OVF == 1) {    // A counter overflow caused the interrupt
     time_manager.ts_base++;
-    if (power_state_manager.system_pwr_state_active)
+    if (power_state_manager.current_pwr_state == STATE_ACTIVE)
     {
       sync_manager.step();
     }

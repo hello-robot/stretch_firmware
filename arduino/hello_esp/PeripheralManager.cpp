@@ -54,10 +54,20 @@ void PeripheralManager::peripheral_sleep_state() {
     digitalWrite(PIN_12V0_DISABLE, HIGH);
     digitalWrite(PIN_DCM_MODE_EN, HIGH);
     digitalWrite(PIN_ESP_STS_LED, LOW);
+    digitalWrite(PIN_RPI_PWR_DISABLE, HIGH);
+}
+
+void PeripheralManager::peripheral_sd_state() {
+    digitalWrite(PIN_STS_LEDS_DISABLE, HIGH);
+    digitalWrite(PIN_12V0_DISABLE, LOW);
+    digitalWrite(PIN_DCM_MODE_EN, HIGH);
+    digitalWrite(PIN_ESP_STS_LED, LOW);
+    digitalWrite(PIN_RPI_PWR_DISABLE, HIGH);
 }
 
 void PeripheralManager::peripheral_wakeup_state() {
     digitalWrite(PIN_STS_LEDS_DISABLE, LOW);
     digitalWrite(PIN_12V0_DISABLE, LOW);
     digitalWrite(PIN_DCM_MODE_EN, LOW);
+    digitalWrite(PIN_RPI_PWR_DISABLE, LOW);
 }

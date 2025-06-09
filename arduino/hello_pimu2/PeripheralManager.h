@@ -18,6 +18,7 @@ class PeripheralManager
     void rpc_actuator_control(uint8_t actuator, uint8_t enable);
     void peripheral_sleep_state();
     void peripheral_active_state();
+    void peripheral_sd_state();
 };
 
 #endif

@@ -17,7 +17,7 @@ class EspManager {
     void esp_fw_update();
     void send_packet(const uint8_t *data, uint8_t len);
     bool receive_packet(uint8_t *data, uint8_t& n, int cobbs_frame_size);
-    void send_status(uint8_t sts_id, const void* data, size_t data_size);
+    void send_status(uint8_t pwr_sts, uint8_t sts_id, const void* data, size_t data_size);
     
   private:
     Crc16* _crc;

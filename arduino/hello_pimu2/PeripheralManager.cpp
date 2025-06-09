@@ -87,3 +87,12 @@ void PeripheralManager::peripheral_active_state()
     digitalWrite(DISABLE_20V0, LOW);
     digitalWrite(RUNSTOP_LED, HIGH);
 }
+
+void PeripheralManager::peripheral_sd_state()
+{
+    fast_actuator_control(false);
+    digitalWrite(DISABLE_5V0, LOW);
+    digitalWrite(DISABLE_20V0, HIGH);
+    digitalWrite(RUNSTOP_LED, LOW);
+    digitalWrite(STATUS_LED, LOW);
+}

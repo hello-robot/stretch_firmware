@@ -10,6 +10,8 @@
 #define UART_PWR_SLEEP 0x04
 #define UART_PWR_WAKE 0x05
 #define UART_STS_BOOTED 0x06
+#define UART_STS_SD_CHRG 0x07
+#define UART_STS_SLEEP_CHRG 0x08
 
 struct VoltageStatus {
     float voltage_battery; // Voltage in Volts

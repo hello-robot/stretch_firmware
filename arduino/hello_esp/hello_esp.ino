@@ -10,19 +10,16 @@ void setup() {
 }
 
 void loop() {
-  if (system_pwr_state_active)
+  
+  if (current_pwr_state == STATE_ACTIVE)
   {
     toggle_led(500);
-    process_pimu_requests();
   }
-
-  if (!system_pwr_state_active) {
+  if (current_pwr_state == STATE_SLEEP) {
     // If the system is in sleep mode, we can put the ESP to sleep
-    
-    esp_light_sleep_start(); // Put ESP into deep sleep
-    enter_wake();
-
+    esp_light_sleep_start(); // Put ESP into light sleep
   }
-  
+  process_pimu_requests();
+
 }
 

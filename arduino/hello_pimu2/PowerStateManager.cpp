@@ -5,7 +5,7 @@
 
 volatile bool g_button_pressed = false;
 volatile bool _falling_detected = false;
-volatile bool _state = false;
+volatile system_pwr_state _state = STATE_SLEEP;
 volatile bool _fading_up = false;
 volatile uint8_t _target_pwm = 0;
 volatile uint8_t _fade_cnt = 0;
@@ -41,53 +41,104 @@ void PowerStateManager::power_state_setup()
     USB->DEVICE.CTRLA.bit.ENABLE = 1;
     while (!USB->DEVICE.SYNCBUSY.bit.ENABLE) {;}
 
-    // OSC32KCTRL->OSCULP32K.bit.EN1K = 1;
-    // OSC32KCTRL->OSCULP32K.bit.EN32K = 0;
-    // OSC32KCTRL->RTCCTRL.reg |= OSC32KCTRL_RTCCTRL_RTCSEL_ULP1K;
+    OSC32KCTRL->OSCULP32K.bit.EN1K = 1;
+    OSC32KCTRL->OSCULP32K.bit.EN32K = 0;
+    OSC32KCTRL->RTCCTRL.reg |= OSC32KCTRL_RTCCTRL_RTCSEL_ULP1K;
 
-    // EIC->CTRLA.bit.CKSEL = 1;
+    EIC->CTRLA.bit.CKSEL = 1;
 
-    pinMode(PWR_EN, INPUT);
-    pinMode(SLEEP_EN, INPUT);
-    pinMode(ROBOT_ACTIVE, INPUT);
-    pinMode(BTN_GREEN, OUTPUT);
-    pinMode(BTN_RED, OUTPUT);
     set_up_button();
     if (!digitalRead(PWR_EN))
     {
-        _state = true;
+        current_pwr_state = STATE_ACTIVE;
+        _state = current_pwr_state;
+        if (!check_boot_sts())
+        {
+            _esp_manager.send_status(UART_PWR_WAKE, UART_STS_BOOTED, 0, 0);
+            _peripheral_manager.fast_actuator_control(true);
+        }
     }
+    //Check to see if user did not press the pwr button
     else if(digitalRead(PWR_EN))
     {
-        _state = false;
+        current_pwr_state = STATE_SHUTDOWN_CHRG;
+        enter_chrg_sleep(current_pwr_state);
+        _state = current_pwr_state;
     }
-    system_pwr_state_active =_state;
     
     __disable_irq();
     attachInterrupt(digitalPinToInterrupt(SLEEP_EN), buttonISR, CHANGE);
     __enable_irq();
 
+
 }
 
 void PowerStateManager::step()
 {
-    if (g_button_pressed && system_pwr_state_active)
+    //If button is not pressed enter shudown charge state
+    if (digitalRead(PWR_EN) && current_pwr_state == STATE_SLEEP_CHRG)
     {
+        enter_chrg_sleep(current_pwr_state);
+        current_pwr_state == STATE_SHUTDOWN_CHRG;
+        _state = current_pwr_state;
+        
+    }
+    if (current_pwr_state == STATE_SHUTDOWN_CHRG)
+    {
+        if (!digitalRead(PWR_EN))
+        {
+            current_pwr_state = STATE_ACTIVE;
+            _state = current_pwr_state;
+            enter_sd_to_wake();
+            return;
+        }
+    }
+
+    //If button is pressed and state is active or if soc is 0 
+    if (g_button_pressed && current_pwr_state == STATE_ACTIVE || _battery_manager.battery_soc == 0)
+    {
+        //If not charging go to lowest power mode
         g_button_pressed = false; // Reset button pressed state
-        system_pwr_state_active = false;
-        _state = system_pwr_state_active;
-        enter_sleep();
-        sleep_mode_set = true;
+        if (!_battery_manager.flag_charger_is_charging )
+        {  
+            current_pwr_state = STATE_SLEEP;
+            _state = current_pwr_state;
+            enter_sleep();
+            return;
+        }
+        else if (_battery_manager.flag_charger_is_charging)
+        {
+            enter_chrg_sleep(current_pwr_state);
+            current_pwr_state = STATE_SLEEP_CHRG;
+            _state = current_pwr_state;
+            return;
+        }
+    }
+    
+    //if button is pressed and state is in either sleep or sleep charge enter active state
+    else if(g_button_pressed && (current_pwr_state == STATE_SLEEP || current_pwr_state == STATE_SLEEP_CHRG))
+    {
+
+        g_button_pressed = false; // Reset button pressed state
+        enter_wake(current_pwr_state);
+        current_pwr_state = STATE_ACTIVE;
+        _state = current_pwr_state;
         return;
     }
 
-    else if(g_button_pressed && !system_pwr_state_active)
+    //if system is sleep and charger starts charging enter sleep charge state
+    if (current_pwr_state == STATE_SLEEP && _battery_manager.flag_charger_is_charging)
     {
-        sleep_mode_set = false;
-        system_pwr_state_active = true;
-        _state = system_pwr_state_active;
-        g_button_pressed = false; // Reset button pressed state
-        enter_wake();
+        
+        enter_chrg_sleep(current_pwr_state);
+        current_pwr_state = STATE_SLEEP_CHRG;
+        return;
+    }
+    //if ssytem is sleep charge state and charger is disconnected enter sleep mode
+    if (current_pwr_state == STATE_SLEEP_CHRG && !_battery_manager.flag_charger_is_charging)
+    {
+        current_pwr_state = STATE_SLEEP;
+        enter_sleep();
         return;
     }
 
@@ -98,6 +149,58 @@ bool PowerStateManager::check_boot_sts()
     //Esp will have this pin high when the system is booted
     if (digitalRead(ROBOT_ACTIVE)) return true;
     else return false;
+}
+
+void PowerStateManager::enter_sleep()
+{
+    // imu_b.imu_sleep_mode();
+    _peripheral_manager.peripheral_sleep_state();
+    _lightbar_manager.disableDMAC();
+    _esp_manager.send_status(UART_PWR_SLEEP,0, 0, 0); 
+
+}
+void PowerStateManager::enter_wake(system_pwr_state st)
+{
+    _peripheral_manager.peripheral_active_state();
+    if (st == STATE_SLEEP)
+    {
+        _lightbar_manager.enableDMAC();
+    }
+    _esp_manager.send_status(UART_PWR_WAKE,0, 0, 0);
+
+}
+void PowerStateManager::enter_chrg_sleep(system_pwr_state st)
+{
+    _peripheral_manager.peripheral_sd_state();
+
+    switch (st)
+    {
+        case STATE_SLEEP:
+            sleep_chrg_start_time = time_manager.get_elapsed_time_ms();
+            sleep_chrg_indication = true;
+            _lightbar_manager.enableDMAC();
+            break;
+        case STATE_SHUTDOWN_CHRG:
+            sleep_chrg_start_time = time_manager.get_elapsed_time_ms();
+            sleep_chrg_indication = true;
+            break;
+
+        case STATE_ACTIVE:
+            sleep_chrg_indication = false;
+            _lightbar_manager.Off();
+            break;
+
+        default:
+            break;
+    }          
+    _esp_manager.send_status(UART_STS_SD_CHRG,0, 0, 0);
+
+}
+
+void PowerStateManager::enter_sd_to_wake()
+{
+    _peripheral_manager.peripheral_active_state();
+     _esp_manager.send_status(UART_PWR_WAKE,0, 0, 0);
 }
 
 void PowerStateManager::set_up_button()
@@ -145,69 +248,62 @@ void PowerStateManager::enableTC1()
     while (TC1->COUNT8.SYNCBUSY.bit.ENABLE); // Wait for synchronization
 }
 
-void PowerStateManager::enter_sleep()
-{
-    imu_b.imu_sleep_mode();
-    _peripheral_manager.peripheral_sleep_state();
-    _lightbar_manager.disableDMAC();
-    _esp_manager.send_status(UART_PWR_SLEEP, 0, 0); 
-
-}
-void PowerStateManager::enter_wake()
-{
-    _peripheral_manager.peripheral_active_state();
-    _lightbar_manager.enableDMAC();
-    _esp_manager.send_status(UART_PWR_WAKE, 0, 0);
-    imu_b.imu_wake_up();
-    
-}
-
 void TC1_Handler() {                // gets called with FsMg frequency
 
   if (TC1->COUNT8.INTFLAG.bit.OVF == 1) 
   {
-    TC1->COUNT8.INTFLAG.reg = TC_INTFLAG_OVF;    
-    if (_state)
+    TC1->COUNT8.INTFLAG.reg = TC_INTFLAG_OVF;
+    switch (_state)
     {
-        TC1->COUNT8.CC[0].reg = 255; // Set the duty cycle for the green button
-        TC1->COUNT8.CC[1].reg = 5; // Set the duty cycle for the red button to 0
-        while (TC1->COUNT8.SYNCBUSY.bit.CC0 || TC1->COUNT8.SYNCBUSY.bit.CC1);
-    }
-    else if (!_state)
-    {
-        _fade_cnt += 1;
-        if (_fade_cnt < 4) return;
-        if(_fading_up)
-        {
-            if(_rled < SLEEP_PWM_BRIGHTNESS)
+        case STATE_ACTIVE:
+            TC1->COUNT8.CC[0].reg = 255; // Set the duty cycle for the green button
+            TC1->COUNT8.CC[1].reg = 5; // Set the duty cycle for the red button to 0
+            while (TC1->COUNT8.SYNCBUSY.bit.CC0 || TC1->COUNT8.SYNCBUSY.bit.CC1);
+            break;
+        case STATE_SLEEP:
+        case STATE_SLEEP_CHRG:
+            _fade_cnt += 1;
+            if (_fade_cnt < 8) return;
+            if(_fading_up)
             {
-                _rled += 1; // Increment the red LED duty cycle
+                if(_rled < SLEEP_PWM_BRIGHTNESS)
+                {
+                    _rled += 1; // Increment the red LED duty cycle
+                }
+                else
+                {
+                    _rled = SLEEP_PWM_BRIGHTNESS; // Ensure the red LED duty cycle does not exceed maximum brightness
+                    _fading_up = false; // Stop fading up when the maximum brightness is reached
+                }
+                _fade_cnt = 0;
             }
             else
             {
-                _rled = SLEEP_PWM_BRIGHTNESS; // Ensure the red LED duty cycle does not exceed maximum brightness
-                _fading_up = false; // Stop fading up when the maximum brightness is reached
+                if(_rled > 5)
+                {
+                    _rled -= 1; // Decrement the red LED duty cycle
+                }
+                else
+                {
+                    _rled = 5;
+                    _fading_up = true; // Start fading up when the minimum brightness is reached
+                }
+                _fade_cnt = 0;
             }
-             _fade_cnt = 0;
-        }
-        else
-        {
-            if(_rled > 5)
-            {
-                _rled -= 1; // Decrement the red LED duty cycle
-            }
-            else
-            {
-                _rled = 5;
-                _fading_up = true; // Start fading up when the minimum brightness is reached
-            }
-             _fade_cnt = 0;
-        }
-        
-        TC1->COUNT8.CC[1].reg = _rled; // Set the duty cycle for the green button
-        TC1->COUNT8.CC[0].reg = 5; // Set the duty cycle for the red button to 0
-        while (TC1->COUNT8.SYNCBUSY.bit.CC0 || TC1->COUNT8.SYNCBUSY.bit.CC1);
-    }
+            TC1->COUNT8.CC[1].reg = _rled; // Set the duty cycle for the green button
+            TC1->COUNT8.CC[0].reg = 5; // Set the duty cycle for the red button to 0
+            while (TC1->COUNT8.SYNCBUSY.bit.CC0 || TC1->COUNT8.SYNCBUSY.bit.CC1);
+            break;
+
+        case STATE_SHUTDOWN_CHRG:
+            TC1->COUNT8.CC[0].reg = 5; // Set the duty cycle for the green button
+            TC1->COUNT8.CC[1].reg = 5; // Set the duty cycle for the red button to 0
+            while (TC1->COUNT8.SYNCBUSY.bit.CC0 || TC1->COUNT8.SYNCBUSY.bit.CC1);
+            break;
+        default:
+            break;
+
+    }    
        
   }
 }

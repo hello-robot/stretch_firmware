@@ -1,19 +1,19 @@
 #include "UartManager.h"
 #include "CommProtocol.h"
 #include "PeripheralManager.h"
+#include "EspControl.h"
 
 UartManager uart_manager; // Using Serial1 for UART communication
 PeripheralManager peripheral_manager;
 
 VoltageStatus voltage_status;
 
-bool system_pwr_state_active = true;
+system_pwr_state current_pwr_state = STATE_ACTIVE;
 
 void setup_esp()
 {
     peripheral_manager.gpio_init();
     uart_manager.setup_uart();
-	
 }
 
 void process_pimu_requests()
@@ -23,21 +23,41 @@ void process_pimu_requests()
 	uint8_t n = 0;
 	if (uart_manager.receive_packet(rx_buf, n, sizeof(rx_buf)))
 	{
-		switch (rx_buf[0]) {
+		switch (rx_buf[0])
+		{
+			case UART_PWR_SLEEP:
+				current_pwr_state = STATE_SLEEP;
+				peripheral_manager.peripheral_sleep_state();
+				// Handle trigger command
+				break;
+			case UART_STS_SLEEP_CHRG:
+			case UART_STS_SD_CHRG:
+				current_pwr_state = STATE_SHUTDOWN_CHRG;
+				digitalWrite(PIN_ROBOT_ACTIVE, HIGH);
+				peripheral_manager.peripheral_sd_state();
+				// Handle trigger command
+				break;
+			case UART_PWR_WAKE:
+				current_pwr_state = STATE_ACTIVE;
+				digitalWrite(PIN_ROBOT_ACTIVE, HIGH);
+				peripheral_manager.peripheral_wakeup_state();
+				// Handle trigger command
+				break;
+			default:
+				break;
+		}
+		switch (rx_buf[1]) {
 			case UART_STS_VOLTAGE:
-				memcpy(&voltage_status, &rx_buf[1], sizeof(VoltageStatus));
+				memcpy(&voltage_status, &rx_buf[2], sizeof(VoltageStatus));
 				break;
 			case UART_STS_CURRENT:
 				// Handle current status
 				break;
 			case UART_STS_BOOTED:
 				//Can send packet back if needed
+				current_pwr_state = STATE_ACTIVE;
 				digitalWrite(PIN_ROBOT_ACTIVE, HIGH); // Indicate that the system is booted
-				break;
-			case UART_PWR_SLEEP:
-				system_pwr_state_active = false;
-				peripheral_manager.peripheral_sleep_state();
-				// Handle trigger command
+				peripheral_manager.peripheral_wakeup_state();
 				break;
 			default:
 				// Handle unknown command
@@ -48,7 +68,7 @@ void process_pimu_requests()
 
 void enter_wake()
 {
-	system_pwr_state_active = true;
+	current_pwr_state = STATE_ACTIVE;
 	peripheral_manager.peripheral_wakeup_state();
 }
 

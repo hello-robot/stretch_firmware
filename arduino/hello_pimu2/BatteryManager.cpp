@@ -21,9 +21,6 @@ void BatteryManager::step(float chrg_current, float adapter_v){
     get_currents(chrg_current);
     charging_state(adapter_v);
     battery_soc = get_battery_soc(voltage_battery, flag_charger_connected);
-
-
-
 }
 
 void BatteryManager::get_currents(float chrg_current) {
@@ -40,22 +37,43 @@ void BatteryManager::get_currents(float chrg_current) {
         current_charger = 0;
         current_battery = current_sys;
     }
-
 }
+
+
 
 void BatteryManager::charging_state(float adapter_v)
 {   
-    uint8_t cflag1 = digitalRead(CHARGER_CONNECTED);
-    uint8_t cflag2 = digitalRead(CHARGER_STATE);
-
-    if (adapter_v > 34 && !flag_charger_disabled)
+    if (adapter_v >= 34)
     {
-        flag_charger_connected = true;
-        
+        flag_charger_connected = true; //if the 36V charger input is present
     }
-    else
+    else if (adapter_v < 34)
     {
         flag_charger_connected = false;
+        //when adapter is disconnected default for charger to be on
+        charger_control(true);
+        _chrg_done = false;
+    }
+
+    //Check to see if charger is charging
+    if (flag_charger_connected && !_flag_charger_disabled)
+    {
+        flag_charger_is_charging = true;
+    }
+    else if (flag_charger_connected || !_flag_charger_disabled)
+    {
+        flag_charger_is_charging = false;
+    }
+
+    if (voltage_battery >= 28.8 && flag_charger_is_charging && !_chrg_done)
+    {
+        charger_control(false);
+        _chrg_done = true;
+    }
+    else if (voltage_battery <= 26.0 && _chrg_done)
+    {
+        charger_control(true);
+        _chrg_done = false;
     }
 
 }
@@ -65,12 +83,12 @@ void BatteryManager::charger_control(bool en)
     if (en)
     {
         digitalWrite(CHARGER_DISABLE, LOW);
-        flag_charger_disabled = false;
+        _flag_charger_disabled = false;
     }
     else
     {
         digitalWrite(CHARGER_DISABLE, HIGH);
-        flag_charger_disabled = true;
+        _flag_charger_disabled = true;
     }
 }
 
@@ -78,28 +96,31 @@ int BatteryManager::get_battery_soc(float voltage, bool charger_connected) {
     int new_soc = current_soc;
 
     // Allow downward SoC transitions
-    if (voltage <= 23.3)
+    if (voltage <= 23)
+        new_soc = 0;
+    if (voltage <= 24.0 && current_soc > 10)
         new_soc = 10;
-    else if (voltage <= 23.5 && current_soc > 20)
+    if (voltage <= 24.5 && current_soc > 20)
         new_soc = 20;
-    else if (voltage <= 24.5 && current_soc > 25)
+    if (voltage <= 24.8 && current_soc > 25)
         new_soc = 25;
-    else if (voltage <= 25.5 && current_soc > 50)
+    if (voltage <= 25.1 && current_soc > 50)
         new_soc = 50;
-    else if (voltage <= 26.5 && current_soc > 75)
+    if (voltage <= 25.3 && current_soc > 75)
         new_soc = 75;
 
+
     // Allow upward SoC transitions only if charging
-    if (charger_connected) {
-        if (voltage > 27.6)
+    if (flag_charger_is_charging) {
+        if (voltage > 28.6)
             new_soc = 100;
-        else if (voltage >= 26.5 && new_soc < 75)
+        else if (voltage >= 27.5 && new_soc < 75)
             new_soc = 75;
-        else if (voltage >= 25.5 && new_soc < 50)
+        else if (voltage >= 26.5 && new_soc < 50)
             new_soc = 50;
-        else if (voltage >= 24.5 && new_soc < 25)
+        else if (voltage >= 25.5 && new_soc < 25)
             new_soc = 25;
-        else if (voltage >= 23.5 && new_soc < 20)
+        else if (voltage >= 24.5 && new_soc < 20)
             new_soc = 20;
         else if (voltage >= 23.0 && new_soc < 10)
             new_soc = 10;

@@ -65,11 +65,12 @@ bool EspManager::receive_packet(uint8_t *data, uint8_t &n, int cobbs_frame_size)
 	return false;
 }
 
-void EspManager::send_status(uint8_t sts_id, const void* data, size_t data_size)
+void EspManager::send_status(uint8_t pwr_sts, uint8_t sts_id, const void* data, size_t data_size)
 {
 	uint8_t buf[MAX_UART_PACKET_SIZE];
 	uint8_t idx = 0;
-	buf[idx++] = sts_id; // First byte is the status ID
+	buf[idx++] = pwr_sts; //First byte pwr sts id
+	buf[idx++] = sts_id; // Second byte is the status ID
 	if (data && data_size > 0)
 	{
 		memcpy(&buf[idx], data, data_size);
