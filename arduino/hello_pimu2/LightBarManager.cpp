@@ -21,6 +21,7 @@
 
 
 #define PX_GREEN 0,64,0
+#define PX_GREEN_SLEEP_CHG 0,20,0
 #define PX_YELLOW_GREEN 32,64,0
 #define PX_YELLOW 64,64,0
 #define PX_ORANGE 64,32,0 
@@ -159,11 +160,7 @@ void LightBarManager::Battery_Gauge(int soc,bool runstop_on, bool runstop_led_on
       }
       if (soc == 10)
       {
-          pixels.setPixelColor(0, pixels.Color(PX_OFF));
-          pixels.setPixelColor(1, pixels.Color(PX_OFF));
-          pixels.setPixelColor(2, pixels.Color(PX_OFF));
-          pixels.setPixelColor(3, pixels.Color(PX_RED));
-          pixels.show();
+        low_battery_fault();
       }
     }
     if (charger_on && !runstop_on)
@@ -178,18 +175,19 @@ void LightBarManager::Battery_Gauge(int soc,bool runstop_on, bool runstop_led_on
   }
 }
 
-void LightBarManager::sleep_chrg(unsigned long st)
+void LightBarManager::sleep_chrg()
 {
-  unsigned long t = time_manager.get_elapsed_time_ms();
-  if ((t - st) <= 5000)
-  {
-    ColoredScanUpdate(pixels.Color(PX_OFF),pixels.Color(PX_GREEN),1000);
-  }
-  else
-  {
-    pixels.clear();
+    ColoredScanUpdate(pixels.Color(PX_OFF),pixels.Color(PX_GREEN_SLEEP_CHG),1000);
+}
+void LightBarManager::low_battery_fault()
+{
+
+    pixels.setPixelColor(0, pixels.Color(PX_OFF));
+    pixels.setPixelColor(1, pixels.Color(PX_OFF));
+    pixels.setPixelColor(2, pixels.Color(PX_OFF));
+    pixels.setPixelColor(3, pixels.Color(PX_RED));
     pixels.show();
-  }
+  
 }
 void LightBarManager::ColoredBatteryLevel(float v_bat, float v_bat_min, float v_bat_max,bool runstop_on, bool runstop_led_on,bool charger_on)
 {

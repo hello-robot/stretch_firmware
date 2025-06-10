@@ -29,7 +29,8 @@ class LightBarManager {
     void Off();
     void disableDMAC();
     void enableDMAC();
-    void sleep_chrg(unsigned long st);
+    void sleep_chrg();
+    void low_battery_fault();
     
   private:
     void ColorSet(uint32_t color);

@@ -58,28 +58,30 @@ void PowerStateManager::power_state_setup()
             _peripheral_manager.fast_actuator_control(true);
         }
     }
-    //Check to see if user did not press the pwr button
+    //Check to see if user did not press the pwr button go into shutdown charge mode
     else if(digitalRead(PWR_EN))
     {
+
         current_pwr_state = STATE_SHUTDOWN_CHRG;
         enter_chrg_sleep(current_pwr_state);
         _state = current_pwr_state;
+        // _lightbar_manager.disableDMAC();
     }
-    
+
     __disable_irq();
     attachInterrupt(digitalPinToInterrupt(SLEEP_EN), buttonISR, CHANGE);
-    __enable_irq();
-
-
+      __enable_irq();
+    
 }
 
 void PowerStateManager::step()
 {
     //If button is not pressed enter shudown charge state
-    if (digitalRead(PWR_EN) && current_pwr_state == STATE_SLEEP_CHRG)
+    if (digitalRead(PWR_EN) && current_pwr_state != STATE_SHUTDOWN_CHRG && current_pwr_state != STATE_USER_FEEDBACK)
     {
+        g_button_pressed = false;
         enter_chrg_sleep(current_pwr_state);
-        current_pwr_state == STATE_SHUTDOWN_CHRG;
+        current_pwr_state = STATE_SHUTDOWN_CHRG;
         _state = current_pwr_state;
         
     }
@@ -87,9 +89,11 @@ void PowerStateManager::step()
     {
         if (!digitalRead(PWR_EN))
         {
+            g_button_pressed = false;
             current_pwr_state = STATE_ACTIVE;
             _state = current_pwr_state;
             enter_sd_to_wake();
+            light_bar_indication = false;
             return;
         }
     }
@@ -118,20 +122,30 @@ void PowerStateManager::step()
     //if button is pressed and state is in either sleep or sleep charge enter active state
     else if(g_button_pressed && (current_pwr_state == STATE_SLEEP || current_pwr_state == STATE_SLEEP_CHRG))
     {
-
         g_button_pressed = false; // Reset button pressed state
-        enter_wake(current_pwr_state);
-        current_pwr_state = STATE_ACTIVE;
-        _state = current_pwr_state;
-        return;
+        if (!_battery_manager.battery_soc == 0)
+        {
+            enter_wake(current_pwr_state);
+            current_pwr_state = STATE_ACTIVE;
+            _state = current_pwr_state;
+            return;
+        }
+        else if (_battery_manager.battery_soc == 0){
+            light_bar_indication = true;
+            light_bar_st_time = time_manager.get_elapsed_time_ms();
+            _lightbar_manager.enableDMAC();
+            current_pwr_state = STATE_USER_FEEDBACK;
+            feedback_next_pwr_state = STATE_SLEEP;
+            return;
+        }
+
     }
 
     //if system is sleep and charger starts charging enter sleep charge state
     if (current_pwr_state == STATE_SLEEP && _battery_manager.flag_charger_is_charging)
     {
-        
         enter_chrg_sleep(current_pwr_state);
-        current_pwr_state = STATE_SLEEP_CHRG;
+        // current_pwr_state = STATE_SLEEP_CHRG;
         return;
     }
     //if ssytem is sleep charge state and charger is disconnected enter sleep mode
@@ -141,7 +155,32 @@ void PowerStateManager::step()
         enter_sleep();
         return;
     }
-
+    
+    if (current_pwr_state == STATE_USER_FEEDBACK){
+        if (time_manager.get_elapsed_time_ms() - light_bar_st_time >= 3000)
+        {
+            current_pwr_state = feedback_next_pwr_state;
+            _lightbar_manager.Off();
+            _lightbar_manager.disableDMAC();
+            light_bar_indication = false;
+        }
+        else
+        {
+            if (light_bar_indication && (feedback_next_pwr_state == STATE_SLEEP_CHRG || feedback_next_pwr_state == STATE_SHUTDOWN_CHRG))
+            {
+                _lightbar_manager.sleep_chrg();
+                _esp_manager.send_status(UART_STS_SD_CHRG,0, 0, 0);
+            }
+            if (light_bar_indication && feedback_next_pwr_state == STATE_SLEEP)
+            {
+                //Does not work
+                _lightbar_manager.low_battery_fault();
+            }
+            
+        }
+        return;
+        
+    }
 }
 
 bool PowerStateManager::check_boot_sts()
@@ -162,43 +201,49 @@ void PowerStateManager::enter_sleep()
 void PowerStateManager::enter_wake(system_pwr_state st)
 {
     _peripheral_manager.peripheral_active_state();
-    if (st == STATE_SLEEP)
-    {
-        _lightbar_manager.enableDMAC();
-    }
+    _lightbar_manager.enableDMAC();
     _esp_manager.send_status(UART_PWR_WAKE,0, 0, 0);
 
 }
 void PowerStateManager::enter_chrg_sleep(system_pwr_state st)
 {
     _peripheral_manager.peripheral_sd_state();
+    _esp_manager.send_status(UART_STS_SD_CHRG,0, 0, 0);
 
     switch (st)
     {
         case STATE_SLEEP:
-            sleep_chrg_start_time = time_manager.get_elapsed_time_ms();
-            sleep_chrg_indication = true;
+            current_pwr_state = STATE_USER_FEEDBACK;
+            light_bar_st_time = time_manager.get_elapsed_time_ms();
+            light_bar_indication = true;
+            feedback_next_pwr_state = STATE_SLEEP_CHRG;
             _lightbar_manager.enableDMAC();
             break;
+
         case STATE_SHUTDOWN_CHRG:
-            sleep_chrg_start_time = time_manager.get_elapsed_time_ms();
-            sleep_chrg_indication = true;
+            current_pwr_state = STATE_USER_FEEDBACK;
+            light_bar_st_time = time_manager.get_elapsed_time_ms();
+            light_bar_indication = true;
+            feedback_next_pwr_state = STATE_SHUTDOWN_CHRG;
             break;
 
+        case STATE_SLEEP_CHRG:
         case STATE_ACTIVE:
-            sleep_chrg_indication = false;
+            light_bar_indication = false;
             _lightbar_manager.Off();
+             _lightbar_manager.disableDMAC();
             break;
 
         default:
             break;
     }          
-    _esp_manager.send_status(UART_STS_SD_CHRG,0, 0, 0);
+    
 
 }
 
 void PowerStateManager::enter_sd_to_wake()
 {
+    _lightbar_manager.enableDMAC();
     _peripheral_manager.peripheral_active_state();
      _esp_manager.send_status(UART_PWR_WAKE,0, 0, 0);
 }

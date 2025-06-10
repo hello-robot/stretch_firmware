@@ -24,7 +24,8 @@ typedef enum{
     STATE_ACTIVE,
     STATE_SLEEP,
     STATE_SHUTDOWN_CHRG,
-    STATE_SLEEP_CHRG
+    STATE_SLEEP_CHRG,
+    STATE_USER_FEEDBACK
 }system_pwr_state;
 
 
@@ -41,11 +42,13 @@ class PowerStateManager
     void power_state_setup();
     void enter_chrg_sleep(system_pwr_state st);
     void enter_sd_to_wake();
-    unsigned long sleep_chrg_start_time = 0;
-    bool sleep_chrg_indication = false;
+    unsigned long light_bar_st_time = 0;
+    bool light_bar_indication = false;
+    
 
     void enableTC1();
     system_pwr_state current_pwr_state;
+    system_pwr_state feedback_next_pwr_state;
     volatile bool sleep_mode_set = false;
 
     private:

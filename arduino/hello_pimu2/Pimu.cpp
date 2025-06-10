@@ -133,6 +133,7 @@ void update_cliff_monitor();
 void update_status();
 void toggle_led(int rate_ms);
 void shutdown_state_step();
+void sleep_state_step();
 void update_esp(uint8_t state);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -265,11 +266,13 @@ void shutdown_state_step()
 {
   analog_manager.step(&stat, &cfg);
   battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
-  if (power_state_manager.sleep_chrg_indication)
-  {
-    light_bar_manager.sleep_chrg(power_state_manager.sleep_chrg_start_time);
-  }
   update_esp(UART_STS_SD_CHRG);
+}
+
+void sleep_state_step()
+{
+  analog_manager.step(&stat, &cfg);
+  battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -692,8 +695,7 @@ void TC5_Handler() {
         break;
       
       case STATE_SLEEP:
-        analog_manager.step(&stat, &cfg);
-        battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
+        sleep_state_step();
         break;
 
       case STATE_SHUTDOWN_CHRG:
@@ -704,6 +706,7 @@ void TC5_Handler() {
       default:
         break;
     }
+    
   }
 }
 
@@ -770,8 +773,6 @@ void setupTimer4_and_5() {  // configure the controller interrupt
 
   NVIC_SetPriority(TC5_IRQn, 3);              //Set interrupt priority
   NVIC_SetPriority(TC4_IRQn, 2);              //TC4 pulse generator highest priority so timing is correct
-
-
 
   // Enable TC
   enableTCInterrupts();
