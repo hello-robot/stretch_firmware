@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////
 //Version History
 // Protocol 0: Initial production release for S4
-#define FIRMWARE_VERSION_HR "Stepper2.v0.0.1p6"
+#define FIRMWARE_VERSION_HR "Stepper2.v0.0.1p7"
 
 /////////////////////////////////////////////////////////////////
 
@@ -153,6 +153,8 @@ struct __attribute__ ((packed)) Gains{
   // float voltage_LPF; //Low pass filter roll-off for voltage (Hz)
   uint8_t toff_setting;
   uint8_t decay_setting;
+  uint16_t drv8262_min_vref;
+  float k_calibration_step;
 
 };
 
