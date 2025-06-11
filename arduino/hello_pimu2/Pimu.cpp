@@ -563,6 +563,7 @@ void update_esp(uint8_t state)
   esp_voltage_status.voltage_20v0 = analog_manager.voltage_20v0;
   esp_manager.send_status(state, UART_STS_VOLTAGE, &esp_voltage_status, sizeof(Esp_VoltageStatus));
 }
+
 ////////////////////////////
 
 void update_board_reset()

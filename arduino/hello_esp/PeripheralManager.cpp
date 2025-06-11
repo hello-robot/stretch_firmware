@@ -19,6 +19,7 @@ void PeripheralManager::gpio_init() {
     pinMode(PIN_BARREL_FAULT, INPUT);
     pinMode(PIN_ADAPTER_FAULT, INPUT);
 
+
     
 }
 
@@ -63,6 +64,8 @@ void PeripheralManager::peripheral_sd_state() {
     digitalWrite(PIN_DCM_MODE_EN, HIGH);
     digitalWrite(PIN_ESP_STS_LED, LOW);
     digitalWrite(PIN_RPI_PWR_DISABLE, HIGH);
+    digitalWrite(PIN_AUX_20VO_EN, LOW);
+    
 }
 
 void PeripheralManager::peripheral_wakeup_state() {
@@ -70,4 +73,5 @@ void PeripheralManager::peripheral_wakeup_state() {
     digitalWrite(PIN_12V0_DISABLE, LOW);
     digitalWrite(PIN_DCM_MODE_EN, LOW);
     digitalWrite(PIN_RPI_PWR_DISABLE, LOW);
+    digitalWrite(PIN_AUX_20VO_EN, HIGH);
 }
