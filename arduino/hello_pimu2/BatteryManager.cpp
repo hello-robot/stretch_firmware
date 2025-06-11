@@ -25,13 +25,13 @@ void BatteryManager::step(float chrg_current, float adapter_v){
 
 void BatteryManager::get_currents(float chrg_current) {
     float c = ina228.read_current();
-    if (c < 0 && flag_charger_connected)
+    if (flag_charger_is_charging)
     {
         current_sys = chrg_current + c;
         current_battery = c;
         current_charger = chrg_current;
     }
-    else if (c > 0 && !flag_charger_connected)
+    else if (!flag_charger_is_charging)
     {
         current_sys = c;
         current_charger = 0;
@@ -43,52 +43,46 @@ void BatteryManager::get_currents(float chrg_current) {
 
 void BatteryManager::charging_state(float adapter_v)
 {   
-    if (adapter_v >= 34)
+    if (adapter_v >= 34 && _flag_charger_enabled && !digitalRead(CHARGER_STATE))
     {
         flag_charger_connected = true; //if the 36V charger input is present
+        flag_charger_is_charging = true;
     }
     else if (adapter_v < 34)
     {
         flag_charger_connected = false;
+        flag_charger_is_charging = false;
         //when adapter is disconnected default for charger to be on
-        charger_control(true);
+        charger_enable(true);
         _chrg_done = false;
     }
 
-    //Check to see if charger is charging
-    if (flag_charger_connected && !_flag_charger_disabled)
-    {
-        flag_charger_is_charging = true;
-    }
-    else if (flag_charger_connected || !_flag_charger_disabled)
-    {
-        flag_charger_is_charging = false;
-    }
 
-    if (voltage_battery >= 28.8 && flag_charger_is_charging && !_chrg_done)
+    if (voltage_battery >= 28.8 && flag_charger_is_charging && !_chrg_done && current_battery >= -0.1)
     {
-        charger_control(false);
+        charger_enable(false);
         _chrg_done = true;
     }
     else if (voltage_battery <= 26.0 && _chrg_done)
     {
-        charger_control(true);
+        charger_enable(true);
         _chrg_done = false;
     }
 
 }
 
-void BatteryManager::charger_control(bool en)
+void BatteryManager::charger_enable(bool en)
 {
     if (en)
     {
         digitalWrite(CHARGER_DISABLE, LOW);
-        _flag_charger_disabled = false;
+        _flag_charger_enabled = true;
     }
     else
     {
         digitalWrite(CHARGER_DISABLE, HIGH);
-        _flag_charger_disabled = true;
+        _flag_charger_enabled = false;
+        flag_charger_is_charging = false;
     }
 }
 

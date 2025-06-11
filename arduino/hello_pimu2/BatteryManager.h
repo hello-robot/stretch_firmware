@@ -13,7 +13,7 @@ public:
     void step(float chrg_current,float adapter_v);
     void get_currents(float chrg_current);
     void charging_state(float adapter_v);
-    void charger_control(bool en);
+    void charger_enable(bool en);
     int get_battery_soc(float voltage, bool charger_connected);
 
     float voltage_battery;
@@ -28,7 +28,7 @@ public:
     int current_soc = 100;
 
     private:
-        bool _flag_charger_disabled = false;
+        bool _flag_charger_enabled = true;
         bool _chrg_done = false;
     
 

@@ -451,11 +451,11 @@ void handle_trigger()
     }
     if (trg.data & TRIGGER_CHARGER_ON)
     {
-      battery_manager.charger_control(true);
+      battery_manager.charger_enable(true);
     }
     if (trg.data & TRIGGER_CHARGER_OFF)
     {
-      battery_manager.charger_control(false);
+      battery_manager.charger_enable(false);
     }
     if (trg.data & TRIGGER_ESP_FW_UPDATE)
     {
