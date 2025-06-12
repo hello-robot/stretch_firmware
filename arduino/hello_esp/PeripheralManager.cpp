@@ -19,6 +19,8 @@ void PeripheralManager::gpio_init() {
     pinMode(PIN_BARREL_FAULT, INPUT);
     pinMode(PIN_ADAPTER_FAULT, INPUT);
 
+    enable_aux_20v0(false);
+
 
     
 }
@@ -56,6 +58,7 @@ void PeripheralManager::peripheral_sleep_state() {
     digitalWrite(PIN_DCM_MODE_EN, HIGH);
     digitalWrite(PIN_ESP_STS_LED, LOW);
     digitalWrite(PIN_RPI_PWR_DISABLE, HIGH);
+    // enable_aux_20v0(false);
 }
 
 void PeripheralManager::peripheral_sd_state() {
@@ -64,7 +67,7 @@ void PeripheralManager::peripheral_sd_state() {
     digitalWrite(PIN_DCM_MODE_EN, HIGH);
     digitalWrite(PIN_ESP_STS_LED, LOW);
     digitalWrite(PIN_RPI_PWR_DISABLE, HIGH);
-    digitalWrite(PIN_AUX_20VO_EN, LOW);
+    // enable_aux_20v0(false);
     
 }
 
@@ -73,5 +76,5 @@ void PeripheralManager::peripheral_wakeup_state() {
     digitalWrite(PIN_12V0_DISABLE, LOW);
     digitalWrite(PIN_DCM_MODE_EN, LOW);
     digitalWrite(PIN_RPI_PWR_DISABLE, LOW);
-    digitalWrite(PIN_AUX_20VO_EN, HIGH);
+    // enable_aux_20v0(true);
 }
