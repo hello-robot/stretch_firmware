@@ -19,6 +19,7 @@ class PeripheralManager
     void peripheral_sleep_state();
     void peripheral_active_state();
     void peripheral_sd_state();
+    void set_actuator_active();
 };
 
 #endif

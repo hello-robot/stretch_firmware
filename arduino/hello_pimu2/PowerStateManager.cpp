@@ -59,6 +59,10 @@ void PowerStateManager::power_state_setup()
             _esp_manager.send_status(UART_PWR_WAKE, UART_STS_BOOTED, 0, 0);
             _peripheral_manager.fast_actuator_control(true);
         }
+        else{
+            //Set pins high since we are in active mode
+            _peripheral_manager.set_actuator_active();
+        }
     }
     //Check to see if user did not press the pwr button go into shutdown charge mode
     else if(digitalRead(PWR_EN))
@@ -102,7 +106,7 @@ void PowerStateManager::step()
 
     if (pm_bms_flag.bms_flag == RS485 || pm_bms_flag.bms_flag == I2C)
     {
-        if(_battery_manager.battery_soc == 0 && current_pwr_state)
+        if(_battery_manager.battery_soc == 0 && current_pwr_state == STATE_ACTIVE && _battery_manager.bms_ready)
         {
             current_pwr_state = STATE_SLEEP;
             _state = current_pwr_state;

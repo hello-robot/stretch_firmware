@@ -227,14 +227,18 @@ void setupPimu() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void stepPimuController()
 {
-  
+  digitalWrite(IMU_RESET, HIGH);
   cycle_cnt++;
   toggle_led(500);
   runstop_manager.step(&cfg);
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
   battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
-  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, battery_manager.flag_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.battery_soc);  
+  if (battery_manager.bms_ready)
+  {
+    light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, battery_manager.flag_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.battery_soc);
+    update_voltage_monitor();  
+  }
   update_fan();
   // update_imu();
   update_board_reset();
@@ -242,7 +246,7 @@ void stepPimuController()
   startup_cnt=max(0,startup_cnt-1);
   if(startup_cnt==0)
   {
-    update_voltage_monitor();
+    // update_voltage_monitor();
     // update_current_monitor();
     update_tilt_monitor();
     update_cliff_monitor();
@@ -259,6 +263,7 @@ void stepPimuController()
 
   update_status();
   update_esp(UART_PWR_WAKE);
+  digitalWrite(IMU_RESET, LOW);
 }
 
 void shutdown_state_step()
@@ -617,7 +622,11 @@ void update_status()
   stat.state = trace_manager.trace_on ?     stat.state | STATE_IS_TRACE_ON: stat.state;
   stat.state= battery_manager.flag_charger_is_charging ? stat.state|STATE_IS_CHARGER_CHARGING : stat.state;
   stat.over_tilt_type = state_over_tilt_type;
+
   stat.current_battery = battery_manager.current_battery;
+  stat.battery_soc = battery_manager.battery_soc;
+  stat.battery_soh = battery_manager.battery_soh;
+  
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
   if(TRACE_TYPE==TRACE_TYPE_DEBUG)

@@ -13,6 +13,16 @@ void PeripheralManager::fast_actuator_control(bool en)
   digitalWrite(LATCH_CTRL, LOW);
 }
 
+void PeripheralManager::set_actuator_active()
+{
+    digitalWrite(LIFT_EN, HIGH);
+    digitalWrite(ARM_EN, HIGH);
+    digitalWrite(OMNI_0_EN, HIGH);
+    digitalWrite(OMNI_1_EN, HIGH);
+    digitalWrite(OMNI_2_EN, HIGH);
+    digitalWrite(EOA_EN, HIGH);
+}
+
 // void PeripheralManager::setupPeripheralManager()
 // {
 
@@ -63,8 +73,9 @@ void PeripheralManager::rpc_actuator_control(uint8_t actuator, uint8_t enable)
     digitalWrite(EOA_EN, enable);
     break;
   
-  case ALL:
-    fast_actuator_control(enable);
+  // case ALL:
+  //   fast_actuator_control(enable);
+  //   break;
 
   default:
     break;

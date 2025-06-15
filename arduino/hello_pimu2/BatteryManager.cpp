@@ -63,12 +63,12 @@ void BatteryManager::get_currents(float chrg_current) {
     {
         current_sys = chrg_current + c;
         current_battery = c;
-        current_charger = chrg_current;
+        // current_charger = chrg_current;
     }
     else if (!flag_charger_is_charging)
     {
         current_sys = c;
-        current_charger = 0;
+        // current_charger = 0;
         current_battery = current_sys;
     }
 }
@@ -177,15 +177,15 @@ int BatteryManager::get_battery_soc(float voltage, bool charger_connected) {
 
 void BatteryManager::_bms_step(float charging_current)
 {
-    // unsigned long t = time_manager.get_elapsed_time_ms();
-    const uint32_t t = micros();
+    unsigned long t = time_manager.get_elapsed_time_ms();
+    // const uint32_t t = micros();
     switch (bms_state)
     {
         case BMS_START:
-        if (t - _bms_last_sample_time >= 1000000)
+        if (t - _bms_last_sample_time >= 1000)
         {
             digitalWrite(PIN_TX_EN, HIGH);
-            _send_bms_read_packet(0x00, 0x0A);
+            _send_bms_read_packet(BMS_VOLTAGE_ADDR, 0x11);
             response_start_time = t;
             rx_len = 0;
             bms_state = BMS_TX_IDLE;
@@ -228,6 +228,7 @@ void BatteryManager::_bms_step(float charging_current)
         if (_validate_crc(_rx_buffer, rx_len))
         {
             _get_bms_data(_rx_buffer, charging_current);
+            bms_ready = true;
         }
         bms_state = BMS_START;
         _bms_last_sample_time = t;
@@ -266,8 +267,39 @@ void BatteryManager::_get_bms_data(uint8_t *buf, float charging_current)
 {
     voltage_battery = ((buf[3] << 8) | buf[4]) * 0.01f;
     current_battery = -((int16_t)((buf[5] << 8) | buf[6])) * 0.1f;
+    battery_soh = buf[15];
     battery_soc = buf[16];
-    SerialUSB.println(battery_soc);
+    battery_cycles = (buf[17] << 8 | buf[18]);
+    battery_cell_temp_1 = (int8_t)buf[19];
+    battery_cell_temp_2 = (int8_t)buf[20];
+    battery_cell_temp_3 = (int8_t)buf[21];
+    battery_ambient_temp = (int8_t)buf[22];
+    battery_mosfet_temp = (int8_t)buf[23];
+    chrg_current_limit_mos_state = (buf[34] & CHARG_CUR_LIM_STATE_MSK) >> CHARG_CUR_LIM_STATE_POS;
+    pre_dischargin_mos_state = (buf[34] & PRE_DISCHARGE_STATE_MSK) >> PRE_DISCHARGE_STATE_POS;
+    discharging_mos_state = (buf[35] & DISCHARGE_MOS_STATE_MSK) >> DISCHARGE_MOS_STATE_POS;
+    charging_mos_status = (buf[35] & CHARG_MOS_STATE_MSK) >> CHARG_MOS_STATE_POS;
+    soc_led_0 = (buf[36] & SOC_LED_0_MSK) >> SOC_LED_0_POS;
+    soc_led_1 = (buf[36] & SOC_LED_1_MSK) >> SOC_LED_1_POS;
+    soc_led_2 = (buf[36] & SOC_LED_2_MSK) >> SOC_LED_2_POS;
+    soc_led_3 = (buf[36] & SOC_LED_3_MSK) >> SOC_LED_3_POS;
+    alarm_led = (buf[36] & ALARM_LED_MSK) >> ALARM_LED_POS;
+
+    // SerialUSB.print("Current: ");
+    // SerialUSB.print(current_battery);
+    // SerialUSB.print(" Voltage: ");
+    // SerialUSB.print(voltage_battery);
+    // SerialUSB.printf(" SOC: %d ", battery_soc);
+    // SerialUSB.printf("Mos temp: %d ", battery_mosfet_temp);
+    // SerialUSB.printf("Charg Fet Status: %d ", chrg_current_limit_mos_state);
+    // SerialUSB.printf("Discharg Fet Status: %d ", discharging_mos_state);
+    // SerialUSB.printf("SOC LED 0: %d ", soc_led_0);
+    // SerialUSB.printf("SOC LED 1: %d ", soc_led_1);
+    // SerialUSB.printf("SOC LED 2: %d ", soc_led_2);
+    // SerialUSB.printf("SOC LED 3: %d ", soc_led_3);
+    // SerialUSB.printf("ALARM LED: %d\n", alarm_led);
+
+
     //Discharging
     if (current_battery < 0)
     {

@@ -35,7 +35,7 @@
 // Version 0.6.2: added interrupts for imu data, added writing to system orientation record for IMU orientation to match older robots
 // Version 0.6.3: incorporting charging detection class
 // Version 0.7.0: added is_charger_charging state to pimu status
-#define FIRMWARE_VERSION "Pimu.v0.8.0p6"
+#define FIRMWARE_VERSION "Pimu.v0.0.0p7"
 
 #define FS 1000 //Loop rate in Hz for TC5
 
@@ -223,6 +223,8 @@ struct __attribute__ ((packed)) Pimu_Status{
   float current_charge;
   uint8_t over_tilt_type;
   float current_battery;
+  uint8_t battery_soc;
+  uint8_t battery_soh;
 
 };
 

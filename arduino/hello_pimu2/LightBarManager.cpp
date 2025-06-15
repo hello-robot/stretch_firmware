@@ -23,7 +23,7 @@
 #define PX_GREEN 0,64,0
 #define PX_GREEN_SLEEP_CHG 0,20,0
 #define PX_YELLOW_GREEN 32,64,0
-#define PX_YELLOW 64,64,0
+#define PX_YELLOW 110,30,0
 #define PX_ORANGE 64,32,0 
 #define PX_RED 64,0,0
 
@@ -69,7 +69,7 @@ class SlewPixel
     bf=Blue(color_fg);
     bb=Blue(color_bg);
     pct=init_pct;
-    d_pct = (10/duration_ms)/(p_max-p_min);
+    d_pct = (1/duration_ms)/(p_max-p_min);
     pct_min=p_min;
     pct_max=p_max;
     SetPct(init_pct);
@@ -123,58 +123,163 @@ LightBarManager::LightBarManager()
 {
   lightBar_init=false;
 }
-void LightBarManager::Battery_Gauge(uint8_t soc,bool runstop_on, bool runstop_led_on,bool charger_on)
+void LightBarManager::Battery_Gauge(uint8_t soc,bool runstop_on, bool runstop_led_on, bool charger_on)
 {
-    if (soc > 75)
+  if (runstop_led_on || !runstop_on)
+  {
+    if (!charger_on || runstop_on)
     {
-        pixels.setPixelColor(0, pixels.Color(PX_GREEN));
-        pixels.setPixelColor(1, pixels.Color(PX_GREEN));
-        pixels.setPixelColor(2, pixels.Color(PX_GREEN));
-        pixels.setPixelColor(3, pixels.Color(PX_GREEN));
-        pixels.show();
-    }
-    if (soc > 50 && soc <= 75)
-    {
-        pixels.setPixelColor(0, pixels.Color(PX_OFF));
-        pixels.setPixelColor(1, pixels.Color(PX_GREEN));
-        pixels.setPixelColor(2, pixels.Color(PX_GREEN));
-        pixels.setPixelColor(3, pixels.Color(PX_GREEN));
-        pixels.show();
-    }
-    if (soc > 25 && soc <= 50)
-    {
-        pixels.setPixelColor(0, pixels.Color(PX_OFF));
-        pixels.setPixelColor(1, pixels.Color(PX_OFF));
-        pixels.setPixelColor(2, pixels.Color(PX_GREEN));
-        pixels.setPixelColor(3, pixels.Color(PX_GREEN));
-        pixels.show();
-    }
-    if (soc > 20 && soc <= 25)
-    {
-        pixels.setPixelColor(0, pixels.Color(PX_OFF));
-        pixels.setPixelColor(1, pixels.Color(PX_OFF));
-        pixels.setPixelColor(2, pixels.Color(PX_OFF));
-        pixels.setPixelColor(3, pixels.Color(PX_GREEN));
-        pixels.show();
-    }
-    if (soc > 10 && soc <= 20)
-    {
-        pixels.setPixelColor(0, pixels.Color(PX_OFF));
-        pixels.setPixelColor(1, pixels.Color(PX_OFF));
-        pixels.setPixelColor(2, pixels.Color(PX_OFF));
-        pixels.setPixelColor(3, pixels.Color(PX_YELLOW));
-        pixels.show();
-    }
-    if (soc <= 10)
-    {
-        pixels.setPixelColor(0, pixels.Color(PX_OFF));
-        pixels.setPixelColor(1, pixels.Color(PX_OFF));
-        pixels.setPixelColor(2, pixels.Color(PX_OFF));
-        pixels.setPixelColor(3, pixels.Color(PX_RED));
-        pixels.show();
-    }
+      if (soc > 75)
+      {
+          pixels.setPixelColor(0, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(1, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+          pixels.show();
+      }
+      if (soc > 50 && soc <= 75)
+      {
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+          pixels.show();
+      }
+      if (soc > 25 && soc <= 50)
+      {
+
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_OFF));
+          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+          pixels.show();
+      }
+      if (soc > 20 && soc <= 25)
+      {
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_OFF));
+          pixels.setPixelColor(2, pixels.Color(PX_OFF));
+          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+          pixels.show();
 
 
+      }
+      if (soc > 10 && soc <= 20)
+      {
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_OFF));
+          pixels.setPixelColor(2, pixels.Color(PX_OFF));
+          pixels.setPixelColor(3, pixels.Color(PX_YELLOW));
+          pixels.show();
+      }
+      if (soc <= 10)
+      {
+          pixels.setPixelColor(0, pixels.Color(PX_OFF));
+          pixels.setPixelColor(1, pixels.Color(PX_OFF));
+          pixels.setPixelColor(2, pixels.Color(PX_OFF));
+          pixels.setPixelColor(3, pixels.Color(PX_RED));
+          pixels.show();
+      }
+    }
+    else if (charger_on && !runstop_on)
+    {
+      charging_battery_gauge(soc, runstop_on, runstop_led_on);
+    }
+  }
+  else if (!runstop_led_on || runstop_on)
+  {
+    Off();
+  }
+}
+
+void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool runstop_led_on)
+{
+  if (soc > 75)
+  {
+      if(!p0.configured)
+        p0.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p0.Step();
+      if(!p1.configured)
+        p1.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p1.Step();
+      if(!p2.configured)
+        p2.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p2.Step();
+      if(!p3.configured)
+        p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p3.Step();
+      pixels.setPixelColor(0, pixels.Color(p0.r,p0.g,p0.b));
+      pixels.setPixelColor(1, pixels.Color(p1.r,p1.g,p1.b));
+      pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
+      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
+      pixels.show();
+  }
+  if (soc > 50 && soc <= 75)
+  {
+      if(!p1.configured)
+        p1.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p1.Step();
+      if(!p2.configured)
+        p2.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p2.Step();
+      if(!p3.configured)
+        p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p3.Step();
+      pixels.setPixelColor(0, pixels.Color(PX_OFF));
+      pixels.setPixelColor(1, pixels.Color(p1.r,p1.g,p1.b));
+      pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
+      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
+      pixels.show();
+  }
+  if (soc > 25 && soc <= 50)
+  {
+      if(!p2.configured)
+        p2.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p2.Step();
+      if(!p3.configured)
+        p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p3.Step();
+      pixels.setPixelColor(0, pixels.Color(PX_OFF));
+      pixels.setPixelColor(1, pixels.Color(PX_OFF));
+      pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
+      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
+      pixels.show();
+  }
+
+  if (soc > 20 && soc <= 25)
+  {
+      if(!p3.configured)
+        p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
+      p3.Step();
+      pixels.setPixelColor(0, pixels.Color(PX_OFF));
+      pixels.setPixelColor(1, pixels.Color(PX_OFF));
+      pixels.setPixelColor(1, pixels.Color(PX_OFF));
+      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
+      pixels.show();
+  }
+
+  if (soc > 10 && soc <= 20)
+  {
+      if(!p3.configured)
+        p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_YELLOW), 1000, 0.0, 0, 1.0);
+      p3.Step();
+      pixels.setPixelColor(0, pixels.Color(PX_OFF));
+      pixels.setPixelColor(1, pixels.Color(PX_OFF));
+      pixels.setPixelColor(1, pixels.Color(PX_OFF));
+      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
+      pixels.show();
+  }
+  if (soc <= 10)
+  {
+      if(!p3.configured)
+        p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_RED), 1000, 0.0, 0, 1.0);
+      p3.Step();
+      pixels.setPixelColor(0, pixels.Color(PX_OFF));
+      pixels.setPixelColor(1, pixels.Color(PX_OFF));
+      pixels.setPixelColor(1, pixels.Color(PX_OFF));
+      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
+      pixels.show();
+  }
 }
 
 void LightBarManager::sleep_chrg()
