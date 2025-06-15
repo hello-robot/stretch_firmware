@@ -194,7 +194,6 @@ void setupBoardVariants()
   pinMode(ROBOT_ACTIVE, INPUT);
   pinMode(EOA_FAULT, INPUT);
   pinMode(RUNSTOP_SW, INPUT);
-  pinMode(SYS_OC, INPUT);
 
   BOARD_VARIANT_DEDICATED_SYNC=1;
   
@@ -223,7 +222,7 @@ void setupPimu() {
   power_state_manager.enableTC1();
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
-  time_manager.clock_zero();
+
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void stepPimuController()
@@ -598,7 +597,7 @@ void update_status()
       stat.bump_event_cnt++;
 
   stat.voltage=battery_manager.voltage_battery;
-  stat.current_charge=battery_manager.current_charger;
+  stat.current_charge=analog_manager.current_charger;
   stat.current=battery_manager.current_sys;
   stat.temp=analog_manager.temp;
   stat.state=0;

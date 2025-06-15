@@ -37,7 +37,8 @@
 // Version 0.7.0: added is_charger_charging state to pimu status
 #define FIRMWARE_VERSION "Pimu.v0.8.0p6"
 
-#define FS 100 //Loop rate in Hz for TC5
+#define FS 1000 //Loop rate in Hz for TC5
+
 
 /////////////////////////////////////////////////////////////////
 #define RPC_SET_PIMU_CONFIG 1
@@ -98,11 +99,13 @@
 #define ROBOT_ACTIVE        PIN_ROBOT_ACTIVE
 #define EOA_FAULT           PIN_EOA_FAULT
 #define RUNSTOP_SW          PIN_RUNSTOP_IN
-#define SYS_OC              PIN_SYS_OC
 
 
 #define NEOPIXEL            PIN_SPI_MOSI
-
+//bms flags
+#define NONE 0
+#define I2C 1
+#define RS485 2
 
 
 
@@ -255,6 +258,10 @@ struct __attribute__ ((packed)) Pimu_Actuator_Cntrl{
 
 
 /////////////////////////////////////////////////////////////////
+
+struct __attribute__ ((packed)) BMSFlag{
+  uint8_t bms_flag;
+};
 
 struct Esp_VoltageStatus {
     float voltage_battery; // Voltage in Volts

@@ -123,56 +123,58 @@ LightBarManager::LightBarManager()
 {
   lightBar_init=false;
 }
-void LightBarManager::Battery_Gauge(int soc,bool runstop_on, bool runstop_led_on,bool charger_on)
+void LightBarManager::Battery_Gauge(uint8_t soc,bool runstop_on, bool runstop_led_on,bool charger_on)
 {
-  if (runstop_led_on || !runstop_on)
-  {
-    if (!charger_on)
+    if (soc > 75)
     {
-      if (soc == 100){
-          pixels.setPixelColor(0, pixels.Color(PX_GREEN));
-          pixels.setPixelColor(1, pixels.Color(PX_GREEN));
-          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
-          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
-          pixels.show();
-      }
-      if (soc == 75){
-          pixels.setPixelColor(0, pixels.Color(PX_OFF));
-          pixels.setPixelColor(1, pixels.Color(PX_GREEN));
-          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
-          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
-          pixels.show();
-      }
-      if (soc == 50){
-          pixels.setPixelColor(0, pixels.Color(PX_OFF));
-          pixels.setPixelColor(1, pixels.Color(PX_OFF));
-          pixels.setPixelColor(2, pixels.Color(PX_GREEN));
-          pixels.setPixelColor(3, pixels.Color(PX_GREEN));
-          pixels.show();
-      }
-      if (soc == 20)
-      {
-          pixels.setPixelColor(0, pixels.Color(PX_OFF));
-          pixels.setPixelColor(1, pixels.Color(PX_OFF));
-          pixels.setPixelColor(2, pixels.Color(PX_OFF));
-          pixels.setPixelColor(3, pixels.Color(PX_YELLOW));
-          pixels.show();
-      }
-      if (soc == 10)
-      {
-        low_battery_fault();
-      }
+        pixels.setPixelColor(0, pixels.Color(PX_GREEN));
+        pixels.setPixelColor(1, pixels.Color(PX_GREEN));
+        pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+        pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+        pixels.show();
     }
-    if (charger_on && !runstop_on)
+    if (soc > 50 && soc <= 75)
     {
-      ColoredScanUpdate(pixels.Color(PX_OFF),pixels.Color(PX_GREEN),1000);
-    } 
-  }
-  else
-  {
-    pixels.clear();
-    pixels.show();
-  }
+        pixels.setPixelColor(0, pixels.Color(PX_OFF));
+        pixels.setPixelColor(1, pixels.Color(PX_GREEN));
+        pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+        pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+        pixels.show();
+    }
+    if (soc > 25 && soc <= 50)
+    {
+        pixels.setPixelColor(0, pixels.Color(PX_OFF));
+        pixels.setPixelColor(1, pixels.Color(PX_OFF));
+        pixels.setPixelColor(2, pixels.Color(PX_GREEN));
+        pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+        pixels.show();
+    }
+    if (soc > 20 && soc <= 25)
+    {
+        pixels.setPixelColor(0, pixels.Color(PX_OFF));
+        pixels.setPixelColor(1, pixels.Color(PX_OFF));
+        pixels.setPixelColor(2, pixels.Color(PX_OFF));
+        pixels.setPixelColor(3, pixels.Color(PX_GREEN));
+        pixels.show();
+    }
+    if (soc > 10 && soc <= 20)
+    {
+        pixels.setPixelColor(0, pixels.Color(PX_OFF));
+        pixels.setPixelColor(1, pixels.Color(PX_OFF));
+        pixels.setPixelColor(2, pixels.Color(PX_OFF));
+        pixels.setPixelColor(3, pixels.Color(PX_YELLOW));
+        pixels.show();
+    }
+    if (soc <= 10)
+    {
+        pixels.setPixelColor(0, pixels.Color(PX_OFF));
+        pixels.setPixelColor(1, pixels.Color(PX_OFF));
+        pixels.setPixelColor(2, pixels.Color(PX_OFF));
+        pixels.setPixelColor(3, pixels.Color(PX_RED));
+        pixels.show();
+    }
+
+
 }
 
 void LightBarManager::sleep_chrg()
@@ -332,7 +334,7 @@ void LightBarManager::start_test()
   running_test=true;
 }
 
-void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on,float soc) 
+void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on, uint8_t soc) 
 {
   if (lightBar_init)
   {   

@@ -17,11 +17,11 @@
 BeepManager beep_manager;
 
 //Step is called at 100hz, so x100
-#define BEEP_4000MS 400
-#define BEEP_2000MS 200
-#define BEEP_1000MS 100
-#define BEEP_500MS 50
-#define BEEP_250MS 25
+#define BEEP_4000MS 4000
+#define BEEP_2000MS 2000
+#define BEEP_1000MS 1000
+#define BEEP_500MS 500
+#define BEEP_250MS 250
 
 BeepManager::BeepManager()
 {

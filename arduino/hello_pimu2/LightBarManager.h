@@ -22,7 +22,7 @@ class LightBarPatterns;
 class LightBarManager {    
   public: 
     LightBarManager();
-    void step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on, float v_bat);
+    void step(bool boot_detected, bool runstop_on, bool charger_on, bool charging_required, bool runstop_led_on, uint8_t soc);
     void setupLightBarManager();
     uint8_t get_mode(){return (uint8_t) mode;}
     void start_test();
@@ -36,7 +36,7 @@ class LightBarManager {
     void ColorSet(uint32_t color);
     void ColoredScanUpdate(uint32_t color_bg,uint32_t color_fg,float duration_ms);
     void ColoredBatteryLevel(float v_bat, float v_bat_min, float v_bat_max,bool runstop_on, bool runstop_led_on,bool charger_on);
-    void Battery_Gauge(int soc,bool runstop_on, bool runstop_led_on,bool charger_on);
+    void Battery_Gauge(uint8_t soc,bool runstop_on, bool runstop_led_on,bool charger_on);
     bool lightBar_init;
     lightbar_mode mode; 
 };

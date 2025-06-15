@@ -74,7 +74,7 @@ const PinDescription g_APinDescription[]=
   { PORTB, 22, PIO_DIGITAL, PIN_ATTR_DIGITAL, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },//PIN_ROBOT_ACTIVE #34UL
   { PORTA, 3, PIO_DIGITAL, PIN_ATTR_DIGITAL, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_3 },    //PIN_EOA_FAULT#35UL
   { PORTA, 20, PIO_DIGITAL, PIN_ATTR_DIGITAL, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },//PIN_RUNSTOP_IN #36UL
-  { PORTB, 15, PIO_DIGITAL, PIN_ATTR_DIGITAL, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_15 },  //PIN_SYS_OC #37UL
+  { PORTB, 14, PIO_DIGITAL, PIN_ATTR_DIGITAL, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_15 },  //PIN_SYS_OC #37UL
 
 
   //Serial Communications 38 to 44
@@ -110,7 +110,8 @@ SERCOM sercom3( SERCOM3 ) ;
 SERCOM sercom4( SERCOM4 ) ;
 SERCOM sercom5( SERCOM5 ) ;
 
-Uart Serial1(&sercom5, PIN_SERIAL1_RX, PIN_SERIAL1_TX, PAD_SERIAL1_RX, PAD_SERIAL1_TX ) ;
+Uart Serial1(&sercom5, PIN_SERIAL1_RX, PIN_SERIAL1_TX, PAD_SERIAL1_RX, PAD_SERIAL1_TX );
+Uart Serial2(&sercom4, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERIAL2_TX );
 
 void SERCOM5_0_Handler()
 {
@@ -127,4 +128,22 @@ void SERCOM5_2_Handler()
 void SERCOM5_3_Handler()
 {
   Serial1.IrqHandler();
+}
+
+//Serial2
+void SERCOM4_0_Handler()
+{
+  Serial2.IrqHandler();
+}
+void SERCOM4_1_Handler()
+{
+  Serial2.IrqHandler();
+}
+void SERCOM4_2_Handler()
+{
+  Serial2.IrqHandler();
+}
+void SERCOM4_3_Handler()
+{
+  Serial2.IrqHandler();
 }

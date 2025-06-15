@@ -112,12 +112,12 @@ void IMU_BNO085::setupIMU()
   //https://github.com/sparkfun/SparkFun_BNO080_Arduino_Library/tree/main
 
   
-  Wire1.begin();
+  Wire.begin();
   // Wire1.setClock(400000);
   digitalWrite(IMU_RESET, LOW);
   delay(10);
   digitalWrite(IMU_RESET, HIGH);
-  imu_valid=device.begin(0x4A, Wire1, IMU_INT, IMU_RESET);
+  imu_valid=device.begin(0x4A, Wire, IMU_INT, IMU_RESET);
 
   if (imu_valid)  
   {

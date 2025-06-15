@@ -71,6 +71,7 @@ extern "C"
 #define portModeRegister(port)     ( &(port->DIR.reg) )
 #define digitalPinHasPWM(P)        ( g_APinDescription[P].ulPWMChannel != NOT_ON_PWM || g_APinDescription[P].ulTCChannel != NOT_ON_TIMER )
 
+
 /*
  * digitalPinToTimer(..) is AVR-specific and is not defined for SAMD
  * architecture. If you need to check if a pin supports PWM you must
@@ -133,7 +134,7 @@ static const uint8_t A0  = PIN_5V0_VOLT;
 #define PIN_ROBOT_ACTIVE  (PIN_PWR_EN + 5)
 #define PIN_EOA_FAULT     (PIN_PWR_EN + 6)
 #define PIN_RUNSTOP_IN    (PIN_PWR_EN + 7)
-#define PIN_SYS_OC        (PIN_PWR_EN + 8)
+// #define PIN_SYS_OC        (PIN_PWR_EN + 8)
 
 /*
  * UART Interfaces
@@ -143,20 +144,27 @@ static const uint8_t A0  = PIN_5V0_VOLT;
 #define PAD_SERIAL1_RX        (SERCOM_RX_PAD_1)
 #define PAD_SERIAL1_TX        (UART_TX_PAD_0)
 
+#define PIN_SERIAL2_TX        (38ul)
+#define PIN_SERIAL2_RX        (PIN_SERIAL2_TX + 1)
+#define PAD_SERIAL2_RX        (SERCOM_RX_PAD_1)
+#define PAD_SERIAL2_TX        (UART_TX_PAD_0)
+#define PIN_TX_EN             (PIN_PWR_EN + 8)
+
+
 /*
  * Wire Interfaces
  */
-#define WIRE_INTERFACES_COUNT 2
-#define PIN_WIRE_SDA         (38ul)
-#define PIN_WIRE_SCL         (39ul)
-#define PIN_WIRE1_SDA        (42ul)
-#define PIN_WIRE1_SCL        (43ul)
+#define WIRE_INTERFACES_COUNT 1
+// #define PIN_WIRE_SDA         (38ul)
+// #define PIN_WIRE_SCL         (39ul)
+#define PIN_WIRE_SDA        (42ul)
+#define PIN_WIRE_SCL        (43ul)
 
-#define PERIPH_WIRE          sercom4
-#define WIRE_IT_HANDLER      SERCOM4_Handler
+#define PERIPH_WIRE          sercom1
+#define WIRE_IT_HANDLER      SERCOM1_Handler
 
-#define PERIPH_WIRE1          sercom1
-#define WIRE1_IT_HANDLER      SERCOM1_Handler
+// #define PERIPH_WIRE1          sercom1
+// #define WIRE1_IT_HANDLER      SERCOM1_Handler
 
 //Declration Needed for the I2C libarary
 static const uint8_t SDA = PIN_WIRE_SDA;
@@ -221,6 +229,7 @@ extern SERCOM sercom4;
 extern SERCOM sercom5;
 
 extern Uart Serial1;
+extern Uart Serial2;
 
 #endif
 #define Serial  SerialUSB
