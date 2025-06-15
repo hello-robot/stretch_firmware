@@ -107,12 +107,12 @@ void BatteryManager::charging_state(float adapter_v)
         break;
 
         case RS485:
-        if (voltage_battery >= 28.8)
+        if (voltage_battery >= 28 || battery_soc >= 99)
         {
             charger_enable(false);
             _chrg_done = true;            
         }
-        else if (voltage_battery <= 26.5 && _chrg_done)
+        else if (battery_soc < 97)
         {
             charger_enable(true);
             _chrg_done = false;
@@ -290,7 +290,7 @@ void BatteryManager::_get_bms_data(uint8_t *buf, float charging_current)
     // SerialUSB.print(" Voltage: ");
     // SerialUSB.print(voltage_battery);
     // SerialUSB.printf(" SOC: %d ", battery_soc);
-    // SerialUSB.printf("Mos temp: %d ", battery_mosfet_temp);
+    // SerialUSB.printf("Mos temp: %d ", battery_cycles);
     // SerialUSB.printf("Charg Fet Status: %d ", chrg_current_limit_mos_state);
     // SerialUSB.printf("Discharg Fet Status: %d ", discharging_mos_state);
     // SerialUSB.printf("SOC LED 0: %d ", soc_led_0);

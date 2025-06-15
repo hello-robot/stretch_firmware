@@ -225,6 +225,7 @@ struct __attribute__ ((packed)) Pimu_Status{
   float current_battery;
   uint8_t battery_soc;
   uint8_t battery_soh;
+  uint16_t battery_cycles;
 
 };
 

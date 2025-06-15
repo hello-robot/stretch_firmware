@@ -246,7 +246,6 @@ void stepPimuController()
   startup_cnt=max(0,startup_cnt-1);
   if(startup_cnt==0)
   {
-    // update_voltage_monitor();
     // update_current_monitor();
     update_tilt_monitor();
     update_cliff_monitor();
@@ -626,6 +625,7 @@ void update_status()
   stat.current_battery = battery_manager.current_battery;
   stat.battery_soc = battery_manager.battery_soc;
   stat.battery_soh = battery_manager.battery_soh;
+  stat.battery_cycles = battery_manager.battery_cycles;
   
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 
