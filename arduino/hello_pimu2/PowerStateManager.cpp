@@ -11,7 +11,6 @@ volatile uint8_t _target_pwm = 0;
 volatile uint8_t _fade_cnt = 0;
 volatile uint8_t _rled = SLEEP_PWM_BRIGHTNESS; // Red LED duty cycle
 
-BMSFlag pm_bms_flag;
 
 void buttonISR()
 {
@@ -104,16 +103,14 @@ void PowerStateManager::step()
         }
     }
 
-    if (pm_bms_flag.bms_flag == RS485 || pm_bms_flag.bms_flag == I2C)
+    if(_battery_manager.battery_soc == 0 && current_pwr_state == STATE_ACTIVE && _battery_manager.bms_ready)
     {
-        if(_battery_manager.battery_soc == 0 && current_pwr_state == STATE_ACTIVE && _battery_manager.bms_ready)
-        {
-            current_pwr_state = STATE_SLEEP;
-            _state = current_pwr_state;
-            enter_sleep();
-            return;
-        }
+        current_pwr_state = STATE_SLEEP;
+        _state = current_pwr_state;
+        enter_sleep();
+        return;
     }
+    
 
     //If button is pressed and state is active or if soc is 0 
     if (g_button_pressed && current_pwr_state == STATE_ACTIVE)
@@ -140,14 +137,14 @@ void PowerStateManager::step()
     else if(g_button_pressed && (current_pwr_state == STATE_SLEEP || current_pwr_state == STATE_SLEEP_CHRG))
     {
         g_button_pressed = false; // Reset button pressed state
-        if (!_battery_manager.battery_soc == 0 || pm_bms_flag.bms_flag == NONE)
+        if (!_battery_manager.battery_soc == 0)
         {
             enter_wake(current_pwr_state);
             current_pwr_state = STATE_ACTIVE;
             _state = current_pwr_state;
             return;
         }
-        else if (_battery_manager.battery_soc == 0 && (pm_bms_flag.bms_flag == RS485 ||pm_bms_flag.bms_flag == I2C)){
+        else if (_battery_manager.battery_soc == 0 ){
             light_bar_indication = true;
             light_bar_st_time = time_manager.get_elapsed_time_ms();
             _lightbar_manager.enableDMAC();

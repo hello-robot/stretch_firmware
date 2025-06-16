@@ -1,78 +1,19 @@
 #include "BatteryManager.h"
-
-
-
-INA228 ina228(INA228_ADDRESS); // Create an instance of the INA228 class with the default I2C address
-
-BMSFlag bms_coms;
-
-BmsCommState bms_state = BMS_START;
 unsigned long _bms_last_sample_time=0;
 unsigned long response_start_time = 0;
 
 
 void BatteryManager::init() {
-    bms_coms.bms_flag = RS485;
-    switch (bms_coms.bms_flag)
-    {
-        case I2C:
-        // ina228.begin(Wire, 1000000); // Initialize the INA228 with the Wire library and a clock speed of 400kHz
-        // ina228.init();
-        // ina228.set_shunt_measurment_time();
-        // ina228.set_conversion_delay();
-        // ina228.set_adc_range(ADC_RANGE_163); // Set the ADC range to 163mV
-        // ina228.set_alert_dialog();
-        // ina228.set_oc_limit(15.0f); //Set overcurrent limit to 1A
-        // ina228.set_neg_oc_limit(-10.0f); // Set the negative overcurrent limit to -1A
-        // pinMode(PIN_TX_EN, INPUT);
-        break;
-
-        case RS485:
-        _crc = &crc;
-        _cobs = &cobs;
-        pinMode(PIN_TX_EN, OUTPUT);
-        Serial2.begin(9600);
-        break;
-    }
-
+    _crc = &crc;
+    pinMode(PIN_TX_EN, OUTPUT);
+    Serial2.begin(9600);
 }
 
 void BatteryManager::step(float chrg_current, float adapter_v){
-    switch (bms_coms.bms_flag)
-    {
-        case I2C:
-        // voltage_battery = ina228.read_vbus();
-        // get_currents(chrg_current);
-        // charging_state(adapter_v);
-        // battery_soc = get_battery_soc(voltage_battery, flag_charger_connected);
-        break;
-
-        case RS485:
-        _bms_step(chrg_current);
-        charging_state(adapter_v);
-        break;
-
-    }
+    _bms_step(chrg_current);
+    charging_state(adapter_v);
 
 }
-
-void BatteryManager::get_currents(float chrg_current) {
-    
-    float c = ina228.read_current();
-    if (flag_charger_is_charging)
-    {
-        current_sys = chrg_current + c;
-        current_battery = c;
-        // current_charger = chrg_current;
-    }
-    else if (!flag_charger_is_charging)
-    {
-        current_sys = c;
-        // current_charger = 0;
-        current_battery = current_sys;
-    }
-}
-
 
 
 void BatteryManager::charging_state(float adapter_v)
@@ -91,36 +32,17 @@ void BatteryManager::charging_state(float adapter_v)
         _chrg_done = false;
     }
 
-    switch (bms_coms.bms_flag)
+
+    if (voltage_battery >= 28 && battery_soc > 99)
     {
-        case I2C:
-        if (voltage_battery >= 28.8 && flag_charger_is_charging && !_chrg_done && current_battery >= -0.1)
-        {
-            charger_enable(false);
-            _chrg_done = true;
-        }
-        else if (voltage_battery <= 26.8 && _chrg_done)
-        {
-            charger_enable(true);
-            _chrg_done = false;
-        }
-        break;
-
-        case RS485:
-        if (voltage_battery >= 28 || battery_soc >= 99)
-        {
-            charger_enable(false);
-            _chrg_done = true;            
-        }
-        else if (battery_soc < 97)
-        {
-            charger_enable(true);
-            _chrg_done = false;
-        }
-        break;
+        charger_enable(false);
+        _chrg_done = true;            
     }
-
-
+    else if (battery_soc < 97)
+    {
+        charger_enable(true);
+        _chrg_done = false;
+    }
 }
 
 void BatteryManager::charger_enable(bool en)
@@ -138,47 +60,10 @@ void BatteryManager::charger_enable(bool en)
     }
 }
 
-int BatteryManager::get_battery_soc(float voltage, bool charger_connected) {
-    int new_soc = current_soc;
-
-    // Allow downward SoC transitions
-    if (voltage <= 23)
-        new_soc = 0;
-    if (voltage <= 24.0 && current_soc > 10)
-        new_soc = 10;
-    if (voltage <= 24.5 && current_soc > 20)
-        new_soc = 20;
-    if (voltage <= 24.8 && current_soc > 25)
-        new_soc = 25;
-    if (voltage <= 25.1 && current_soc > 50)
-        new_soc = 50;
-    if (voltage <= 25.3 && current_soc > 75)
-        new_soc = 75;
-
-
-    // Allow upward SoC transitions only if charging
-    if (flag_charger_is_charging) {
-        if (voltage > 28.6)
-            new_soc = 100;
-        else if (voltage >= 27.5 && new_soc < 75)
-            new_soc = 75;
-        else if (voltage >= 26.5 && new_soc < 50)
-            new_soc = 50;
-        else if (voltage >= 25.5 && new_soc < 25)
-            new_soc = 25;
-        else if (voltage >= 24.5 && new_soc < 20)
-            new_soc = 20;
-        else if (voltage >= 23.0 && new_soc < 10)
-            new_soc = 10;
-    }
-    current_soc = new_soc;
-    return new_soc;
-}
 
 void BatteryManager::_bms_step(float charging_current)
 {
     unsigned long t = time_manager.get_elapsed_time_ms();
-    // const uint32_t t = micros();
     switch (bms_state)
     {
         case BMS_START:
@@ -298,7 +183,6 @@ void BatteryManager::_get_bms_data(uint8_t *buf, float charging_current)
     // SerialUSB.printf("SOC LED 2: %d ", soc_led_2);
     // SerialUSB.printf("SOC LED 3: %d ", soc_led_3);
     // SerialUSB.printf("ALARM LED: %d\n", alarm_led);
-
 
     //Discharging
     if (current_battery < 0)

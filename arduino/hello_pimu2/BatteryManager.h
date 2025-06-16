@@ -1,13 +1,10 @@
 #ifndef __BATTERYMANAGER_H__
 #define __BATTERYMANAGER_H__
 
-#include "INA228.h"
 #include "AnalogManager.h"
 #include "Common.h"
 #include "Transport.h"
 #include "TimeManager.h"
-
-#define CHARGING_CURRENT 5.57f
 
 #define BMS_SAMPLE_RATE 1000 //in ms
 #define BMS_FRAMING_TIMEOUT 100 //in ms
@@ -49,11 +46,8 @@ class BatteryManager
 public:
     void init();
     void step(float chrg_current,float adapter_v);
-    void get_currents(float chrg_current);
     void charging_state(float adapter_v);
     void charger_enable(bool en);
-    int get_battery_soc(float voltage, bool charger_connected);
-    
 
     float voltage_battery;
     float current_sys;
@@ -80,14 +74,10 @@ public:
     bool flag_charger_is_charging = false;
     bool bms_ready = false;
 
-    
-    int current_soc = 100;
-
     private:
         bool _flag_charger_enabled = true;
         bool _chrg_done = false;
         Crc16* _crc;
-        COBS* _cobs;
         uint8_t _rx_buffer[256];
         uint8_t _tx_buffer[256];
         uint8_t rx_len = 0;

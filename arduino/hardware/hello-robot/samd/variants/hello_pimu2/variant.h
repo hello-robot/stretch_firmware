@@ -134,7 +134,7 @@ static const uint8_t A0  = PIN_5V0_VOLT;
 #define PIN_ROBOT_ACTIVE  (PIN_PWR_EN + 5)
 #define PIN_EOA_FAULT     (PIN_PWR_EN + 6)
 #define PIN_RUNSTOP_IN    (PIN_PWR_EN + 7)
-// #define PIN_SYS_OC        (PIN_PWR_EN + 8)
+
 
 /*
  * UART Interfaces
@@ -155,16 +155,11 @@ static const uint8_t A0  = PIN_5V0_VOLT;
  * Wire Interfaces
  */
 #define WIRE_INTERFACES_COUNT 1
-// #define PIN_WIRE_SDA         (38ul)
-// #define PIN_WIRE_SCL         (39ul)
 #define PIN_WIRE_SDA        (42ul)
 #define PIN_WIRE_SCL        (43ul)
 
 #define PERIPH_WIRE          sercom1
 #define WIRE_IT_HANDLER      SERCOM1_Handler
-
-// #define PERIPH_WIRE1          sercom1
-// #define WIRE1_IT_HANDLER      SERCOM1_Handler
 
 //Declration Needed for the I2C libarary
 static const uint8_t SDA = PIN_WIRE_SDA;

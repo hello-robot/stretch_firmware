@@ -262,9 +262,6 @@ struct __attribute__ ((packed)) Pimu_Actuator_Cntrl{
 
 /////////////////////////////////////////////////////////////////
 
-struct __attribute__ ((packed)) BMSFlag{
-  uint8_t bms_flag;
-};
 
 struct Esp_VoltageStatus {
     float voltage_battery; // Voltage in Volts
