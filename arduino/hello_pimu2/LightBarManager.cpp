@@ -216,6 +216,9 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
   }
   if (soc > 50 && soc <= 75)
   {
+      if(!p0.configured)
+        p0.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p0.Step();
       if(!p1.configured)
         p1.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p1.Step();
@@ -225,7 +228,7 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p3.Step();
-      pixels.setPixelColor(0, pixels.Color(PX_OFF));
+      pixels.setPixelColor(0, pixels.Color(p0.r,p0.g,p0.b));
       pixels.setPixelColor(1, pixels.Color(p1.r,p1.g,p1.b));
       pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
       pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
@@ -233,14 +236,20 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
   }
   if (soc > 25 && soc <= 50)
   {
+      if(!p0.configured)
+        p0.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p0.Step();
+      if(!p1.configured)
+        p1.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p1.Step();
       if(!p2.configured)
         p2.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p2.Step();
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p3.Step();
-      pixels.setPixelColor(0, pixels.Color(PX_OFF));
-      pixels.setPixelColor(1, pixels.Color(PX_OFF));
+      pixels.setPixelColor(0, pixels.Color(p0.r,p0.g,p0.b));
+      pixels.setPixelColor(1, pixels.Color(p1.r,p1.g,p1.b));
       pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
       pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
       pixels.show();
@@ -248,6 +257,15 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
 
   if (soc > 20 && soc <= 25)
   {
+      if(!p0.configured)
+        p0.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p0.Step();
+      if(!p1.configured)
+        p1.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p1.Step();
+      if(!p2.configured)
+        p2.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p2.Step();
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p3.Step();
@@ -260,6 +278,15 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
 
   if (soc > 10 && soc <= 20)
   {
+      if(!p0.configured)
+        p0.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p0.Step();
+      if(!p1.configured)
+        p1.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p1.Step();
+      if(!p2.configured)
+        p2.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p2.Step();
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_YELLOW), 1000, 0.0, 0, 1.0);
       p3.Step();
@@ -271,6 +298,15 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
   }
   if (soc <= 10)
   {
+      if(!p0.configured)
+        p0.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p0.Step();
+      if(!p1.configured)
+        p1.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p1.Step();
+      if(!p2.configured)
+        p2.Configure(pixels.Color(PX_OFF), pixels.Color(PX_OFF), 1000, 0.0, 0, 1.0);
+      p2.Step();
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_RED), 1000, 0.0, 0, 1.0);
       p3.Step();
@@ -295,68 +331,6 @@ void LightBarManager::low_battery_fault()
     pixels.setPixelColor(3, pixels.Color(PX_RED));
     pixels.show();
   
-}
-void LightBarManager::ColoredBatteryLevel(float v_bat, float v_bat_min, float v_bat_max,bool runstop_on, bool runstop_led_on,bool charger_on)
-{
-  if (runstop_led_on || !runstop_on)
-    {
-      float dv=(v_bat_max-v_bat_min)/4;
-      uint32_t c1, c2;
-      float interp;
-      if (v_bat<v_bat_min)
-      {
-        c1=pixels.Color(PX_RED);
-        c2=pixels.Color(PX_RED);
-        interp=1.0;
-      }
-      else if (v_bat>=v_bat_min && v_bat<(v_bat_min+dv))
-      {
-        c1=pixels.Color(PX_RED);
-        c2=pixels.Color(PX_ORANGE);
-        interp = (v_bat-v_bat_min)/dv;
-      }
-      else if (v_bat>=(v_bat_min+dv) && v_bat<(v_bat_min+2*dv))
-      {
-        c1=pixels.Color(PX_ORANGE);
-        c2=pixels.Color(PX_YELLOW);
-        interp = (v_bat-(v_bat_min+dv))/dv;
-      }
-      else if (v_bat>=(v_bat_min+2*dv) && v_bat<(v_bat_min+3*dv))
-      {
-        c1=pixels.Color(PX_YELLOW);
-        c2=pixels.Color(PX_YELLOW_GREEN);
-        interp = (v_bat-(v_bat_min+2*dv))/dv;
-      }
-      else if (v_bat>=(v_bat_min+3*dv) && v_bat<v_bat_max)
-      {
-        c1=pixels.Color(PX_YELLOW_GREEN);
-        c2=pixels.Color(PX_GREEN);
-        interp = (v_bat-(v_bat_min+3*dv))/dv;
-      }
-      else
-      {
-        c1=pixels.Color(PX_GREEN);
-        c2=pixels.Color(PX_GREEN);
-        interp=1.0;
-      }
-      uint8_t r = ((float)(Red(c2)-Red(c1)))*interp+Red(c1);
-      uint8_t g = ((float)(Green(c2)-Green(c1)))*interp+Green(c1);
-      uint8_t b = ((float)(Blue(c2)-Blue(c1)))*interp+Blue(c1);
-      if (charger_on && !runstop_on)
-      {
-        ColoredScanUpdate(pixels.Color(PX_OFF),pixels.Color(r,g,b),1000);
-      } 
-      else
-      {
-        ColorSet(pixels.Color(r,g,b));
-        pixels.show();
-      }
-    }
-    else
-    {
-      pixels.clear();
-      pixels.show();
-    }
 }
 
 
@@ -446,7 +420,7 @@ void LightBarManager::step(bool boot_detected, bool runstop_on, bool charger_on,
     
       if (running_test)
       {
-        ColoredBatteryLevel(test_voltage, V_BAT_MIN, V_BAT_MAX, runstop_on, runstop_led_on, charger_on );
+      
         test_voltage=max(23.0,test_voltage-0.005);
         if (test_voltage==23.0)
           running_test=false;

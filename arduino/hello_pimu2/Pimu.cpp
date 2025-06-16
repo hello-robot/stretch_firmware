@@ -518,7 +518,7 @@ void update_imu()
 ////////////////////////////
 void update_voltage_monitor()
 {
-    if(battery_manager.battery_soc <= 10) //dropped below
+    if(battery_manager.battery_soc <= 10 && !battery_manager.flag_charger_is_charging) //dropped below
     {
       // state_low_voltage_alert=true;
       // if (cfg.stop_at_low_voltage)
