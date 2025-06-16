@@ -137,14 +137,14 @@ void PowerStateManager::step()
     else if(g_button_pressed && (current_pwr_state == STATE_SLEEP || current_pwr_state == STATE_SLEEP_CHRG))
     {
         g_button_pressed = false; // Reset button pressed state
-        if (!_battery_manager.battery_soc == 0)
+        if (!_battery_manager.battery_soc == 0 || _battery_manager.flag_charger_is_charging)
         {
             enter_wake(current_pwr_state);
             current_pwr_state = STATE_ACTIVE;
             _state = current_pwr_state;
             return;
         }
-        else if (_battery_manager.battery_soc == 0 ){
+        else if (_battery_manager.battery_soc == 0 && !_battery_manager.flag_charger_is_charging){
             light_bar_indication = true;
             light_bar_st_time = time_manager.get_elapsed_time_ms();
             _lightbar_manager.enableDMAC();
