@@ -222,6 +222,7 @@ void setupPimu() {
   power_state_manager.enableTC1();
   setupTimer4_and_5();
   setupWDT(WDT_TIMEOUT_PERIOD);
+  time_manager.clock_zero();
 
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
