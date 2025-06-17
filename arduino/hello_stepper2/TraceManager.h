@@ -21,9 +21,10 @@
 #define TRACE_TYPE_STATUS 0
 #define TRACE_TYPE_DEBUG 1
 #define TRACE_TYPE_PRINT 2
+#define TRACE_TYPE_FEEDBACK 3
 
 
-#define TRACE_TYPE TRACE_TYPE_PRINT
+#define TRACE_TYPE TRACE_TYPE_FEEDBACK
 
 /* This class supports generating traces of data at the full control rates. 
  * There are three modes:
@@ -38,11 +39,12 @@
  */
  
 /////////////////////////// TRACE //////////////////////////////////////
-#define N_TRACE_RAW 10375  //Raw buffer. (DO NOT INCREASE THIS MEMORY) Allocate enough for min 125 Status messages / 1000 debug messages / 250 print messages
-#define N_TRACE_STATUS 125 //Status message is 83 bytes ea
-#define N_TRACE_DEBUG 500 //Debug message is 14 bytes ea
+#define N_TRACE_RAW 148768//Raw buffer. (DO NOT INCREASE THIS MEMORY) Allocate enough for min 125 Status messages / 1000 debug messages / 250 print messages
+#define N_TRACE_STATUS 170 //Status message is 83 bytes ea
+#define N_TRACE_DEBUG 10625 //Debug message is 14 bytes ea
 #define N_TRACE_PRINT_LN 32
-#define N_TRACE_PRINT 200   //Print message is 44 bytes ea
+#define N_TRACE_PRINT 3380   //Print message is 44 bytes ea
+#define N_TRACE_FEEDBACK 18596 // Feedback message is 88 bytes ea
 
 struct __attribute__ ((packed)) DebugTrace{ //14 bytes
   uint8_t u8_1;
@@ -58,7 +60,10 @@ struct __attribute__ ((packed)) PrintTrace{ //44 bytes
   float x;
 };
 
-
+struct __attribute__ ((packed)) FeedbackTrace{
+  float pos;
+  float vel;
+};
 
 class TraceManager {
    public: 
@@ -69,10 +74,12 @@ class TraceManager {
     void update_trace_print();
     void update_trace_debug();
     void update_trace_status(Status * stat);
+    void update_trace_feedback();
 
     
     DebugTrace debug_msg;
     PrintTrace print_msg;
+    FeedbackTrace feedback_msg;
     
     bool trace_on;
     

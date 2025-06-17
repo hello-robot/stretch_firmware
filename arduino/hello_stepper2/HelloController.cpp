@@ -88,10 +88,12 @@ volatile int cmd_cnt_exec=0;
 volatile int cmd_cnt_rpc=0;
 volatile int cmd_rpc_overflow=0;
 
-/*
-#define N_POS_HISTORY 1250 //With Control rate of 5Khz, log 0.25s of past motions
-float pos_history[N_POS_HISTORY];
-int pos_history_idx=0;*/
+
+// #define N_POS_HISTORY 1250 //With Control rate of 5Khz, log 0.25s of past motions
+// float pos_history[N_POS_HISTORY];
+// int pos_history_idx=0;
+// #define N_POS_HISTORY 25000 
+// float pos_history[N_POS_HISTORY];
 
 
 //By default boot with hello_interface on
@@ -159,6 +161,8 @@ bool motor_enabled_flag = true;
 
 uint16_t drv8262_min_vref=50;
 float k_calibration_step=0.2;
+
+bool goUpFlag = true;
 
 ///////////////////////// UTIL ///////////////////////////
 
@@ -265,7 +269,7 @@ void setupHelloController()
   memset(&stat_out, 0, sizeof(Status));
   memset(&stat_aux, 0, sizeof(StatusAux));
   memset(&motion_limits, 0, sizeof(MotionLimits));
-  //memset(&pos_history, 0, N_POS_HISTORY*sizeof(float));
+  // memset(&pos_history, 0, N_POS_HISTORY*sizeof(float));
 
   sprintf(board_info.board_variant, "Stepper.%d", BOARD_VARIANT);
   memcpy(&(board_info.firmware_version_hr),FIRMWARE_VERSION_HR,min(20,strlen(FIRMWARE_VERSION_HR)));
@@ -596,6 +600,7 @@ void update_status()
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 
+/*
 if (trace_manager.trace_on)
 {
    if(TRACE_TYPE==TRACE_TYPE_DEBUG)
@@ -618,7 +623,15 @@ if (trace_manager.trace_on)
   {
     trace_manager.update_trace_status(&stat_out);
   }
+
+  if(TRACE_TYPE==TRACE_TYPE_FEEDBACK)
+  {
+    trace_manager.feedback_msg.pos=stat.pos;
+    trace_manager.feedback_msg.vel=stat.vel;
+    trace_manager.update_trace_feedback();
+  }
 }
+*/
 
 }
 
@@ -663,6 +676,13 @@ void update_trace()
   if(TRACE_TYPE==TRACE_TYPE_STATUS)
   {
     trace_manager.update_trace_status(&stat_out);
+  }
+
+  if(TRACE_TYPE==TRACE_TYPE_FEEDBACK)
+  {
+    trace_manager.feedback_msg.pos=stat.pos;
+    trace_manager.feedback_msg.vel=stat.vel;
+    trace_manager.update_trace_feedback();
   }
 }
 
@@ -1051,6 +1071,22 @@ void stepHelloController()
     diag_is_mg_accelerating=0;
     diag_is_mg_moving=0;
 
+    if(trace_manager.trace_on){
+      cmd.mode = MODE_POS_TRAJ_INCR;
+      if(ywd >= rad_to_deg(50.0)){
+        goUpFlag = false;
+      }
+      if(ywd <= rad_to_deg(5)){
+        goUpFlag = true;
+      }
+      if(goUpFlag){
+        x_des_incr = yw + rad_to_deg(10); 
+      }
+      if(!goUpFlag){
+        x_des_incr = yw - rad_to_deg(10); 
+      }
+    }
+
       ////// Now run control cycle
 
       //Make sure drives are on (unless in safety freewheel)
@@ -1376,10 +1412,10 @@ void stepHelloController()
     analog_manager.step();
   }
   update_status();
-  update_trace();
+  // update_trace();
   ctrl_cycle_cnt++;
 
-
+  
   //ctrl_loop_time_max_us=ctrl_loop_time_max_us,time_manager.current_time_us()-stat.timestamp);
   
   
@@ -1425,6 +1461,7 @@ void TC5_Handler() {                // gets called with FPID frequency
         {
           time_manager.ts_base++;
           toggle_led(500);
+          update_trace();
           ms_loop_cnt=0;
         }
         
