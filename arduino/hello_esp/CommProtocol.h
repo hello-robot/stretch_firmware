@@ -12,7 +12,7 @@
 #define UART_STS_BOOTED 0x06
 #define UART_STS_SD_CHRG 0x07
 #define UART_STS_SLEEP_CHRG 0x08
-
+#define UART_GET_STS 0x09
 struct VoltageStatus {
     float voltage_battery; // Voltage in Volts
     float voltage_20v0;

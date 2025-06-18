@@ -10,6 +10,7 @@
 #define BMS_FRAMING_TIMEOUT 100 //in ms
 
 #define BMS_VOLTAGE_ADDR 0x00
+#define BMS_SOC_ADDR 0x06
 
 #define SOC_LED_0_POS 0x00
 #define SOC_LED_1_POS 0x01
@@ -20,6 +21,10 @@
 #define PRE_DISCHARGE_STATE_POS 0x05
 #define DISCHARGE_MOS_STATE_POS 0x06
 #define CHARG_MOS_STATE_POS 0x07
+#define ALARM_L1_BAT_V_HIGH_POS 0x00
+#define ALARM_L1_CELL_V_HIGH_POS 0x00
+#define ALARM_L1_CELL_VDIF_HIGH_POS 0x02
+
 
 #define SOC_LED_0_MSK (0x01 << SOC_LED_0_POS)
 #define SOC_LED_1_MSK (0x01 << SOC_LED_1_POS)
@@ -32,7 +37,9 @@
 #define DISCHARGE_MOS_STATE_MSK (0x01 << DISCHARGE_MOS_STATE_POS)
 #define CHARG_MOS_STATE_MSK (0x01 << CHARG_MOS_STATE_POS)
 
-
+#define ALARM_L1_BAT_V_HIGH_MSK (0x01 << ALARM_L1_BAT_V_HIGH_POS)
+#define ALARM_L1_CELL_V_HIGH_MSK (0x01 << ALARM_L1_CELL_V_HIGH_POS)
+#define ALARM_L1_CELL_VDIF_HIGH_MSK (0x01 << ALARM_L1_CELL_VDIF_HIGH_POS)
 
 enum BmsCommState {
     BMS_START,
@@ -48,10 +55,12 @@ public:
     void step(float chrg_current,float adapter_v);
     void charging_state(float adapter_v);
     void charger_enable(bool en);
+    void bms_startup();
 
     float voltage_battery;
     float current_sys;
     float current_battery;
+    float current_charger;
     uint8_t battery_soc;
     uint8_t battery_soh;
     uint16_t battery_cycles;
@@ -69,10 +78,14 @@ public:
     bool soc_led_2;
     bool soc_led_3;
     bool alarm_led;
+    bool alarm_l1_cell_v_high;
+    bool alarm_l1_cell_vdif_high;
+    bool alarm_l1_total_v_high;
 
     bool flag_charger_connected = false;
     bool flag_charger_is_charging = false;
     bool bms_ready = false;
+    bool user_charger_control = false;
 
     private:
         bool _flag_charger_enabled = true;

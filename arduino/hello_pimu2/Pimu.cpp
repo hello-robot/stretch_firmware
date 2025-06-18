@@ -135,6 +135,8 @@ void toggle_led(int rate_ms);
 void shutdown_state_step();
 void sleep_state_step();
 void update_esp(uint8_t state);
+void enableTC5();
+void enableTC4();
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -213,14 +215,16 @@ void setupPimu() {
   memcpy(&(board_info.firmware_version),FIRMWARE_VERSION,min(20,strlen(FIRMWARE_VERSION)));
   analog_manager.setupADC();
   analog_manager.factory_config();
-  battery_manager.init();
   esp_manager.setup();
   light_bar_manager.setupLightBarManager();
-  analog_manager.step(&stat, &cfg);
-  battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
+  battery_manager.init();
   power_state_manager.power_state_setup();
   power_state_manager.enableTC1();
+  esp_manager.send_status(UART_PWR_WAKE, 0, 0);
   setupTimer4_and_5();
+  enableTC4();
+  enableTC5();
+  time_manager.clock_zero();
   setupWDT(WDT_TIMEOUT_PERIOD);
   time_manager.clock_zero();
 
@@ -235,11 +239,9 @@ void stepPimuController()
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
   battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
-  if (battery_manager.bms_ready)
-  {
-    light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, battery_manager.flag_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.battery_soc);
-    update_voltage_monitor();  
-  }
+  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, battery_manager.flag_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.battery_soc);
+  update_voltage_monitor();  
+  
   update_fan();
   // update_imu();
   update_board_reset();
@@ -456,10 +458,12 @@ void handle_trigger()
     if (trg.data & TRIGGER_CHARGER_ON)
     {
       battery_manager.charger_enable(true);
+      battery_manager.user_charger_control = false;
     }
     if (trg.data & TRIGGER_CHARGER_OFF)
     {
       battery_manager.charger_enable(false);
+      battery_manager.user_charger_control = true;
     }
     if (trg.data & TRIGGER_ESP_FW_UPDATE)
     {
@@ -565,7 +569,7 @@ void update_esp(uint8_t state)
 {
   esp_voltage_status.voltage_battery = battery_manager.voltage_battery;
   esp_voltage_status.voltage_20v0 = analog_manager.voltage_20v0;
-  esp_manager.send_status(state, UART_STS_VOLTAGE, &esp_voltage_status, sizeof(Esp_VoltageStatus));
+  esp_manager.send_status(UART_STS_VOLTAGE, &esp_voltage_status, sizeof(Esp_VoltageStatus));
 }
 
 ////////////////////////////
@@ -602,7 +606,7 @@ void update_status()
       stat.bump_event_cnt++;
 
   stat.voltage=battery_manager.voltage_battery;
-  stat.current_charge=analog_manager.current_charger;
+  stat.current_charge=battery_manager.current_charger;
   stat.current=battery_manager.current_sys;
   stat.temp=analog_manager.temp;
   stat.state=0;
@@ -721,17 +725,19 @@ void TC5_Handler() {
 }
 
 
-void enableTCInterrupts() {   //enables the controller interrupt ("closed loop mode")
+void enableTC5() {   //enables the controller interrupt ("closed loop mode")
     // Enable InterruptVector
   NVIC_EnableIRQ(TC5_IRQn);
-  NVIC_EnableIRQ(TC4_IRQn);
-  
-  TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC5
+  TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC4
   while(!TC5->COUNT16.SYNCBUSY.bit.ENABLE);
 
+}
+
+void enableTC4()
+{
+  NVIC_EnableIRQ(TC4_IRQn);
   TC4->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;    //Enable TC4
   while(!TC4->COUNT16.SYNCBUSY.bit.ENABLE);
-
 }
 
 void disableTCInterrupts() {  //disables the controller interrupt ("closed loop mode")
@@ -785,7 +791,6 @@ void setupTimer4_and_5() {  // configure the controller interrupt
   NVIC_SetPriority(TC4_IRQn, 2);              //TC4 pulse generator highest priority so timing is correct
 
   // Enable TC
-  enableTCInterrupts();
 }
 
 ////////////////////// Timer4 /////////////////////////////////////////

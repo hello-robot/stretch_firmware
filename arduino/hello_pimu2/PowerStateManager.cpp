@@ -49,19 +49,27 @@ void PowerStateManager::power_state_setup()
     EIC->CTRLA.bit.CKSEL = 1;
 
     set_up_button();
-    if (!digitalRead(PWR_EN))
+
+    //Check if user pressed power button and battery is above 5%, enter active state
+    if (!digitalRead(PWR_EN) && _battery_manager.battery_soc >= 5)
     {
         current_pwr_state = STATE_ACTIVE;
         _state = current_pwr_state;
         if (!check_boot_sts())
         {
-            _esp_manager.send_status(UART_PWR_WAKE, UART_STS_BOOTED, 0, 0);
+            _esp_manager.send_status(UART_PWR_WAKE,0, 0);
             _peripheral_manager.fast_actuator_control(true);
         }
         else{
             //Set pins high since we are in active mode
             _peripheral_manager.set_actuator_active();
         }
+    }
+    //if battery less than 5% enter sleep state
+    else if(!digitalRead(PWR_EN) && _battery_manager.battery_soc < 5)
+    {
+        _esp_manager.send_status(UART_PWR_SLEEP,0, 0);
+        _peripheral_manager.fast_actuator_control(false);
     }
     //Check to see if user did not press the pwr button go into shutdown charge mode
     else if(digitalRead(PWR_EN))
@@ -183,7 +191,7 @@ void PowerStateManager::step()
             if (light_bar_indication && (feedback_next_pwr_state == STATE_SLEEP_CHRG || feedback_next_pwr_state == STATE_SHUTDOWN_CHRG))
             {
                 _lightbar_manager.sleep_chrg();
-                _esp_manager.send_status(UART_STS_SD_CHRG,0, 0, 0);
+                _esp_manager.send_status(UART_STS_SD_CHRG,0, 0);
             }
             if (light_bar_indication && feedback_next_pwr_state == STATE_SLEEP)
             {
@@ -209,20 +217,21 @@ void PowerStateManager::enter_sleep()
     // imu_b.imu_sleep_mode();
     _peripheral_manager.peripheral_sleep_state();
     _lightbar_manager.disableDMAC();
-    _esp_manager.send_status(UART_PWR_SLEEP,0, 0, 0); 
+    _esp_manager.send_status(UART_PWR_SLEEP,0,0); 
 
 }
 void PowerStateManager::enter_wake(system_pwr_state st)
 {
     _peripheral_manager.peripheral_active_state();
     _lightbar_manager.enableDMAC();
-    _esp_manager.send_status(UART_PWR_WAKE,0, 0, 0);
+    _esp_manager.send_status(UART_PWR_WAKE,0, 0);
+    _peripheral_manager.set_actuator_active();
 
 }
 void PowerStateManager::enter_chrg_sleep(system_pwr_state st)
 {
     _peripheral_manager.peripheral_sd_state();
-    _esp_manager.send_status(UART_STS_SD_CHRG,0, 0, 0);
+    _esp_manager.send_status(UART_STS_SD_CHRG,0, 0);
 
     switch (st)
     {
@@ -259,7 +268,7 @@ void PowerStateManager::enter_sd_to_wake()
 {
     _lightbar_manager.enableDMAC();
     _peripheral_manager.peripheral_active_state();
-     _esp_manager.send_status(UART_PWR_WAKE,0, 0, 0);
+     _esp_manager.send_status(UART_PWR_WAKE,0, 0);
 }
 
 void PowerStateManager::set_up_button()

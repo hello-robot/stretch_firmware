@@ -33,7 +33,6 @@ void process_pimu_requests()
 			case UART_STS_SLEEP_CHRG:
 			case UART_STS_SD_CHRG:
 				current_pwr_state = STATE_SHUTDOWN_CHRG;
-				digitalWrite(PIN_ROBOT_ACTIVE, HIGH);
 				peripheral_manager.peripheral_sd_state();
 				// Handle trigger command
 				break;
@@ -43,24 +42,15 @@ void process_pimu_requests()
 				peripheral_manager.peripheral_wakeup_state();
 				// Handle trigger command
 				break;
-			default:
-				break;
-		}
-		switch (rx_buf[1]) {
 			case UART_STS_VOLTAGE:
-				memcpy(&voltage_status, &rx_buf[2], sizeof(VoltageStatus));
+				memcpy(&voltage_status, &rx_buf[1], sizeof(VoltageStatus));
 				break;
 			case UART_STS_CURRENT:
 				// Handle current status
 				break;
-			case UART_STS_BOOTED:
-				//Can send packet back if needed
-				current_pwr_state = STATE_ACTIVE;
-				digitalWrite(PIN_ROBOT_ACTIVE, HIGH); // Indicate that the system is booted
-				peripheral_manager.peripheral_wakeup_state();
+			case UART_GET_STS:
 				break;
 			default:
-				// Handle unknown command
 				break;
 		}
 	}

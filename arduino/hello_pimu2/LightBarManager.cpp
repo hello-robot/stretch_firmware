@@ -208,11 +208,6 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p3.Step();
-      pixels.setPixelColor(0, pixels.Color(p0.r,p0.g,p0.b));
-      pixels.setPixelColor(1, pixels.Color(p1.r,p1.g,p1.b));
-      pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
-      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
-      pixels.show();
   }
   if (soc > 50 && soc <= 75)
   {
@@ -228,11 +223,6 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p3.Step();
-      pixels.setPixelColor(0, pixels.Color(p0.r,p0.g,p0.b));
-      pixels.setPixelColor(1, pixels.Color(p1.r,p1.g,p1.b));
-      pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
-      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
-      pixels.show();
   }
   if (soc > 25 && soc <= 50)
   {
@@ -248,11 +238,7 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p3.Step();
-      pixels.setPixelColor(0, pixels.Color(p0.r,p0.g,p0.b));
-      pixels.setPixelColor(1, pixels.Color(p1.r,p1.g,p1.b));
-      pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
-      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
-      pixels.show();
+
   }
 
   if (soc > 20 && soc <= 25)
@@ -269,11 +255,6 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_GREEN), 1000, 0.0, 0, 1.0);
       p3.Step();
-      pixels.setPixelColor(0, pixels.Color(PX_OFF));
-      pixels.setPixelColor(1, pixels.Color(PX_OFF));
-      pixels.setPixelColor(1, pixels.Color(PX_OFF));
-      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
-      pixels.show();
   }
 
   if (soc > 10 && soc <= 20)
@@ -290,11 +271,6 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_YELLOW), 1000, 0.0, 0, 1.0);
       p3.Step();
-      pixels.setPixelColor(0, pixels.Color(PX_OFF));
-      pixels.setPixelColor(1, pixels.Color(PX_OFF));
-      pixels.setPixelColor(1, pixels.Color(PX_OFF));
-      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
-      pixels.show();
   }
   if (soc <= 10)
   {
@@ -310,12 +286,12 @@ void LightBarManager::charging_battery_gauge(uint8_t soc,bool runstop_on, bool r
       if(!p3.configured)
         p3.Configure(pixels.Color(PX_OFF), pixels.Color(PX_RED), 1000, 0.0, 0, 1.0);
       p3.Step();
-      pixels.setPixelColor(0, pixels.Color(PX_OFF));
-      pixels.setPixelColor(1, pixels.Color(PX_OFF));
-      pixels.setPixelColor(1, pixels.Color(PX_OFF));
-      pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
-      pixels.show();
   }
+    pixels.setPixelColor(0, pixels.Color(p0.r,p0.g,p0.b));
+    pixels.setPixelColor(1, pixels.Color(p1.r,p1.g,p1.b));
+    pixels.setPixelColor(2, pixels.Color(p2.r,p2.g,p2.b));
+    pixels.setPixelColor(3, pixels.Color(p3.r,p3.g,p3.b));
+    pixels.show();
 }
 
 void LightBarManager::sleep_chrg()

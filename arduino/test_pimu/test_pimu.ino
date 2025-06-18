@@ -54,27 +54,63 @@ void setup()        // This code runs once at startup
 	_crc = &crc;
 	_cobs = &cobs;
   SerialUSB.begin(2000000);
+  while(!SerialUSB);
   Serial2.begin(9600);
   pinMode(PIN_TX_EN, OUTPUT);
   pinMode(PIN_STS_LED, OUTPUT);
+  bms_startup();
 
 
 }
 
 void loop()
 {
-  bms_step();
-  delay(1);
-  SerialUSB.print("Voltage: ");
-  SerialUSB.print(status.voltage);
-  SerialUSB.print(" Current: ");
-  SerialUSB.print(status.current);
-  SerialUSB.print(" SOH: ");
-  SerialUSB.print(status.soh);
-  SerialUSB.print(" SOC: ");
-  SerialUSB.println(status.soc);
+  // bms_step();
+  // delay(1);
+  // SerialUSB.print("Voltage: ");
+  // SerialUSB.print(status.voltage);
+  // SerialUSB.print(" Current: ");
+  // SerialUSB.print(status.current);
+  // SerialUSB.print(" SOH: ");
+  // SerialUSB.print(status.soh);
+  // SerialUSB.print(" SOC: ");
+  // SerialUSB.println(status.soc);
 }
 
+void bms_startup()
+{
+    digitalWrite(PIN_TX_EN, HIGH);
+    send_bms_read_packet(0x06, 0x01);
+    while (!(SERCOM4->USART.INTFLAG.bit.TXC));
+    digitalWrite(PIN_TX_EN, LOW);
+    unsigned long t_start = micros();
+    while ((micros() - t_start) < FRAMING_TIMEOUT)
+    {
+      while (Serial2.available())
+      {
+          _rx_buffer[rx_len++] = Serial2.read();
+          if (rx_len >= 5 && rx_len == _rx_buffer[2] + 5)
+          {  
+              SerialUSB.println("Buffer size correct");
+              break;
+          }
+          if (rx_len >= sizeof(_rx_buffer)) {
+                  SerialUSB.println("Buffer of");
+                  // Safety: avoid buffer overflow
+                  break;
+              }
+      }
+    }
+    if (validate_crc(_rx_buffer, rx_len))
+    {
+        status.soc = _rx_buffer[4];
+        SerialUSB.println(status.soc);
+    }
+    else{
+      SerialUSB.println("Not validated");
+    }
+
+}
 
 
 
