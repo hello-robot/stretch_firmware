@@ -240,8 +240,11 @@ void stepPimuController()
   beep_manager.step();
   analog_manager.step(&stat, &cfg);
   battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
-  light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, battery_manager.flag_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.battery_soc);
-  update_voltage_monitor();  
+  if (battery_manager.bms_ready)
+  {
+    light_bar_manager.step(state_boot_detected, runstop_manager.state_runstop_event, battery_manager.flag_charger_connected, state_low_voltage_alert, runstop_manager.runstop_led_on, battery_manager.battery_soc);
+    update_voltage_monitor();  
+  }
   
   update_fan();
   // update_imu();
