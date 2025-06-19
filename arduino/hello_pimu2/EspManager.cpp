@@ -23,47 +23,87 @@ void EspManager::send_packet(const uint8_t *data, uint8_t len)
 	Serial1.write(_tx_buffer, nb);
 }
 
-bool EspManager::receive_packet(uint8_t *data, uint8_t &n, int cobbs_frame_size)
+void EspManager::rx_step()
 {
 	unsigned long t_start = micros();
 	uint8_t byte_in;
-	while ((micros() - t_start) < FRAMING_TIMEOUT) // data may be sparse, keep polling until first byte arrives, then get whole packet
-	{
-		if (Serial1.available() > 0)
-		{
-			byte_in = Serial1.read();
-			t_start = micros(); // Restart the timer otherwise can have race condition as prior start point may be close to expiring
 
-			if (byte_in == COBS_FRAME_DELIMITER)
+	switch (_esp_rx_state)
+	{
+		case ESP_RX_WAIT:
+		{
+			while (Serial1.available())
 			{
-				n = _cobs->decode(_rx_buffer, _rx_buffer_idx, data);
-				_crc->clearCrc();
-				uint16_t crc1 = _crc->Modbus(data, 0, n - 2);
-				uint16_t crc2 = (data[n - 2] << 8) | data[n - 1];
-				n = n - 2;
-				_rx_buffer_idx = 0;
-				_rx_buffer_overflow = false;
-				return (crc1 == crc2);
-			}
-			else
-			{
-				if ((_rx_buffer_idx + 1) < cobbs_frame_size)
+				byte_in = Serial1.read();
+
+				if (byte_in == COBS_FRAME_DELIMITER)
 				{
-					_rx_buffer[_rx_buffer_idx++] = byte_in;
+					
+					_esp_rx_state = ESP_RX_VALIDATE;
+					break;
 				}
 				else
 				{
-					// The buffer will be in an overflowed state if we write
-					// so set a buffer overflowed flag.
-					_rx_buffer_overflow = true;
-					_rx_buffer_idx = 0;
-					// ready_rpc_state();
+					if (_rx_buffer_idx < sizeof(_rx_buffer))
+					{
+						_rx_buffer[_rx_buffer_idx++] = byte_in;
+					}
+					else
+					{
+						_rx_buffer_overflow = true;
+						_rx_buffer_idx = 0;
+					}
+				}
+			}
+			break;
+		}
+		case ESP_RX_VALIDATE:
+		{
+			
+			uint8_t decoded[256];
+			uint8_t n = _cobs->decode(_rx_buffer, _rx_buffer_idx, decoded);
+			
+			if (n < 2)
+			{
+				_esp_rx_state = ESP_RX_WAIT;
+				_rx_buffer_idx = 0;
+				break;
+			}
+			_crc->clearCrc();
+			uint16_t crc1 = _crc->Modbus(decoded, 0, n - 2);
+			uint16_t crc2 = (decoded[n - 2] << 8) | decoded[n - 1];
+			n = n - 2;
+			_rx_buffer_idx = 0;
+			_rx_buffer_overflow = false;
+			_esp_rx_state = ESP_RX_WAIT;
+			
+			if (crc1 == crc2)
+			{
+				
+				switch (decoded[0])
+				{
+				case UART_ESP_STATUS:
+				{
+					memcpy(&esp_sts, &decoded[1], sizeof(Esp_Status));
+					break;
+				}
+				case UART_WAKE_ACK:
+				{
+					wake_ack = true;
+					break;
+				}
+				default:
+					break;
 				}
 			}
 		}
+		default:
+			_esp_rx_state = ESP_RX_WAIT;
+			break;
 	}
-	return false;
 }
+
+
 
 void EspManager::send_status(uint8_t sts, const void* data, size_t data_size)
 {
@@ -77,8 +117,6 @@ void EspManager::send_status(uint8_t sts, const void* data, size_t data_size)
 	}
 	send_packet(buf, idx);
 }
-
-
 
 void EspManager::esp_fw_update()
 {

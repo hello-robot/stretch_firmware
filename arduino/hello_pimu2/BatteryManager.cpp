@@ -122,22 +122,7 @@ void BatteryManager::_bms_step(float charging_current)
         break;
 
         case BMS_RX_IDLE:
-        while (Serial2.available())
-        {
-            _rx_buffer[rx_len++] = Serial2.read();
-            if (rx_len >= 5 && rx_len == _rx_buffer[2] + 5)
-            {
-                bms_state = BMS_PARSE;
-                break;
-            }
-
-            if (rx_len >= sizeof(_rx_buffer)) {
-                // Safety: avoid buffer overflow
-                bms_state = BMS_START;
-                _bms_last_sample_time = t;
-                break;
-            }
-        }
+        _read_byte(t);
         if (t - response_start_time > BMS_FRAMING_TIMEOUT)
         {
             bms_state = BMS_START;
@@ -153,6 +138,26 @@ void BatteryManager::_bms_step(float charging_current)
         bms_state = BMS_START;
         _bms_last_sample_time = t;
         break;
+    }
+}
+
+void BatteryManager::_read_byte(unsigned long st)
+{
+    while (Serial2.available())
+    {
+        _rx_buffer[rx_len++] = Serial2.read();
+        if (rx_len >= 5 && rx_len == _rx_buffer[2] + 5)
+        {
+            bms_state = BMS_PARSE;
+            break;
+        }
+
+        if (rx_len >= sizeof(_rx_buffer)) {
+            // Safety: avoid buffer overflow
+            bms_state = BMS_START;
+            _bms_last_sample_time = st;
+            break;
+        }
     }
 }
 
@@ -214,7 +219,7 @@ void BatteryManager::_get_bms_data(uint8_t *buf, float charging_current)
     // SerialUSB.print(current_battery);
     // SerialUSB.print(" Voltage: ");
     // SerialUSB.print(voltage_battery);
-    // SerialUSB.printf(" SOC: %d ", battery_soc);
+    // SerialUSB.printf(" SOC: %d\n", battery_soc);
     // SerialUSB.printf("Mos temp: %d ", battery_cycles);
     // SerialUSB.printf("Charg Fet Status: %d ", charging_mos_status);
     // SerialUSB.printf("Discharg Fet Status: %d\n", discharging_mos_state);

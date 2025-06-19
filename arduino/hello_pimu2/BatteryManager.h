@@ -99,6 +99,7 @@ public:
         bool _validate_crc(uint8_t* buf, uint8_t len);
         void _send_bms_read_packet(uint16_t reg_add, uint16_t reg_count);
         void _get_bms_data(uint8_t *buf, float charging_current);
+        void _read_byte(unsigned long st);
         
 };
 

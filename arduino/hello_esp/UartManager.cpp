@@ -75,7 +75,18 @@ bool UartManager::receive_packet(uint8_t *data, uint8_t &n, int cobbs_frame_size
 	return false;
 }
 
-
+void UartManager::send_status(uint8_t sts, const void* data, size_t data_size)
+{
+	uint8_t buf[MAX_UART_PACKET_SIZE];
+	uint8_t idx = 0;
+	buf[idx++] = sts; //First byte pwr sts id
+	if (data && data_size > 0)
+	{
+		memcpy(&buf[idx], data, data_size);
+		idx += data_size;
+	}
+	send_packet(buf, idx);
+}
 
 // void IRAM_ATTR onUartRx(void* arg) {
 //   while (_uartSerialPtr && _uartSerialPtr->available()) {

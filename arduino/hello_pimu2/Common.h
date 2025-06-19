@@ -35,7 +35,7 @@
 // Version 0.6.2: added interrupts for imu data, added writing to system orientation record for IMU orientation to match older robots
 // Version 0.6.3: incorporting charging detection class
 // Version 0.7.0: added is_charger_charging state to pimu status
-#define FIRMWARE_VERSION "Pimu.v0.0.0p7"
+#define FIRMWARE_VERSION "Pimu.v0.0.0p8"
 
 #define FS 1000 //Loop rate in Hz for TC5
 
@@ -128,34 +128,40 @@
 #define STATE_IS_TRACE_ON 8192       //Is trace recording
 #define STATE_IS_CHARGER_CHARGING 16384
 
-#define TRIGGER_BOARD_RESET  1
-#define TRIGGER_RUNSTOP_RESET  2
-#define TRIGGER_CLIFF_EVENT_RESET 4
-#define TRIGGER_BUZZER_ON  8
-#define TRIGGER_BUZZER_OFF  16
-#define TRIGGER_FAN_ON  32
-#define TRIGGER_FAN_OFF  64
-#define TRIGGER_IMU_RESET 128
-#define TRIGGER_RUNSTOP_ON 256
-#define TRIGGER_BEEP 512
-#define TRIGGER_LIGHTBAR_TEST 1024
-#define TRIGGER_ENABLE_TRACE 2048
-#define TRIGGER_DISABLE_TRACE 4096
-#define TRIGGER_CHARGER_ON 8192
-#define TRIGGER_CHARGER_OFF 16384
-#define TRIGGER_ESP_FW_UPDATE 32768
-#define TRIGGER_ESP_RESET 65536
-
+#define TRIGGER_BOARD_RESET  (1U << 0)
+#define TRIGGER_RUNSTOP_RESET  (1U << 1)
+#define TRIGGER_CLIFF_EVENT_RESET (1U << 2)
+#define TRIGGER_BUZZER_ON  (1U << 3)
+#define TRIGGER_BUZZER_OFF  (1U << 4)
+#define TRIGGER_FAN_ON  (1U << 5)
+#define TRIGGER_FAN_OFF  (1U << 6)
+#define TRIGGER_IMU_RESET (1U << 7)
+#define TRIGGER_RUNSTOP_ON (1U << 8)
+#define TRIGGER_BEEP (1U << 9)
+#define TRIGGER_LIGHTBAR_TEST (1U << 10)
+#define TRIGGER_ENABLE_TRACE (1U << 11)
+#define TRIGGER_DISABLE_TRACE (1U << 12)
+#define TRIGGER_CHARGER_ON (1U << 13)
+#define TRIGGER_CHARGER_OFF (1U << 14)
+#define TRIGGER_ESP_FW_UPDATE (1U << 15)
+#define TRIGGER_ESP_RESET (1U << 16)
+#define TRIGGER_LIDAR_OFF (1U << 17)
+#define TRIGGER_LIDAR_ON (1U << 18)
+#define TRIGGER_20V0_AUX_OFF (1U << 19)
+#define TRIGGER_20V0_AUX_ON (1U << 20)
+#define TRIGGER_CPU_PWR_CYCLE (1U << 21)
 
 /////////////////////////////////////////////////////////////////
-#define UART_STS_VOLTAGE 0x01
-#define UART_STS_CURRENT 0x02
+#define UART_ESP_STATUS 0x01
+#define UART_SAMD_STATUS 0x02
 #define UART_TRIGGER 0x03
 #define UART_PWR_SLEEP 0x04
 #define UART_PWR_WAKE 0x05
 #define UART_STS_BOOTED 0x06
 #define UART_STS_SD_CHRG 0x07
 #define UART_STS_SLEEP_CHRG 0x08
+#define UART_WAKE_ACK 0x09
+
 
 /////////////////////////////////////////////////////////////////
 
@@ -226,7 +232,13 @@ struct __attribute__ ((packed)) Pimu_Status{
   uint8_t battery_soc;
   uint8_t battery_soh;
   uint16_t battery_cycles;
-
+  float voltage_cpu;
+  float voltage_5v0;
+  float voltage_36v0;
+  float voltage_12v0;
+  float voltage_20v0_aux;
+  float current_cpu;
+  bool cpu_on_sts;
 };
 
 //Dummy struct for now, for future expansion
@@ -263,9 +275,16 @@ struct __attribute__ ((packed)) Pimu_Actuator_Cntrl{
 /////////////////////////////////////////////////////////////////
 
 
-struct Esp_VoltageStatus {
+struct Samd_Status {
     float voltage_battery; // Voltage in Volts
     float voltage_20v0;
+    uint8_t battery_soc;
+    bool charger_charging;
+    bool state_runstop_event;
+};
+
+struct Esp_Trigger{
+  uint32_t data;
 };
 
 #endif

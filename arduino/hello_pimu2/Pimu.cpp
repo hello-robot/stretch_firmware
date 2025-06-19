@@ -84,8 +84,8 @@ Pimu_Actuator_Cntrl joint_control;
 
 
 
-Esp_VoltageStatus esp_voltage_status;
-
+Samd_Status samd_status;
+Esp_Trigger esp_trigger;
 
 
 void setupTimer4_and_5();
@@ -96,9 +96,9 @@ void resetWDT();
 void setupWDT(uint8_t period);
 
 bool boot_sts;
-volatile bool sleep_mode_done = false;
-
-
+volatile bool esp_trigger_pending = false;
+volatile bool cpu_power_cycle_trigger = false;
+uint16_t cpu_timer = 0;
 
 /////////////////////////////////////////////////////////////////////////
 float deg_to_rad(float x)
@@ -134,9 +134,11 @@ void update_status();
 void toggle_led(int rate_ms);
 void shutdown_state_step();
 void sleep_state_step();
-void update_esp(uint8_t state);
+void esp_tx_step();
 void enableTC5();
 void enableTC4();
+void esp_rx_step();
+void cpu_power_cycle();
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -232,7 +234,6 @@ void setupPimu() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void stepPimuController()
 {
-  digitalWrite(IMU_RESET, HIGH);
   cycle_cnt++;
   toggle_led(500);
   runstop_manager.step(&cfg);
@@ -245,6 +246,7 @@ void stepPimuController()
   update_fan();
   // update_imu();
   update_board_reset();
+
 
   startup_cnt=max(0,startup_cnt-1);
   if(startup_cnt==0)
@@ -264,15 +266,20 @@ void stepPimuController()
   }
 
   update_status();
-  update_esp(UART_PWR_WAKE);
-  digitalWrite(IMU_RESET, LOW);
+  esp_tx_step();
+  esp_rx_step();
+  if (cpu_power_cycle_trigger)
+  {
+    cpu_power_cycle();
+  }
+
 }
 
 void shutdown_state_step()
 {
   analog_manager.step(&stat, &cfg);
   battery_manager.step(analog_manager.current_charger, analog_manager.voltage_36v0);
-  update_esp(UART_STS_SD_CHRG);
+  // update_esp(UART_STS_SD_CHRG);
 }
 
 void sleep_state_step()
@@ -375,7 +382,7 @@ void stepPimuRPC()
 
 
 ////////////////////////////
-uint8_t board_reset_cnt=0;
+uint16_t board_reset_cnt=0;
 bool first_config = 1;
 int fan_on_cnt=0;
 bool pulse_on=0;
@@ -401,7 +408,7 @@ void handle_trigger()
     }
     if (trg.data & TRIGGER_BOARD_RESET)
     {
-          board_reset_cnt=100;
+          board_reset_cnt=1000;
     }
     if (trg.data & TRIGGER_RUNSTOP_RESET)
     {
@@ -431,7 +438,7 @@ void handle_trigger()
     {
           state_fan_on=true;
           digitalWrite(FAN_EN, LOW);
-          fan_on_cnt=1200;
+          fan_on_cnt=12000;
     }
     if (trg.data & TRIGGER_FAN_OFF)
     {
@@ -472,6 +479,30 @@ void handle_trigger()
     if (trg.data & TRIGGER_ESP_RESET)
     {
       esp_manager.esp_reset();
+    }
+    if (trg.data & TRIGGER_LIDAR_OFF)
+    {
+      esp_trigger.data |= TRIGGER_LIDAR_OFF;
+      esp_trigger_pending = true;
+    }
+    if (trg.data & TRIGGER_LIDAR_ON)
+    {
+      esp_trigger.data |= TRIGGER_LIDAR_ON;
+      esp_trigger_pending = true;
+    }
+    if (trg.data & TRIGGER_20V0_AUX_OFF)
+    {
+      esp_trigger.data |= TRIGGER_20V0_AUX_OFF;
+      esp_trigger_pending = true;
+    }
+    if (trg.data & TRIGGER_20V0_AUX_ON)
+    {
+     esp_trigger.data |= TRIGGER_20V0_AUX_ON;
+     esp_trigger_pending = true;
+    }
+    if (trg.data & TRIGGER_CPU_PWR_CYCLE)
+    {
+      cpu_power_cycle_trigger=true;
     }
     
 }
@@ -564,13 +595,48 @@ void update_tilt_monitor()
       }
 }
 
-void update_esp(uint8_t state)
-
+void esp_tx_step()
 {
-  esp_voltage_status.voltage_battery = battery_manager.voltage_battery;
-  esp_voltage_status.voltage_20v0 = analog_manager.voltage_20v0;
-  esp_manager.send_status(UART_STS_VOLTAGE, &esp_voltage_status, sizeof(Esp_VoltageStatus));
+  if (esp_manager.wake_ack)
+  {
+    esp_manager.send_status(UART_PWR_WAKE, 0,0);
+    esp_manager.wake_ack = false;
+    return;
+  }
+  if (esp_trigger_pending)
+  {
+    esp_manager.send_status(UART_TRIGGER, &esp_trigger, sizeof(Esp_Trigger));
+    esp_trigger_pending  = false;
+    esp_trigger.data = 0;
+    return;
+  }
+  samd_status.voltage_battery = battery_manager.voltage_battery;
+  samd_status.voltage_20v0 = analog_manager.voltage_20v0;
+  samd_status.battery_soc = battery_manager.battery_soc;
+  samd_status.charger_charging = battery_manager.flag_charger_is_charging;
+  samd_status.state_runstop_event = runstop_manager.state_runstop_event;
+  esp_manager.send_status(UART_SAMD_STATUS, &samd_status, sizeof(Samd_Status));
 }
+
+
+
+void esp_rx_step()
+{
+  esp_manager.rx_step();
+}
+
+void cpu_power_cycle()
+{
+  cpu_timer++;
+  digitalWrite(DISABLE_20V0, HIGH);
+  if(cpu_timer > 5000)
+  {
+    digitalWrite(DISABLE_20V0, LOW);
+    cpu_timer = 0;
+    cpu_power_cycle_trigger = false;
+  }
+}
+
 
 ////////////////////////////
 
@@ -631,6 +697,13 @@ void update_status()
   stat.battery_soc = battery_manager.battery_soc;
   stat.battery_soh = battery_manager.battery_soh;
   stat.battery_cycles = battery_manager.battery_cycles;
+  stat.voltage_cpu = analog_manager.voltage_20v0;
+  stat.voltage_5v0 = analog_manager.voltage_5v0;
+  stat.voltage_36v0 = analog_manager.voltage_36v0;
+  stat.voltage_12v0 = esp_manager.esp_sts.voltage_12v0;
+  stat.voltage_20v0_aux = esp_manager.esp_sts.voltage_20v0_aux;
+  stat.current_cpu = analog_manager.current_cpu;
+  stat.cpu_on_sts = esp_manager.esp_sts.cpu_sts;
   
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Pimu_Status));
 

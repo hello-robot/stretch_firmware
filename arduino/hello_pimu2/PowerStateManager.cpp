@@ -222,9 +222,9 @@ void PowerStateManager::enter_sleep()
 }
 void PowerStateManager::enter_wake(system_pwr_state st)
 {
+    _esp_manager.send_status(UART_PWR_WAKE,0, 0);
     _peripheral_manager.peripheral_active_state();
     _lightbar_manager.enableDMAC();
-    _esp_manager.send_status(UART_PWR_WAKE,0, 0);
     _peripheral_manager.set_actuator_active();
 
 }

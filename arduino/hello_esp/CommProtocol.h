@@ -4,20 +4,38 @@
 #include <stdint.h>
 
 
-#define UART_STS_VOLTAGE 0x01
-#define UART_STS_CURRENT 0x02
+#define UART_ESP_STATUS 0x01
+#define UART_SAMD_STATUS 0x02
 #define UART_TRIGGER 0x03
 #define UART_PWR_SLEEP 0x04
 #define UART_PWR_WAKE 0x05
 #define UART_STS_BOOTED 0x06
 #define UART_STS_SD_CHRG 0x07
 #define UART_STS_SLEEP_CHRG 0x08
-#define UART_GET_STS 0x09
-struct VoltageStatus {
+#define UART_WAKE_ACK 0x09
+#define UART_GET_STS 0x10
+
+
+#define TRIGGER_LIDAR_OFF (1U << 17)
+#define TRIGGER_LIDAR_ON (1U << 18)
+#define TRIGGER_20V0_AUX_OFF (1U << 19)
+#define TRIGGER_20V0_AUX_ON (1U << 20)
+
+struct Samd_Status {
     float voltage_battery; // Voltage in Volts
     float voltage_20v0;
-    float voltage_5v0;
-    float voltage_36v0;
+    uint8_t battery_soc;
+    bool charger_charging;
+    bool state_runstop_event;
 };
-
+struct Esp_Status {
+    float voltage_12v0;
+    float voltage_20v0_aux;
+    bool charger_barrel_fault; // Voltage in Volts
+    bool charger_adapter_fault;
+    bool cpu_sts;
+};
+struct Esp_Trigger{
+  uint32_t data;
+};
 #endif

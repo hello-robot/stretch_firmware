@@ -58,7 +58,8 @@ void PeripheralManager::peripheral_sleep_state() {
     digitalWrite(PIN_DCM_MODE_EN, HIGH);
     digitalWrite(PIN_ESP_STS_LED, LOW);
     digitalWrite(PIN_RPI_PWR_DISABLE, HIGH);
-    // enable_aux_20v0(false);
+    enable_aux_20v0(false);
+    disable_lidar(true);
 }
 
 void PeripheralManager::peripheral_sd_state() {
@@ -67,7 +68,8 @@ void PeripheralManager::peripheral_sd_state() {
     digitalWrite(PIN_DCM_MODE_EN, HIGH);
     digitalWrite(PIN_ESP_STS_LED, LOW);
     digitalWrite(PIN_RPI_PWR_DISABLE, HIGH);
-    // enable_aux_20v0(false);
+    enable_aux_20v0(false);
+    disable_lidar(true);
     
 }
 
@@ -76,5 +78,5 @@ void PeripheralManager::peripheral_wakeup_state() {
     digitalWrite(PIN_12V0_DISABLE, LOW);
     digitalWrite(PIN_DCM_MODE_EN, LOW);
     digitalWrite(PIN_RPI_PWR_DISABLE, LOW);
-    // enable_aux_20v0(true);
+    disable_lidar(false);
 }

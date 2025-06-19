@@ -53,11 +53,26 @@ void setup()        // This code runs once at startup
 {
 	_crc = &crc;
 	_cobs = &cobs;
-  SerialUSB.begin(2000000);
-  while(!SerialUSB);
-  Serial2.begin(9600);
-  pinMode(PIN_TX_EN, OUTPUT);
+  // pinMode(PIN_TX_EN, OUTPUT);
   pinMode(PIN_STS_LED, OUTPUT);
+  SerialUSB.begin(2000000);
+
+  Serial2.begin(9600);
+    //PB14 sercom4 C register
+  PORT->Group[1].PINCFG[14].bit.PMUXEN = 1;
+  PORT->Group[1].PMUX[7].bit.PMUXE = PORT_PMUX_PMUXE(0x02);
+  SERCOM4->USART.CTRLA.bit.ENABLE = 0;
+  while(SERCOM4->USART.CTRLA.bit.ENABLE);
+  SERCOM4->USART.CTRLA.bit.TXPO = 0x03;
+  SERCOM4->USART.CTRLC.bit.GTIME = 8; 
+  SERCOM4->USART.CTRLA.bit.ENABLE = 1;
+  while(!SERCOM4->USART.CTRLA.bit.ENABLE);
+
+
+  while(!SerialUSB);
+  
+  
+
   bms_startup();
 
 
@@ -80,7 +95,7 @@ void loop()
 void bms_startup()
 {
     digitalWrite(PIN_TX_EN, HIGH);
-    send_bms_read_packet(0x06, 0x01);
+    send_bms_read_packet(0x00, 0x01);
     while (!(SERCOM4->USART.INTFLAG.bit.TXC));
     digitalWrite(PIN_TX_EN, LOW);
     unsigned long t_start = micros();
@@ -91,11 +106,11 @@ void bms_startup()
           _rx_buffer[rx_len++] = Serial2.read();
           if (rx_len >= 5 && rx_len == _rx_buffer[2] + 5)
           {  
-              SerialUSB.println("Buffer size correct");
+              // SerialUSB.println("Buffer size correct");
               break;
           }
           if (rx_len >= sizeof(_rx_buffer)) {
-                  SerialUSB.println("Buffer of");
+                  // SerialUSB.println("Buffer of");
                   // Safety: avoid buffer overflow
                   break;
               }
@@ -103,11 +118,12 @@ void bms_startup()
     }
     if (validate_crc(_rx_buffer, rx_len))
     {
-        status.soc = _rx_buffer[4];
-        SerialUSB.println(status.soc);
+        status.voltage = (_rx_buffer[3] << 8 | _rx_buffer[4]) * 0.01f;
+        // status.soc = _rx_buffer[4];
+        // SerialUSB.println(status.voltage);
     }
     else{
-      SerialUSB.println("Not validated");
+      // SerialUSB.println("Not validated");
     }
 
 }
@@ -122,7 +138,7 @@ void bms_step()
     case BMS_START:
       if (now - last_request_time >= 1000000)
       {
-        digitalWrite(PIN_TX_EN, HIGH);
+        // digitalWrite(PIN_TX_EN, HIGH);
         send_bms_read_packet(0x00, 0x0A);
         response_start_time = now;
         rx_len = 0;
@@ -133,7 +149,7 @@ void bms_step()
     case BMS_TX_IDLE:
       if (SERCOM4->USART.INTFLAG.bit.TXC)
       {
-        digitalWrite(PIN_TX_EN, LOW);
+        // digitalWrite(PIN_TX_EN, LOW);
         bms_state = BMS_RX_IDLE;
       }
       break;

@@ -11,7 +11,7 @@
 #include "TimeManager.h"
 
 
-#define SLEEP_PWM_BRIGHTNESS (uint8_t)35 // Target PWM for the power button LE
+#define SLEEP_PWM_BRIGHTNESS (uint8_t)25 // Target PWM for the power button LE
 
 
 

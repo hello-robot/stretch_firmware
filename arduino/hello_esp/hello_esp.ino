@@ -1,6 +1,8 @@
 
 #include "EspControl.h"
 
+
+
 void setup() {
   // put your setup code here, to run once:
   SerialUSB.begin(250000);
@@ -14,12 +16,13 @@ void loop() {
   if (current_pwr_state == STATE_ACTIVE)
   {
     toggle_led(500);
+    process_pimu_requests();
   }
-  if (current_pwr_state == STATE_SLEEP) {
+  if (current_pwr_state == STATE_SLEEP || current_pwr_state == STATE_SHUTDOWN_CHRG) {
     // If the system is in sleep mode, we can put the ESP to sleep
     esp_light_sleep_start(); // Put ESP into light sleep
+    enter_wake();
   }
-  process_pimu_requests();
-
+  
 }
 
