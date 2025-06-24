@@ -26,16 +26,13 @@ class AnalogManager {
     void setupADC();
     void factory_config();
     
-    float cliff_LPFa; 
-    float cliff_LPFb;
     float voltage_LPFa; 
     float voltage_LPFb;
     float current_LPFa; 
     float current_LPFb;
     float temp_LPFa; 
     float temp_LPFb ;    
-    float cliff[4];
-    bool at_cliff[4];
+
 
 
     float voltage_5v0;

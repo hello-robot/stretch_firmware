@@ -44,7 +44,7 @@ float high_current_alert= I_TO_RAW(6.0);
 float over_tilt_alert_deg = 10.0;
 int startup_cnt=500;
 
-bool state_cliff_event=false;
+
 bool state_fan_on=false;
 bool state_buzzer_on=false;
 bool state_low_voltage_alert=false;
@@ -129,7 +129,6 @@ void update_voltage_monitor();
 void update_current_monitor();
 void update_tilt_monitor();
 void update_board_reset();
-void update_cliff_monitor();
 void update_status();
 void toggle_led(int rate_ms);
 void shutdown_state_step();
@@ -247,7 +246,7 @@ void stepPimuController()
   }
   
   update_fan();
-  // update_imu();
+  //update_imu();
   update_board_reset();
 
 
@@ -256,7 +255,6 @@ void stepPimuController()
   {
     // update_current_monitor();
     update_tilt_monitor();
-    update_cliff_monitor();
   }
   
   if (runstop_manager.state_runstop_event)
@@ -422,10 +420,6 @@ void handle_trigger()
     {
           runstop_manager.activate_runstop();
           runstop_manager.step(&cfg);
-    }
-    if (trg.data & TRIGGER_CLIFF_EVENT_RESET)
-    {
-          state_cliff_event = false;
     }
     if (trg.data & TRIGGER_BUZZER_ON)
     {
@@ -654,15 +648,6 @@ void update_board_reset()
 }
 ////////////////////////////
 
-void update_cliff_monitor()
-{
-  uint8_t cliff_last = state_cliff_event;
-  state_cliff_event = state_cliff_event || (analog_manager.at_cliff[0] ||analog_manager.at_cliff[1] ||analog_manager.at_cliff[2] ||analog_manager.at_cliff[3])&& cfg.stop_at_cliff; //Remains true until reset
-  if (!cliff_last && state_cliff_event)
-    beep_manager.do_beep(BEEP_ID_SINGLE_SHORT);
-  if(state_cliff_event)
-    runstop_manager.activate_runstop();
-}
 
 ////////////////////////////
 
@@ -679,11 +664,6 @@ void update_status()
   stat.current=battery_manager.current_sys;
   stat.temp=analog_manager.temp;
   stat.state=0;
-  stat.state = analog_manager.at_cliff[0] ? stat.state|STATE_AT_CLIFF_0 : stat.state;
-  stat.state = analog_manager.at_cliff[1] ? stat.state|STATE_AT_CLIFF_1 : stat.state;
-  stat.state = analog_manager.at_cliff[2] ? stat.state|STATE_AT_CLIFF_2 : stat.state;
-  stat.state = analog_manager.at_cliff[3] ? stat.state|STATE_AT_CLIFF_3 : stat.state;
-  stat.state= state_cliff_event ? stat.state|STATE_CLIFF_EVENT : stat.state;
   stat.state= runstop_manager.state_runstop_event? stat.state|STATE_RUNSTOP_EVENT : stat.state;
   stat.state= state_fan_on ? stat.state|STATE_FAN_ON : stat.state;
   stat.state= state_buzzer_on ? stat.state|STATE_BUZZER_ON : stat.state;

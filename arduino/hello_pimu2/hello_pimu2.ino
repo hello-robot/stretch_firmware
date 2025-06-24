@@ -24,7 +24,7 @@
 void setup()        // This code runs once at startup
 {     
   setupBoardVariants();
-  // setupIMU();
+  //setupIMU();
   SerialUSB.begin(2000000);
   setupPimu();              
   setupTransport();

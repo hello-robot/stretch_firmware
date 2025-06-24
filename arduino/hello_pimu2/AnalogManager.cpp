@@ -40,8 +40,7 @@ AnalogManager analog_manager;
 
 
 AnalogManager::AnalogManager(){
-  cliff_LPFa = 1.0; 
-  cliff_LPFb = 0.0;
+
   voltage_LPFa = 1.0; 
   voltage_LPFb = 0.0;
   current_LPFa = 1.0; 
@@ -118,10 +117,7 @@ void AnalogManager::update_config(Pimu_Config * cfg_new, Pimu_Config * cfg_old)
   current_rpi = 2.0f*(3.4f*adc_1_Result[IDX_RPI_IMON])/4095;
   temp = ((3.4f*(adc_0_Result[IDX_VTEMP])/4095)-0.5F)/0.01f;
 
-    cliff[0] = 0;
-    cliff[1] = 0;
-    cliff[2] = 0;
-    cliff[3] = 0;
+
     first_config=0;
   }
 }
@@ -143,10 +139,6 @@ void AnalogManager::step(Pimu_Status * stat, Pimu_Config * cfg)
   current_rpi = 2.0f*(3.4f*adc_1_Result[IDX_RPI_IMON])/4095;
   temp = ((3.4f*(adc_0_Result[IDX_VTEMP])/4095)-0.5F)/0.01f;
 
-    cliff[0] = 0;
-    cliff[1] = 0;
-    cliff[2] = 0;
-    cliff[3] = 0;
     first_filter=false;
   }
 
@@ -174,21 +166,8 @@ void AnalogManager::step(Pimu_Status * stat, Pimu_Config * cfg)
   // Serial.print(" VTemp: ");
   // Serial.println(temp);
 
-  
-  cliff[0]= 0;
-  cliff[1]= 0;
-  cliff[2]=0;
-  cliff[3]= 0;
 
 
-  stat->cliff_range[0]=cliff[0]-cfg->cliff_zero[0];
-  stat->cliff_range[1]=cliff[1]-cfg->cliff_zero[1];
-  stat->cliff_range[2]=cliff[2]-cfg->cliff_zero[2];
-  stat->cliff_range[3]=cliff[3]-cfg->cliff_zero[3];
-  at_cliff[0] = stat->cliff_range[0]<cfg->cliff_thresh; //Neg is dropoff
-  at_cliff[1] = stat->cliff_range[1]<cfg->cliff_thresh;
-  at_cliff[2] = stat->cliff_range[2]<cfg->cliff_thresh;
-  at_cliff[3] = stat->cliff_range[3]<cfg->cliff_thresh;
 
 
   adc_0_resultsReady = false;                              

@@ -110,14 +110,8 @@
 
 
 /////////////////////////////////////////////////////////////////
-#define NUM_CLIFF 4
 
-#define STATE_AT_CLIFF_0 1
-#define STATE_AT_CLIFF_1 2
-#define STATE_AT_CLIFF_2 4
-#define STATE_AT_CLIFF_3 8
 #define STATE_RUNSTOP_EVENT 16
-#define STATE_CLIFF_EVENT 32
 #define STATE_FAN_ON 64
 #define STATE_BUZZER_ON 128
 #define STATE_LOW_VOLTAGE_ALERT 256
@@ -130,7 +124,6 @@
 
 #define TRIGGER_BOARD_RESET  (1U << 0)
 #define TRIGGER_RUNSTOP_RESET  (1U << 1)
-#define TRIGGER_CLIFF_EVENT_RESET (1U << 2)
 #define TRIGGER_BUZZER_ON  (1U << 3)
 #define TRIGGER_BUZZER_OFF  (1U << 4)
 #define TRIGGER_FAN_ON  (1U << 5)
@@ -193,22 +186,13 @@ struct __attribute__ ((packed)) IMU_Status{
 
 
 struct __attribute__ ((packed)) Pimu_Config{
-  float cliff_zero[NUM_CLIFF];
-  float cliff_thresh;
-  float cliff_LPF; //Hz rolloff
   float voltage_LPF; 
   float current_LPF;
   float temp_LPF;
-  uint8_t stop_at_cliff;
   uint8_t stop_at_runstop;
   uint8_t stop_at_tilt;
   uint8_t stop_at_low_voltage;
   uint8_t stop_at_high_current;
-  float mag_offsets[3];
-  float mag_softiron_matrix[9];
-  float gyro_zero_offsets[3];
-  float rate_gyro_vector_scale;
-  float gravity_vector_scale;
   float accel_LPF;
   float bump_thresh;
   float low_voltage_alert;
@@ -221,7 +205,6 @@ struct __attribute__ ((packed)) Pimu_Status{
   float voltage;
   float current;
   float temp;
-  float cliff_range[NUM_CLIFF];
   uint32_t state;      
   uint64_t timestamp; //us
   uint16_t bump_event_cnt;
