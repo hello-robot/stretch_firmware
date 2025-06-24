@@ -88,13 +88,11 @@ volatile int cmd_cnt_exec=0;
 volatile int cmd_cnt_rpc=0;
 volatile int cmd_rpc_overflow=0;
 
-
-// #define N_POS_HISTORY 1250 //With Control rate of 5Khz, log 0.25s of past motions
-// float pos_history[N_POS_HISTORY];
-// int pos_history_idx=0;
-// #define N_POS_HISTORY 25000 
-// float pos_history[N_POS_HISTORY];
-
+/*
+#define N_POS_HISTORY 1250 //With Control rate of 5Khz, log 0.25s of past motions
+float pos_history[N_POS_HISTORY];
+int pos_history_idx=0;
+*/
 
 //By default boot with hello_interface on
 //Turn on when get RPC request RPC_SET_MENU_ON
@@ -162,7 +160,6 @@ bool motor_enabled_flag = true;
 uint16_t drv8262_min_vref=50;
 float k_calibration_step=0.2;
 
-bool goUpFlag = true;
 
 ///////////////////////// UTIL ///////////////////////////
 
@@ -680,12 +677,12 @@ void update_trace()
 
   if(TRACE_TYPE==TRACE_TYPE_FEEDBACK)
   {
+    // trace_manager.feedback_msg.pos=deg_to_rad(vg.vel);
     trace_manager.feedback_msg.pos=stat.pos;
     trace_manager.feedback_msg.vel=stat.vel;
     trace_manager.update_trace_feedback();
   }
 }
-
 
 void stepHelloController()
 {
@@ -1071,21 +1068,37 @@ void stepHelloController()
     diag_is_mg_accelerating=0;
     diag_is_mg_moving=0;
 
-    if(trace_manager.trace_on){
-      cmd.mode = MODE_POS_TRAJ_INCR;
-      if(ywd >= rad_to_deg(50.0)){
-        goUpFlag = false;
-      }
-      if(ywd <= rad_to_deg(5)){
-        goUpFlag = true;
-      }
-      if(goUpFlag){
-        x_des_incr = yw + rad_to_deg(10); 
-      }
-      if(!goUpFlag){
-        x_des_incr = yw - rad_to_deg(10); 
-      }
-    }
+    // if(trace_manager.trace_on){
+    //   // cmd.mode = MODE_POS_TRAJ_INCR;
+    //   // cmd.mode = MODE_VEL_TRAJ;
+    //   cmd.mode = MODE_VEL_PID;
+    //   // cmd.mode = MODE_POS_PID;
+    //   if(test_cnt == 0){
+    //     vg.safe_switch_on(yw, v);
+    //     test_cnt++;
+    //   }
+    //   if(ywd >= rad_to_deg(45.0)){
+    //     goUpFlag = false;
+    //   }
+    //   if(ywd <= rad_to_deg(15.0)){
+    //     goUpFlag = true;
+    //   }
+    //   if(goUpFlag){
+    //     // x_des_incr = yw + rad_to_deg(10); // For MODE_POS_TRAJ_INCR
+    //     cmd.v_des = 12.0;
+    //   }
+    //   if(!goUpFlag){
+    //     // x_des_incr = yw - rad_to_deg(10); // For MODE_POS_TRAJ_INCR
+    //     cmd.v_des = -12.0;
+    //   }
+    //   cmd.a_des = 15.0;
+    //   vg.setMaxAcceleration(abs(rad_to_deg(cmd.a_des)));
+    // }
+    // if(!trace_manager.trace_on && test_cnt != 0){
+    //   test_cnt = 0;
+    //   cmd.mode = MODE_HOLD;
+    //   hold_pos = yw;
+    // }
 
       ////// Now run control cycle
 
@@ -1181,7 +1194,7 @@ void stepHelloController()
             if (ITerm > gains.vKi_limit) ITerm = gains.vKi_limit;
             else if (ITerm < -gains.vKi_limit) ITerm = -gains.vKi_limit;
             u = ((gains.vKp * e) + ITerm - (gains.vKd * (e-e_1)));
-            u=u*stiffness_target;
+            u=2*u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=0;
             diag_near_vel_setpoint=abs(e)<gains.vel_near_setpoint_d;
             diag_is_mg_accelerating=vg.isAccelerating();
