@@ -464,6 +464,7 @@ void serialCheck() {        //Monitors serial for commands.  Must be called in r
           if ((char)SerialUSB.read()=='x')
           {
             hello_interface = true;
+            enableTCInterrupts(); 
           }
         }
         break;

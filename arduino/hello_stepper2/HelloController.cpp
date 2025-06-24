@@ -243,6 +243,7 @@ void setupBoardVariants()
     pinMode(PIN_DECAY_SELECT, OUTPUT);
     pinMode(PIN_DRV_OCPM, OUTPUT);
     pinMode(PIN_BOOT, OUTPUT);
+    pinMode(PIN_TEST, OUTPUT);
 
     digitalWrite(PIN_DRV_OCPM, HIGH);
     analog_manager.setupADC();
@@ -447,7 +448,7 @@ void handleNewRPC()
           write_to_lookup(enc_calib_in.block_id, enc_calib_in.block);
           if (enc_calib_in.block_id==7)//done
           {
-            board_reset_cnt=100;
+            board_reset_cnt=500;
           }
           break;
     case RPC_GET_STATUS:
@@ -696,7 +697,7 @@ void stepHelloController()
         dirty_trigger=0;
 
         if (trg.data & TRIGGER_BOARD_RESET)
-          board_reset_cnt=100;
+          board_reset_cnt=500;
 
         if (trg.data & TRIGGER_ENABLE_TRACE)
         {
@@ -1399,8 +1400,10 @@ int ms_loop_cnt=0;
 void TC5_Handler() {                // gets called with FPID frequency
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
+    
      if (hello_interface)
      {
+        
         ///////////// Handle encoder read ////////////////
         noInterrupts();
         enc_raw=readEncoder();
@@ -1420,8 +1423,8 @@ void TC5_Handler() {                // gets called with FPID frequency
         }
     
         ///////////// Handle 1MS functions ////////////////
-         ms_loop_cnt++;
-         if (ms_loop_cnt==MS_LOOP_RATE)
+        ms_loop_cnt++;
+        if (ms_loop_cnt==MS_LOOP_RATE)
         {
           time_manager.ts_base++;
           toggle_led(500);
@@ -1436,23 +1439,16 @@ void TC5_Handler() {                // gets called with FPID frequency
         }
         else
         {
-          //U=max(20,U);
-          //stat.debug=round(U);
-          if (gains.decay_setting==0)
-          {
-            output(-(y+PAY), round(U),0);
-          }
-          else
-          {
-            output(-(y+PAY), round(U),drv8262_min_vref);
-          }
+          output(-(y+PAY), round(U),drv8262_min_vref);
         }
+        
         
      }
      else
      {
       Mechaduino_TC5_Handler();
      }
+     
      TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 
