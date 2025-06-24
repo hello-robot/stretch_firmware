@@ -592,7 +592,7 @@ void update_status()
   memcpy((uint8_t *) (&stat_out),(uint8_t *) (&stat),sizeof(Status));
   interrupts();
 
-if (trace_manager.trace_on)
+/*if (trace_manager.trace_on)
 {
    if(TRACE_TYPE==TRACE_TYPE_DEBUG)
   {
@@ -614,7 +614,7 @@ if (trace_manager.trace_on)
   {
     trace_manager.update_trace_status(&stat_out);
   }
-}
+}*/
 
 }
 
@@ -1137,7 +1137,7 @@ void stepHelloController()
             if (ITerm > gains.vKi_limit) ITerm = gains.vKi_limit;
             else if (ITerm < -gains.vKi_limit) ITerm = -gains.vKi_limit;
             u = ((gains.vKp * e) + ITerm - (gains.vKd * (e-e_1)));
-            u=u*stiffness_target;
+            u=u*stiffness_target+current_to_effort(cmd.i_feedforward);
             diag_near_pos_setpoint=0;
             diag_near_vel_setpoint=abs(e)<gains.vel_near_setpoint_d;
             diag_is_mg_accelerating=vg.isAccelerating();
