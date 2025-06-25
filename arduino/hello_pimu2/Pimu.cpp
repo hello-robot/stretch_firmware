@@ -290,6 +290,7 @@ void sleep_state_step()
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int rpc_cntr=0;
 void handleNewRPC()
 {
   int ll;
@@ -313,21 +314,28 @@ void handleNewRPC()
           num_byte_rpc_out=1+sizeof(uint32_t);
           break;
     case RPC_GET_PIMU_STATUS: 
-          update_status();
+          //update_status();
           rpc_out[0]=RPC_REPLY_PIMU_STATUS;
-          memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Pimu_Status)); //Collect the status data
           num_byte_rpc_out=sizeof(Pimu_Status)+1;
+          noInterrupts();
+          stat_out.debug=rpc_cntr++;
+          memcpy(rpc_out + 1, (uint8_t *) (&stat_out), sizeof(Pimu_Status)); //Collect the status data
+          interrupts();
           break;
 
      case RPC_GET_PIMU_STATUS_AUX:
           stat_aux.foo=sync_manager.motor_sync_cnt;
           rpc_out[0]=RPC_REPLY_PIMU_STATUS_AUX;
+          noInterrupts();
           memcpy(rpc_out + 1, (uint8_t *) (&stat_aux), sizeof(Pimu_Status_Aux)); //Collect the status_aux data
+          interrupts();
           num_byte_rpc_out=sizeof(Pimu_Status_Aux)+1;
           break;
      case RPC_GET_PIMU_BOARD_INFO:
           rpc_out[0]=RPC_REPLY_PIMU_BOARD_INFO;
+          noInterrupts();
           memcpy(rpc_out + 1, (uint8_t *) (&board_info), sizeof(Pimu_Board_Info)); //Collect the status data
+          interrupts();
           num_byte_rpc_out=sizeof(Pimu_Board_Info)+1;
           state_boot_detected=true;
           break; 
@@ -654,7 +662,7 @@ void update_board_reset()
 void update_status()
 {
 
-  //stat.debug=imu_b.irq_cnt;
+  stat.debug=123;//imu_b.irq_cnt;
 
   if(stat.imu.bump>cfg.bump_thresh) //Use the FW tap detector
       stat.bump_event_cnt++;
