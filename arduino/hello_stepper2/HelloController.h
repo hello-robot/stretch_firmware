@@ -52,6 +52,9 @@ extern void WDTsync();
 extern void systemReset();
 extern void disableWDT();
 
+extern uint16_t drv8262_min_vref;
+extern float k_calibration_step;
+
 #define CLOCK_RATE_HZ 48000000 //For SAMD51, actual clock is 120Mhz but using generic clock 1 (48M) for timing
 #define WDT_TIMEOUT_PERIOD 11 //ms range 0-11ms
 

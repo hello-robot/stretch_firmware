@@ -75,14 +75,17 @@ void loop()                 // main loop
 // Flash LED fast when in menu mode, slow in RPC mode
 if (hello_interface)
 {
+
   resetWDT();
   stepHelloControllerRPC();
 }
 else
 {
+  
   disableWDT();
   serialCheck();
   toggle_led(200);
+  
 }
 #else
   disableWDT();
