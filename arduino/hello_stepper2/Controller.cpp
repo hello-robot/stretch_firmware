@@ -27,7 +27,7 @@
 
 void Mechaduino_TC5_Handler() {                // gets called with FPID frequency
 
-
+  
   static int print_counter = 0;               //this is used by step response
 
 /*#ifdef HELLO
@@ -115,7 +115,7 @@ void Mechaduino_TC5_Handler() {                // gets called with FPID frequenc
       else ledPin_LOW();                  //digitalWrite(ledPin, LOW);
 #endif
 
-      output(-y, round(U),0);    // update phase currents
+      output(-y, round(U),25);    // update phase currents
     }
     
    // e_3 = e_2;    //copy current values to previous values for next control cycle
@@ -134,6 +134,7 @@ void Mechaduino_TC5_Handler() {                // gets called with FPID frequenc
         print_counter = 0;
       }
     }
+    
     TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
     // TEST1_LOW();            //for testing the control loop timing
 

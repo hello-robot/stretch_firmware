@@ -153,7 +153,7 @@ static const uint8_t MOSI  = PIN_SPI_MOSI;
 /*
  * Test Pins for profiling and other uses
  */
-#define PIN_TEST            (32ul)
+#define PIN_TEST            (35ul)
 
 
 /*

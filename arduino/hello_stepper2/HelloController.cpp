@@ -157,6 +157,9 @@ int vel_watchdog=CONTROL_RATE_HZ; //Watchdog counts down from 1s
 bool motor_enabled_flag = true;
 
 
+uint16_t drv8262_min_vref=50;
+float k_calibration_step=0.2;
+
 ///////////////////////// UTIL ///////////////////////////
 
 
@@ -240,6 +243,7 @@ void setupBoardVariants()
     pinMode(PIN_DECAY_SELECT, OUTPUT);
     pinMode(PIN_DRV_OCPM, OUTPUT);
     pinMode(PIN_BOOT, OUTPUT);
+    pinMode(PIN_TEST, OUTPUT);
 
     digitalWrite(PIN_DRV_OCPM, HIGH);
     analog_manager.setupADC();
@@ -282,8 +286,8 @@ void setupHelloController()
   dirty_gains=1; //force load of gains
 
   //DRV8262 current can not be set below vref value of 50mV
-  set_vref_1(DRV8262_MIN_VREF);
-  set_vref_2(DRV8262_MIN_VREF);
+  set_vref_1(drv8262_min_vref);
+  set_vref_2(drv8262_min_vref);
   digitalWrite(PIN_BOOT, HIGH);
   
 
@@ -444,7 +448,7 @@ void handleNewRPC()
           write_to_lookup(enc_calib_in.block_id, enc_calib_in.block);
           if (enc_calib_in.block_id==7)//done
           {
-            board_reset_cnt=100;
+            board_reset_cnt=500;
           }
           break;
     case RPC_GET_STATUS:
@@ -546,6 +550,7 @@ void handleNewRPC()
 void update_status()
 {
 
+  //stat.debug=k_calibration_step;
   //noInterrupts();
   //stat.timestamp=time_manager.get_encoder_timestamp();
   stat.effort= eff;
@@ -692,7 +697,7 @@ void stepHelloController()
         dirty_trigger=0;
 
         if (trg.data & TRIGGER_BOARD_RESET)
-          board_reset_cnt=100;
+          board_reset_cnt=500;
 
         if (trg.data & TRIGGER_ENABLE_TRACE)
         {
@@ -775,6 +780,10 @@ void stepHelloController()
 
       dirty_gains=0;
       first_step_safety=10; //recapture hold position in case encoder polarity has flipped
+
+      k_calibration_step = gains.k_calibration_step;
+      stat.debug=k_calibration_step;
+      drv8262_min_vref = gains.drv8262_min_vref;
     }
    
     
@@ -1391,8 +1400,10 @@ int ms_loop_cnt=0;
 void TC5_Handler() {                // gets called with FPID frequency
   if (TC5->COUNT16.INTFLAG.bit.OVF == 1) 
   {
+    
      if (hello_interface)
      {
+        
         ///////////// Handle encoder read ////////////////
         noInterrupts();
         enc_raw=readEncoder();
@@ -1412,8 +1423,8 @@ void TC5_Handler() {                // gets called with FPID frequency
         }
     
         ///////////// Handle 1MS functions ////////////////
-         ms_loop_cnt++;
-         if (ms_loop_cnt==MS_LOOP_RATE)
+        ms_loop_cnt++;
+        if (ms_loop_cnt==MS_LOOP_RATE)
         {
           time_manager.ts_base++;
           toggle_led(500);
@@ -1423,28 +1434,21 @@ void TC5_Handler() {                // gets called with FPID frequency
          ///////////// Send control commands to commutation driver ////////////////
         if (receiving_calibration)
         {
-          set_vref_1(DRV8262_MIN_VREF);
-          set_vref_2(DRV8262_MIN_VREF);
+          set_vref_1(drv8262_min_vref);
+          set_vref_2(drv8262_min_vref);
         }
         else
         {
-          //U=max(20,U);
-          //stat.debug=round(U);
-          if (gains.decay_setting==0)
-          {
-            output(-(y+PAY), round(U),5);
-          }
-          else
-          {
-            output(-(y+PAY), round(U),5);
-          }
+          output(-(y+PAY), round(U),drv8262_min_vref);
         }
+        
         
      }
      else
      {
       Mechaduino_TC5_Handler();
      }
+     
      TC5->COUNT16.INTFLAG.bit.OVF = 1;    // writing a one clears the flag ovf flag
   }
 
